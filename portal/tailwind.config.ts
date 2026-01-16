@@ -9,21 +9,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // SubscriberSync Brand Colors
-        ink: '#0C0F17',
+        ink: '#0a0c10',
         slate: '#161B26',
-        border: '#2A3142',
-        muted: '#8B95A8',
-        light: '#E8ECF2',
         copper: '#E07A42',
-        'copper-dark': '#C4652F',
-        success: '#22c55e',
-        'success-dark': '#1a3d2e',
+        'copper-dark': '#c56835',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        data: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
+      animation: {
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      }
     },
   },
   plugins: [],

@@ -10,12 +10,10 @@ interface PortalPageProps {
 }
 
 export default async function PortalPage({ params }: PortalPageProps) {
-  // Try to get client from Airtable, fall back to demo data
   let client = process.env.AIRTABLE_API_KEY 
     ? await getClientBySlug(params.slug)
     : null
   
-  // Use demo data if no Airtable connection or client not found
   if (!client) {
     client = getDemoClient(params.slug)
   }
@@ -23,8 +21,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
   return (
     <main className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-border">
-        <div className="max-w-5xl mx-auto px-6 py-6">
+      <header className="border-b border-slate-800/50 backdrop-blur-md bg-[#0a0c10]/80 sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {client.logoUrl ? (
@@ -34,22 +32,33 @@ export default async function PortalPage({ params }: PortalPageProps) {
                   className="h-10 w-auto"
                 />
               ) : (
-                <div className="w-10 h-10 bg-copper rounded-lg flex items-center justify-center">
-                  <span className="text-xl font-bold text-white">
-                    {client.company.charAt(0)}
-                  </span>
+                <div className="relative">
+                  <div className="w-12 h-12 bg-gradient-to-br from-copper to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-copper/20">
+                    <span className="text-xl font-bold text-white">
+                      {client.company.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="absolute -inset-1 bg-copper/20 rounded-xl blur-md -z-10" />
                 </div>
               )}
               <div>
-                <h1 className="text-xl font-semibold text-light">{client.company}</h1>
-                <p className="text-sm text-muted">Subscriber Journey System</p>
+                <h1 className="text-xl font-semibold text-slate-50">{client.company}</h1>
+                <p className="text-xs text-slate-500 font-data tracking-wider">SUBSCRIBER JOURNEY SYSTEM</p>
               </div>
             </div>
             
-            {client.status === 'Live' && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-success/10 border border-success/20 rounded-full">
-                <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                <span className="text-sm text-success font-medium">System Active</span>
+            {client.status === 'Live' ? (
+              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+                <div className="relative">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                  <div className="absolute inset-0 w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+                </div>
+                <span className="text-sm text-emerald-400 font-semibold">LIVE</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2 bg-copper/10 border border-copper/30 rounded-full">
+                <div className="w-2 h-2 bg-copper rounded-full animate-pulse" />
+                <span className="text-sm text-copper font-semibold">BUILDING</span>
               </div>
             )}
           </div>
@@ -59,13 +68,27 @@ export default async function PortalPage({ params }: PortalPageProps) {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
         {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-copper/20 to-copper/5 border border-copper/20 rounded-2xl p-6">
-          <h2 className="text-xl font-semibold text-light mb-2">
-            Welcome to your Subscriber Journey System
-          </h2>
-          <p className="text-muted">
-            Everything is connected. Your subscriber data flows automatically between Recharge, Airtable, and Klaviyo.
-          </p>
+        <div className="relative overflow-hidden rounded-2xl border border-copper/20 p-8 gradient-border">
+          <div className="absolute inset-0 bg-gradient-to-r from-copper/10 via-copper/5 to-transparent" />
+          <div className="absolute inset-0 grid-pattern opacity-30" />
+          <div className="absolute -top-20 -right-20 w-60 h-60 bg-copper/20 rounded-full blur-3xl" />
+          
+          <div className="relative flex items-start gap-5">
+            <div className="w-14 h-14 bg-copper/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <span className="text-3xl">🚀</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-50 mb-2">
+                Welcome to your Command Center
+              </h2>
+              <p className="text-slate-400 max-w-2xl leading-relaxed">
+                Everything is connected. Your subscriber data flows automatically between 
+                <span className="text-copper font-medium"> Recharge</span>,
+                <span className="text-copper font-medium"> Airtable</span>, and
+                <span className="text-copper font-medium"> Klaviyo</span> in real-time.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Status Bar */}
@@ -74,40 +97,50 @@ export default async function PortalPage({ params }: PortalPageProps) {
         {/* Stats - Only show when live */}
         {client.status === 'Live' && (
           <>
-            <div>
-              <h2 className="text-lg font-semibold text-light mb-4 flex items-center gap-2">
-                <span>📊</span> Your Subscribers
-              </h2>
+            <section>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
+                  <span>📊</span>
+                </div>
+                <h2 className="text-lg font-semibold text-slate-100">Subscriber Metrics</h2>
+                <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent" />
+              </div>
               <StatsGrid client={client} />
-            </div>
+            </section>
 
             {/* Dashboard Link */}
             {client.airtableUrl && (
-              <div className="bg-slate rounded-2xl border border-border p-6">
-                <h2 className="text-lg font-semibold text-light mb-4 flex items-center gap-2">
-                  <span>📋</span> Your Dashboard
-                </h2>
+              <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
+                    <span>📋</span>
+                  </div>
+                  <h2 className="text-lg font-semibold text-slate-100">Dashboard Access</h2>
+                </div>
                 <a
                   href={client.airtableUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-3 bg-copper hover:bg-copper-dark text-white font-medium rounded-xl transition-colors"
+                  className="inline-flex items-center gap-3 px-6 py-3 bg-copper hover:bg-copper/90 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-copper/30 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Open Airtable Dashboard
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span>Open Airtable</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
-              </div>
+              </section>
             )}
 
             {/* Video Walkthrough */}
             {client.loomUrl && (
-              <div className="bg-slate rounded-2xl border border-border p-6">
-                <h2 className="text-lg font-semibold text-light mb-4 flex items-center gap-2">
-                  <span>🎥</span> Video Walkthrough
-                </h2>
-                <div className="aspect-video rounded-xl overflow-hidden bg-ink">
+              <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
+                    <span>🎥</span>
+                  </div>
+                  <h2 className="text-lg font-semibold text-slate-100">Video Walkthrough</h2>
+                </div>
+                <div className="aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-700/50">
                   <iframe
                     src={client.loomUrl.replace('share', 'embed')}
                     frameBorder="0"
@@ -115,7 +148,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
                     className="w-full h-full"
                   />
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Klaviyo Reference */}
@@ -128,20 +161,22 @@ export default async function PortalPage({ params }: PortalPageProps) {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border mt-16">
+      <footer className="border-t border-slate-800/50 mt-16">
         <div className="max-w-5xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-muted text-sm">
-              <div className="w-6 h-6 bg-copper rounded flex items-center justify-center">
-                <span className="text-xs font-bold text-white">S</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-copper to-orange-600 rounded-lg flex items-center justify-center">
+                <span className="text-sm font-bold text-white">S</span>
               </div>
-              <span>Powered by SubscriberSync</span>
+              <span className="text-slate-500 text-sm">
+                Powered by <span className="text-copper font-medium">SubscriberSync</span>
+              </span>
             </div>
             <a 
               href="https://subscribersync.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm text-muted hover:text-copper transition-colors"
+              className="text-sm text-slate-500 hover:text-copper transition-colors font-data"
             >
               subscribersync.com
             </a>

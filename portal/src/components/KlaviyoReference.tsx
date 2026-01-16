@@ -2,127 +2,142 @@
 
 import { useState } from 'react'
 
-interface ReferenceItem {
+interface AccordionItemProps {
   title: string
-  content: React.ReactNode
+  icon: string
+  children: React.ReactNode
+  defaultOpen?: boolean
+}
+
+function AccordionItem({ title, icon, children, defaultOpen = false }: AccordionItemProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  
+  return (
+    <div className={`
+      border rounded-xl overflow-hidden transition-all duration-300
+      ${isOpen ? 'border-copper/30 bg-slate-800/30' : 'border-slate-700/50 bg-slate-900/30'}
+    `}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-slate-800/30 transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`
+            w-10 h-10 rounded-lg flex items-center justify-center transition-colors
+            ${isOpen ? 'bg-copper/20' : 'bg-slate-800/80'}
+          `}>
+            <span className="text-lg">{icon}</span>
+          </div>
+          <span className={`font-medium transition-colors ${isOpen ? 'text-copper' : 'text-slate-200'}`}>
+            {title}
+          </span>
+        </div>
+        <svg 
+          className={`w-5 h-5 transition-all duration-300 ${isOpen ? 'rotate-180 text-copper' : 'text-slate-500'}`}
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      <div className={`
+        overflow-hidden transition-all duration-300 ease-out
+        ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}
+      `}>
+        <div className="px-5 pb-5 pt-2 border-t border-slate-700/30">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CodeBlock({ children }: { children: string }) {
+  return (
+    <code className="px-2 py-1 bg-slate-900 text-copper font-data text-sm rounded border border-slate-700/50">
+      {children}
+    </code>
+  )
 }
 
 export default function KlaviyoReference() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
-
-  const references: ReferenceItem[] = [
-    {
-      title: 'Trigger email when someone gets Box 3',
-      content: (
-        <ol className="space-y-3 text-muted">
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">1.</span>
-            <span>Create a new Flow in Klaviyo</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">2.</span>
-            <span>Trigger: Metric → <code className="bg-ink px-2 py-0.5 rounded text-light">Box Shipped</code></span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">3.</span>
-            <span>Add Flow Filter: <code className="bg-ink px-2 py-0.5 rounded text-light">box_number equals 3</code></span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">4.</span>
-            <span>Build your email content</span>
-          </li>
-        </ol>
-      ),
-    },
-    {
-      title: 'Segment subscribers by box number',
-      content: (
-        <ol className="space-y-3 text-muted">
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">1.</span>
-            <span>Go to Audience → Lists & Segments</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">2.</span>
-            <span>Create Segment</span>
-          </li>
-          <li className="flex gap-3">
-            <span className="text-copper font-medium">3.</span>
-            <span>Condition: <code className="bg-ink px-2 py-0.5 rounded text-light">current_box is at least 5</code></span>
-          </li>
-        </ol>
-      ),
-    },
-    {
-      title: 'Available profile properties',
-      content: (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2 text-muted font-medium">Property</th>
-                <th className="text-left py-2 text-muted font-medium">Values</th>
-                <th className="text-left py-2 text-muted font-medium">Use for</th>
-              </tr>
-            </thead>
-            <tbody className="text-muted">
-              <tr className="border-b border-border/50">
-                <td className="py-3"><code className="text-copper">subscriber_status</code></td>
-                <td>active, paused, cancelled</td>
-                <td>Segments, flow filters</td>
-              </tr>
-              <tr className="border-b border-border/50">
-                <td className="py-3"><code className="text-copper">current_box</code></td>
-                <td>1, 2, 3, 4...</td>
-                <td>Flow triggers, segments</td>
-              </tr>
-              <tr>
-                <td className="py-3"><code className="text-copper">subscription_date</code></td>
-                <td>Date</td>
-                <td>Anniversary flows</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      ),
-    },
-  ]
-
   return (
-    <div className="bg-slate rounded-2xl border border-border overflow-hidden">
-      <div className="p-6 border-b border-border">
-        <h2 className="text-lg font-semibold text-light flex items-center gap-2">
-          <span>🎯</span> Klaviyo Quick Reference
-        </h2>
+    <section className="bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
+          <span>🎯</span>
+        </div>
+        <h2 className="text-lg font-semibold text-slate-100">Klaviyo Integration</h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent" />
       </div>
       
-      <div className="divide-y divide-border">
-        {references.map((ref, index) => (
-          <div key={index}>
-            <button
-              onClick={() => setOpenIndex(openIndex === index ? null : index)}
-              className="w-full p-5 flex items-center justify-between text-left hover:bg-ink/50 transition-colors"
-            >
-              <span className="font-medium text-light">{ref.title}</span>
-              <svg
-                className={`w-5 h-5 text-muted transition-transform ${openIndex === index ? 'rotate-180' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {openIndex === index && (
-              <div className="px-5 pb-5">
-                <div className="p-4 bg-ink rounded-xl">
-                  {ref.content}
-                </div>
-              </div>
-            )}
+      <div className="space-y-3">
+        <AccordionItem 
+          icon="📧" 
+          title="Trigger email for specific box number"
+          defaultOpen={true}
+        >
+          <ol className="space-y-3 text-slate-300 text-sm">
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-copper/20 text-copper rounded-lg flex items-center justify-center text-xs font-bold font-data">01</span>
+              <span>Create new Flow in Klaviyo</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-copper/20 text-copper rounded-lg flex items-center justify-center text-xs font-bold font-data">02</span>
+              <span>Trigger: Metric → <CodeBlock>Box Shipped</CodeBlock></span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-copper/20 text-copper rounded-lg flex items-center justify-center text-xs font-bold font-data">03</span>
+              <span>Flow Filter: <CodeBlock>box_number equals 3</CodeBlock></span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-copper/20 text-copper rounded-lg flex items-center justify-center text-xs font-bold font-data">04</span>
+              <span>Build your email</span>
+            </li>
+          </ol>
+        </AccordionItem>
+        
+        <AccordionItem icon="👥" title="Segment by subscription status">
+          <ol className="space-y-3 text-slate-300 text-sm">
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-copper/20 text-copper rounded-lg flex items-center justify-center text-xs font-bold font-data">01</span>
+              <span>Create new Segment</span>
+            </li>
+            <li className="flex gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-copper/20 text-copper rounded-lg flex items-center justify-center text-xs font-bold font-data">02</span>
+              <span>Condition: <CodeBlock>current_box is at least 5</CodeBlock></span>
+            </li>
+          </ol>
+        </AccordionItem>
+        
+        <AccordionItem icon="📊" title="Profile properties reference">
+          <div className="overflow-hidden rounded-xl border border-slate-700/50">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-800/80">
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium font-data text-xs uppercase tracking-wider">Property</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium font-data text-xs uppercase tracking-wider">Values</th>
+                  <th className="px-4 py-3 text-left text-slate-400 font-medium font-data text-xs uppercase tracking-wider">Use Case</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                <tr className="hover:bg-slate-800/30 transition-colors">
+                  <td className="px-4 py-3"><CodeBlock>subscriber_status</CodeBlock></td>
+                  <td className="px-4 py-3 text-slate-300">active, paused, cancelled</td>
+                  <td className="px-4 py-3 text-slate-500">Segments</td>
+                </tr>
+                <tr className="hover:bg-slate-800/30 transition-colors">
+                  <td className="px-4 py-3"><CodeBlock>current_box</CodeBlock></td>
+                  <td className="px-4 py-3 text-slate-300">1, 2, 3...</td>
+                  <td className="px-4 py-3 text-slate-500">Flow triggers</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        ))}
+        </AccordionItem>
       </div>
-    </div>
+    </section>
   )
 }
