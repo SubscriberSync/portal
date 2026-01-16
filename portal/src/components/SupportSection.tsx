@@ -1,7 +1,98 @@
+'use client'
+
 import { ClientData } from '@/lib/types'
+import { useState } from 'react'
 
 interface SupportSectionProps {
   client: ClientData
+}
+
+function SupportCard({
+  icon,
+  title,
+  description,
+  children,
+  accentColor = 'copper',
+}: {
+  icon: string
+  title: string
+  description: string
+  children: React.ReactNode
+  accentColor?: 'copper' | 'purple'
+}) {
+  const [isHovered, setIsHovered] = useState(false)
+
+  const colors = {
+    copper: {
+      bg: 'from-copper/20 to-copper/5',
+      border: 'border-copper/20',
+      glow: 'bg-copper/20',
+    },
+    purple: {
+      bg: 'from-purple-500/20 to-purple-600/5',
+      border: 'border-purple-500/20',
+      glow: 'bg-purple-500/20',
+    },
+  }
+
+  const c = colors[accentColor]
+
+  return (
+    <div
+      className={`
+        relative glass rounded-2xl p-6 border border-slate-700/30 overflow-hidden
+        transition-all duration-500 ease-out-expo
+        ${isHovered ? 'scale-[1.02] shadow-card-hover' : ''}
+      `}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Background gradient */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${c.bg} opacity-50`} />
+
+      {/* Grid pattern */}
+      <div className="absolute inset-0 grid-pattern-dense opacity-20" />
+
+      {/* Hover glow */}
+      <div
+        className={`
+          absolute -top-16 -right-16 w-32 h-32 rounded-full blur-3xl
+          ${c.glow} transition-opacity duration-500
+          ${isHovered ? 'opacity-60' : 'opacity-0'}
+        `}
+      />
+
+      <div className="relative flex items-start gap-5">
+        {/* Icon */}
+        <div
+          className={`
+            w-14 h-14 bg-gradient-to-br ${c.bg} rounded-2xl flex items-center justify-center flex-shrink-0
+            border ${c.border} transition-all duration-300
+            ${isHovered ? 'scale-110 rotate-3' : ''}
+          `}
+        >
+          <span className="text-2xl filter drop-shadow-lg">{icon}</span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <h3 className="font-bold text-lg text-slate-100 mb-1">{title}</h3>
+          <p className="text-sm text-slate-400 mb-4">{description}</p>
+          {children}
+        </div>
+      </div>
+
+      {/* Bottom accent */}
+      <div
+        className={`
+          absolute bottom-0 left-0 h-0.5 bg-gradient-to-r
+          ${accentColor === 'copper' ? 'from-copper to-amber-500' : 'from-purple-500 to-violet-500'}
+          transition-all duration-500
+          ${isHovered ? 'w-full opacity-60' : 'w-0 opacity-0'}
+        `}
+      />
+    </div>
+  )
 }
 
 export default function SupportSection({ client }: SupportSectionProps) {
@@ -10,84 +101,100 @@ export default function SupportSection({ client }: SupportSectionProps) {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     })
   }
 
   return (
-    <section className="bg-gradient-to-br from-slate-900/80 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 overflow-hidden relative">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-40 h-40 bg-copper/5 rounded-full blur-3xl" />
-      
+    <section className="relative glass-strong rounded-3xl border border-slate-700/50 p-8 overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 grid-pattern opacity-30" />
+      <div
+        className="absolute top-0 right-0 w-64 h-64 bg-copper/10 rounded-full blur-3xl animate-morph"
+        style={{ animationDuration: '20s' }}
+      />
+      <div
+        className="absolute -bottom-20 -left-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl animate-morph"
+        style={{ animationDuration: '15s', animationDelay: '5s' }}
+      />
+
       <div className="relative">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
-            <span>💬</span>
+        {/* Section header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 glass rounded-xl flex items-center justify-center border border-slate-700/50">
+            <span className="text-2xl">💬</span>
           </div>
-          <h2 className="text-lg font-semibold text-slate-100">Support</h2>
+          <div>
+            <h2 className="text-xl font-bold text-slate-100">Support</h2>
+            <p className="text-xs text-slate-500 font-data tracking-wider">GET HELP ANYTIME</p>
+          </div>
           <div className="flex-1 h-px bg-gradient-to-r from-slate-700 to-transparent" />
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Contact */}
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/30 card-hover">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-copper/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">📧</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-100 mb-1">Need Help?</h3>
-                <p className="text-sm text-slate-400 mb-3">
-                  Questions or issues with your system
-                </p>
-                <a 
-                  href="mailto:travis@subscribersync.com"
-                  className="inline-flex items-center gap-2 text-copper hover:text-orange-400 transition-colors text-sm font-semibold group"
-                >
-                  travis@subscribersync.com
-                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </a>
-              </div>
+
+        {/* Support cards */}
+        <div className="grid md:grid-cols-2 gap-5">
+          <SupportCard
+            icon="📧"
+            title="Need Help?"
+            description="Questions or issues with your system"
+            accentColor="copper"
+          >
+            <a
+              href="mailto:travis@subscribersync.com"
+              className="inline-flex items-center gap-2 text-copper hover:text-copper-light transition-colors font-semibold group"
+            >
+              travis@subscribersync.com
+              <svg
+                className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </a>
+          </SupportCard>
+
+          <SupportCard
+            icon="🛠"
+            title="Need Changes?"
+            description="Custom modifications available"
+            accentColor="purple"
+          >
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-slate-100 font-data">$150</span>
+              <span className="text-sm text-slate-500">/ request</span>
             </div>
-          </div>
-          
-          {/* Changes */}
-          <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/30 card-hover">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">🛠</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-100 mb-1">Need Changes?</h3>
-                <p className="text-sm text-slate-400 mb-3">
-                  Custom modifications available
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-slate-100 font-data">$150</span>
-                  <span className="text-sm text-slate-500">/ request</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          </SupportCard>
         </div>
-        
-        {/* Renewal */}
+
+        {/* Hosting Renewal */}
         {client.hostingRenewal && (
-          <div className="mt-5 pt-5 border-t border-slate-700/30">
-            <div className="flex items-center justify-between bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                  <span>📅</span>
+          <div className="mt-6 pt-6 border-t border-slate-700/30">
+            <div className="glass rounded-2xl p-5 border border-slate-700/30 flex items-center justify-between group hover:border-copper/20 transition-all duration-300">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 glass rounded-xl flex items-center justify-center border border-slate-700/50 group-hover:border-copper/20 transition-colors">
+                  <span className="text-2xl">📅</span>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 font-data uppercase tracking-wider">Hosting Renewal</p>
-                  <p className="font-semibold text-slate-100">{formatDate(client.hostingRenewal)}</p>
+                  <p className="text-xs text-slate-500 font-data uppercase tracking-wider mb-1">
+                    Hosting Renewal
+                  </p>
+                  <p className="text-lg font-bold text-slate-100">
+                    {formatDate(client.hostingRenewal)}
+                  </p>
                 </div>
               </div>
-              <div className="px-3 py-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                <span className="text-xs text-emerald-400 font-data">Auto-reminder enabled</span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-emerald-400 font-semibold font-data">
+                  Auto-reminder enabled
+                </span>
               </div>
             </div>
           </div>
