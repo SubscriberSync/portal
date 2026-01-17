@@ -7,9 +7,14 @@ const base = process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID
   : null
 
 export async function getClientBySlug(slug: string): Promise<ClientData | null> {
-  if (!base) return null
+  if (!base) {
+    console.log('[Airtable] No base configured, returning null')
+    return null
+  }
 
   try {
+    console.log(`[Airtable] Fetching client with slug: ${slug}`)
+
     const records = await base('Clients')
       .select({
         filterByFormula: `{Slug} = '${slug}'`,
@@ -17,15 +22,23 @@ export async function getClientBySlug(slug: string): Promise<ClientData | null> 
       })
       .firstPage()
 
-    if (records.length === 0) return null
+    if (records.length === 0) {
+      console.log(`[Airtable] No client found with slug: ${slug}`)
+      return null
+    }
 
     const record = records[0]
     const fields = record.fields
 
+    // Log the Portal Status field for debugging
+    console.log(`[Airtable] Found client: ${fields['Client']}, Portal Status: "${fields['Portal Status']}"`)
+
+    const status = (fields['Portal Status'] as ClientData['status']) || 'Building'
+
     return {
       company: (fields['Client'] as string) || '',
       slug: (fields['Slug'] as string) || slug,
-      status: (fields['Portal Status'] as ClientData['status']) || 'Building',
+      status,
       logoUrl: fields['Logo URL'] as string | undefined,
       airtableUrl: fields['Airtable URL'] as string | undefined,
       loomUrl: fields['Loom URL'] as string | undefined,
@@ -36,7 +49,7 @@ export async function getClientBySlug(slug: string): Promise<ClientData | null> 
       hostingRenewal: (fields['Hosting Renewal'] as string) || null,
     }
   } catch (error) {
-    console.error('Error fetching client from Airtable:', error)
+    console.error('[Airtable] Error fetching client:', error)
     return null
   }
 }

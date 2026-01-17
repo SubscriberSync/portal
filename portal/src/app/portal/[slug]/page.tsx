@@ -7,6 +7,10 @@ import KlaviyoReference from '@/components/KlaviyoReference'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
 
+// Force dynamic rendering - don't cache this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface PortalPageProps {
   params: { slug: string }
 }
