@@ -62,6 +62,7 @@ export interface IntakeItemConfig {
   placeholder: string
   helpText: string
   multiline?: boolean
+  sensitive?: boolean  // If true, input is masked (password field) and value is hidden in display
   loomField: 'loomRecharge' | 'loomKlaviyo' | 'loomShopifyProducts' | null
 }
 
@@ -72,6 +73,7 @@ export const INTAKE_ITEMS: IntakeItemConfig[] = [
     description: 'Your Recharge API key lets us sync subscription data.',
     placeholder: 'pk_xxxxxxxxxxxxxxxxxxxxxxxx',
     helpText: 'Found in Recharge → Apps → API tokens',
+    sensitive: true,
     loomField: 'loomRecharge',
   },
   {
@@ -80,6 +82,7 @@ export const INTAKE_ITEMS: IntakeItemConfig[] = [
     description: 'Your Klaviyo key lets us sync subscriber properties.',
     placeholder: 'pk_xxxxxxxxxxxxxxxxxxxxxxxx',
     helpText: 'Found in Klaviyo → Settings → API Keys → Private',
+    sensitive: true,
     loomField: 'loomKlaviyo',
   },
   {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, AlertTriangle, Clock, HelpCircle, Loader2, Send } from 'lucide-react'
+import { Check, AlertTriangle, Clock, HelpCircle, Loader2, Send, Eye, EyeOff } from 'lucide-react'
 import { IntakeItemConfig, IntakeSubmission, IntakeStatus } from '@/lib/intake-types'
 import HelpPanel from './HelpPanel'
 
@@ -11,6 +11,12 @@ interface IntakeItemProps {
   loomUrl?: string
   onSubmit: (value: string) => Promise<{ success: boolean; error?: string }>
   disabled?: boolean
+}
+
+// Helper to mask sensitive values (show first 4 and last 4 chars)
+function maskValue(value: string): string {
+  if (!value || value.length <= 12) return '••••••••••••'
+  return `${value.substring(0, 4)}${'•'.repeat(Math.min(value.length - 8, 16))}${value.substring(value.length - 4)}`
 }
 
 const STATUS_CONFIG: Record<IntakeStatus, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
@@ -40,17 +46,18 @@ const STATUS_CONFIG: Record<IntakeStatus, { icon: React.ReactNode; color: string
   },
 }
 
-export default function IntakeItem({ 
-  config, 
-  submission, 
+export default function IntakeItem({
+  config,
+  submission,
   loomUrl,
   onSubmit,
-  disabled = false 
+  disabled = false
 }: IntakeItemProps) {
   const [value, setValue] = useState(submission?.value || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showHelp, setShowHelp] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   
   const status: IntakeStatus = submission?.status || 'Pending'
   const statusConfig = STATUS_CONFIG[status]
@@ -114,6 +121,10 @@ export default function IntakeItem({
   
   // Approved state - collapsed
   if (status === 'Approved') {
+    const displayValue = config.sensitive
+      ? maskValue(submission?.value || '')
+      : `${submission?.value?.substring(0, 30)}${(submission?.value?.length || 0) > 30 ? '...' : ''}`
+
     return (
       <div className="bg-slate-800/30 rounded-xl p-4 border border-emerald-500/20">
         <div className="flex items-center justify-between">
@@ -123,7 +134,7 @@ export default function IntakeItem({
             </div>
             <div>
               <p className="text-sm font-medium text-slate-200">{config.title}</p>
-              <p className="text-xs text-emerald-400">✓ {submission?.value?.substring(0, 30)}{(submission?.value?.length || 0) > 30 ? '...' : ''}</p>
+              <p className="text-xs text-emerald-400 font-mono">✓ {displayValue}</p>
             </div>
           </div>
         </div>
@@ -133,6 +144,10 @@ export default function IntakeItem({
   
   // Submitted state - waiting
   if (status === 'Submitted') {
+    const displayValue = config.sensitive
+      ? maskValue(submission?.value || '')
+      : `${submission?.value?.substring(0, 40)}${(submission?.value?.length || 0) > 40 ? '...' : ''}`
+
     return (
       <div className="bg-slate-800/50 rounded-xl p-5 border border-amber-500/20">
         <div className="flex items-start justify-between">
@@ -143,7 +158,7 @@ export default function IntakeItem({
             <div>
               <p className="text-sm font-medium text-slate-200">{config.title}</p>
               <p className="text-xs text-amber-400 mt-1">{statusConfig.label}</p>
-              <p className="text-xs text-slate-500 mt-2 font-mono">{submission?.value?.substring(0, 40)}{(submission?.value?.length || 0) > 40 ? '...' : ''}</p>
+              <p className="text-xs text-slate-500 mt-2 font-mono">{displayValue}</p>
             </div>
           </div>
         </div>
@@ -200,17 +215,29 @@ export default function IntakeItem({
               className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50 focus:ring-1 focus:ring-copper/30 disabled:opacity-50 font-mono resize-none"
             />
           ) : (
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={config.placeholder}
-              disabled={disabled || isSubmitting}
-              className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50 focus:ring-1 focus:ring-copper/30 disabled:opacity-50 font-mono"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSubmit()
-              }}
-            />
+            <div className="flex-1 relative">
+              <input
+                type={config.sensitive && !showPassword ? 'password' : 'text'}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={config.placeholder}
+                disabled={disabled || isSubmitting}
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 pr-10 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50 focus:ring-1 focus:ring-copper/30 disabled:opacity-50 font-mono"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSubmit()
+                }}
+              />
+              {config.sensitive && (
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-slate-400 hover:text-slate-200 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
           )}
           
           <button
