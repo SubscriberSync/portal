@@ -61,9 +61,13 @@ export default function IntakeItem({
   
   const status: IntakeStatus = submission?.status || 'Pending'
   const statusConfig = STATUS_CONFIG[status]
-  
+
+  // Check if there's already a submitted value (even if status isn't set properly)
+  const hasExistingValue = !!(submission?.value && submission.value.trim())
+  const isReadOnly = status === 'Submitted' || status === 'Approved' || (hasExistingValue && status === 'Pending')
+
   const handleSubmit = async () => {
-    if (!value.trim() || isSubmitting || disabled) return
+    if (!value.trim() || isSubmitting || disabled || isReadOnly) return
     
     setIsSubmitting(true)
     setError(null)
@@ -142,8 +146,8 @@ export default function IntakeItem({
     )
   }
 
-  // Submitted state - waiting
-  if (status === 'Submitted') {
+  // Submitted state OR has existing value - show read-only waiting state
+  if (status === 'Submitted' || (hasExistingValue && status !== 'Rejected')) {
     const displayValue = config.sensitive
       ? maskValue(submission?.value || '')
       : `${submission?.value?.substring(0, 40)}${(submission?.value?.length || 0) > 40 ? '...' : ''}`
@@ -153,11 +157,11 @@ export default function IntakeItem({
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className={`w-8 h-8 rounded-lg ${statusConfig.bg} flex items-center justify-center ${statusConfig.color}`}>
-              {statusConfig.icon}
+              {statusConfig.icon || <Clock className="w-4 h-4" />}
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">{config.title}</p>
-              <p className="text-xs text-amber-600 mt-1">{statusConfig.label}</p>
+              <p className="text-xs text-amber-600 mt-1">{statusConfig.label || 'Awaiting Review'}</p>
               <p className="text-xs text-foreground-tertiary mt-2 font-mono">{displayValue}</p>
             </div>
           </div>
