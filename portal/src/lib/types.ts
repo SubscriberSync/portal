@@ -27,6 +27,8 @@ export interface ClientData {
   discordServerId?: string
   // Integration status (based on credentials in Airtable)
   integrations?: ClientIntegrations
+  // Client's own Backstage base (duplicated from template)
+  backstageBaseId?: string
 }
 
 export const statusStages = [

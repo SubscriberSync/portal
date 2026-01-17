@@ -112,6 +112,8 @@ export async function getClientBySlug(slug: string): Promise<ClientData | null> 
       hostingRenewal: (fields['Hosting Renewal'] as string) || null,
       discordServerId: (fields['Discord Server ID'] as string) || undefined,
       integrations,
+      // Client's own Backstage base ID (duplicated from template)
+      backstageBaseId: (fields['Client Airtable Base ID'] as string) || undefined,
     }
   } catch (error) {
     console.error('[Airtable] Error fetching client:', error)
@@ -149,6 +151,8 @@ export function getDemoClient(slug: string): ClientData {
     cancelledSubscribers: isLive ? 268 : 0,
     hostingRenewal: isLive ? '2025-06-15' : null,
     integrations: demoIntegrations,
+    // Demo uses the default backstage base from config
+    backstageBaseId: isLive ? config.airtable.backstage.baseId : undefined,
   }
 }
 

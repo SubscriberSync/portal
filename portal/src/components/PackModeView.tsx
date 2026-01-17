@@ -14,9 +14,10 @@ interface PackBatch {
 
 interface PackModeViewProps {
   onExit: () => void
+  clientSlug?: string
 }
 
-export default function PackModeView({ onExit }: PackModeViewProps) {
+export default function PackModeView({ onExit, clientSlug }: PackModeViewProps) {
   const [batches, setBatches] = useState<PackBatch[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +27,9 @@ export default function PackModeView({ onExit }: PackModeViewProps) {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/packing', { cache: 'no-store' })
+      // Include client slug to fetch from their specific Backstage base
+      const url = clientSlug ? `/api/packing?client=${clientSlug}` : '/api/packing'
+      const response = await fetch(url, { cache: 'no-store' })
       if (!response.ok) throw new Error('Failed to fetch')
       const data = await response.json()
       setBatches(data.batches || [])

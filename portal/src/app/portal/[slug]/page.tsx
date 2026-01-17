@@ -50,6 +50,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         logoUrl={client.logoUrl}
         status={client.status}
         integrations={client.integrations}
+        clientSlug={params.slug}
       />
 
       {/* Main Content */}
@@ -121,7 +122,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
             {/* Shipping CSV Download */}
             <section className="animate-fade-up" style={{ animationDelay: '350ms' }}>
-              <ShippingDownload />
+              <ShippingDownload clientSlug={params.slug} />
             </section>
 
             {/* Video Walkthrough */}

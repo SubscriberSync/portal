@@ -16,9 +16,10 @@ interface PortalHeaderProps {
   logoUrl?: string
   status: string
   integrations?: ClientIntegrations
+  clientSlug?: string
 }
 
-export default function PortalHeader({ company, logoUrl, status, integrations: clientIntegrations }: PortalHeaderProps) {
+export default function PortalHeader({ company, logoUrl, status, integrations: clientIntegrations, clientSlug }: PortalHeaderProps) {
   const [isPackMode, setIsPackMode] = useState(false)
   const [showIntegrations, setShowIntegrations] = useState(false)
 
@@ -63,7 +64,7 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
   const connectedCount = integrations.filter(i => i.connected).length
 
   if (isPackMode) {
-    return <PackModeView onExit={() => setIsPackMode(false)} />
+    return <PackModeView onExit={() => setIsPackMode(false)} clientSlug={clientSlug} />
   }
 
   return (

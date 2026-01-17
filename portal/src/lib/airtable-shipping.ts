@@ -21,14 +21,19 @@ export interface ShippingRecord {
 }
 
 // Fetch all shipping records from Airtable
-export async function getShippingRecords(): Promise<ShippingRecord[]> {
+// clientBaseId: The client's own Backstage base ID (from their Clients record)
+export async function getShippingRecords(clientBaseId?: string): Promise<ShippingRecord[]> {
   if (!config.airtable.token) {
     console.error('[Shipping] Missing AIRTABLE_TOKEN')
     return []
   }
 
-  const { baseId, tables } = config.airtable.backstage
+  // Use client's base ID if provided, otherwise fall back to default config
+  const baseId = clientBaseId || config.airtable.backstage.baseId
+  const { tables } = config.airtable.backstage
   const f = config.fields.subscriber
+
+  console.log(`[Shipping] Fetching records from base: ${baseId}`)
 
   try {
     const allRecords: ShippingRecord[] = []
@@ -97,8 +102,8 @@ export interface PackBatch {
   records: ShippingRecord[]
 }
 
-export async function getPackingData(): Promise<PackBatch[]> {
-  const records = await getShippingRecords()
+export async function getPackingData(clientBaseId?: string): Promise<PackBatch[]> {
+  const records = await getShippingRecords(clientBaseId)
 
   // Group by batch + box
   const batches = new Map<string, PackBatch>()

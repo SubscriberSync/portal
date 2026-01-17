@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { Download, Loader2, FileSpreadsheet } from 'lucide-react'
 
-export default function ShippingDownload() {
+interface ShippingDownloadProps {
+  clientSlug?: string
+}
+
+export default function ShippingDownload({ clientSlug }: ShippingDownloadProps) {
   const [isDownloading, setIsDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -12,7 +16,9 @@ export default function ShippingDownload() {
     setError(null)
 
     try {
-      const response = await fetch('/api/shipping/csv')
+      // Include client slug to fetch from their specific Backstage base
+      const url = clientSlug ? `/api/shipping/csv?client=${clientSlug}` : '/api/shipping/csv'
+      const response = await fetch(url)
 
       if (!response.ok) {
         const data = await response.json()
@@ -21,13 +27,13 @@ export default function ShippingDownload() {
 
       // Get the blob and trigger download
       const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      const blobUrl = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = url
-      a.download = `shipping-${new Date().toISOString().split('T')[0]}.csv`
+      a.href = blobUrl
+      a.download = `shipping-${clientSlug || 'all'}-${new Date().toISOString().split('T')[0]}.csv`
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
+      window.URL.revokeObjectURL(blobUrl)
       document.body.removeChild(a)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed')
