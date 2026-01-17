@@ -6,6 +6,7 @@ import StatsGrid from '@/components/StatsGrid'
 import KlaviyoReference from '@/components/KlaviyoReference'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
+import ShippingDownload from '@/components/ShippingDownload'
 
 // Force dynamic rendering - don't cache this page
 export const dynamic = 'force-dynamic'
@@ -160,6 +161,11 @@ export default async function PortalPage({ params }: PortalPageProps) {
                 </div>
               </section>
             )}
+
+            {/* Shipping CSV Download */}
+            <section className="animate-fade-up" style={{ animationDelay: '350ms' }}>
+              <ShippingDownload />
+            </section>
 
             {/* Video Walkthrough */}
             {client.loomUrl && (
