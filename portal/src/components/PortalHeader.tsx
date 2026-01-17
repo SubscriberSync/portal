@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Package, ChevronDown } from 'lucide-react'
-import PackModeView from './PackModeView'
 import { ClientIntegrations } from '@/lib/types'
 
 interface Integration {
@@ -20,7 +20,6 @@ interface PortalHeaderProps {
 }
 
 export default function PortalHeader({ company, logoUrl, status, integrations: clientIntegrations, clientSlug }: PortalHeaderProps) {
-  const [isPackMode, setIsPackMode] = useState(false)
   const [showIntegrations, setShowIntegrations] = useState(false)
 
   // Only show Pack Mode button when Live
@@ -63,10 +62,6 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
 
   const connectedCount = integrations.filter(i => i.connected).length
 
-  if (isPackMode) {
-    return <PackModeView onExit={() => setIsPackMode(false)} clientSlug={clientSlug} />
-  }
-
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#F2F0EF]/80 border-b border-border">
       <div className="max-w-5xl mx-auto px-6 py-4">
@@ -93,14 +88,14 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
 
           <div className="flex items-center gap-3">
             {/* Pack Mode Button */}
-            {showPackMode && (
-              <button
-                onClick={() => setIsPackMode(true)}
+            {showPackMode && clientSlug && (
+              <Link
+                href={`/portal/${clientSlug}/pack`}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white font-medium transition-colors"
               >
                 <Package className="w-4 h-4" />
                 <span className="text-sm">Pack Mode</span>
-              </button>
+              </Link>
             )}
 
             {/* Integration Status Dropdown */}

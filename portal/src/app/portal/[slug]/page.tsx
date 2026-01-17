@@ -7,7 +7,8 @@ import StatsGrid from '@/components/StatsGrid'
 import KlaviyoReference from '@/components/KlaviyoReference'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
-import ShippingDownload from '@/components/ShippingDownload'
+import CriticalAlerts from '@/components/CriticalAlerts'
+import PackReadyCounter from '@/components/PackReadyCounter'
 
 // Force dynamic rendering - don't cache this page
 export const dynamic = 'force-dynamic'
@@ -95,9 +96,19 @@ export default async function PortalPage({ params }: PortalPageProps) {
               <StatsGrid client={client} />
             </section>
 
+            {/* Critical Alerts */}
+            <section className="animate-fade-up" style={{ animationDelay: '250ms' }}>
+              <CriticalAlerts clientSlug={params.slug} />
+            </section>
+
+            {/* Pack Ready Counter */}
+            <section className="animate-fade-up" style={{ animationDelay: '300ms' }}>
+              <PackReadyCounter clientSlug={params.slug} />
+            </section>
+
             {/* Dashboard Link */}
             {client.airtableUrl && (
-              <section className="animate-fade-up" style={{ animationDelay: '300ms' }}>
+              <section className="animate-fade-up" style={{ animationDelay: '350ms' }}>
                 <div className="p-8 rounded-2xl bg-background-secondary border border-border">
                   <div className="flex items-center justify-between">
                     <div>
@@ -120,14 +131,9 @@ export default async function PortalPage({ params }: PortalPageProps) {
               </section>
             )}
 
-            {/* Shipping CSV Download */}
-            <section className="animate-fade-up" style={{ animationDelay: '350ms' }}>
-              <ShippingDownload clientSlug={params.slug} />
-            </section>
-
             {/* Video Walkthrough */}
             {client.loomUrl && (
-              <section className="animate-fade-up" style={{ animationDelay: '400ms' }}>
+              <section className="animate-fade-up" style={{ animationDelay: '450ms' }}>
                 <div className="mb-6">
                   <h3 className="text-headline text-foreground mb-2">Video Walkthrough</h3>
                   <p className="text-foreground-secondary">Learn how to use your system</p>
@@ -144,14 +150,14 @@ export default async function PortalPage({ params }: PortalPageProps) {
             )}
 
             {/* Klaviyo Reference */}
-            <section className="animate-fade-up" style={{ animationDelay: '500ms' }}>
+            <section className="animate-fade-up" style={{ animationDelay: '550ms' }}>
               <KlaviyoReference />
             </section>
           </>
         )}
 
         {/* Support */}
-        <section className="animate-fade-up" style={{ animationDelay: client.status === 'Live' ? '600ms' : '200ms' }}>
+        <section className="animate-fade-up" style={{ animationDelay: client.status === 'Live' ? '650ms' : '200ms' }}>
           <SupportSection client={client} />
         </section>
       </div>
