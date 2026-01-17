@@ -21,7 +21,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
   return (
     <main className="min-h-screen">
       {/* Header - Clean, minimal */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/80 border-b border-white/[0.08]">
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#F2F0EF]/80 border-b border-border">
         <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

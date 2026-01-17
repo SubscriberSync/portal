@@ -26,11 +26,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
-      <body className={`${inter.className} bg-black text-[#f5f5f7] antialiased`}>
+      <body className={`${inter.className} bg-[#F2F0EF] text-[#021124] antialiased`}>
         {/* Subtle gradient background */}
         <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0a] to-black" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#E07A42]/[0.03] rounded-full blur-[120px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F2F0EF] via-[#F5F3F2] to-[#F2F0EF]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#E07A42]/[0.04] rounded-full blur-[120px]" />
         </div>
 
         {/* Content */}

@@ -9,17 +9,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#000000',
-        'background-secondary': '#0d0d0d',
-        'background-elevated': '#1a1a1a',
-        foreground: '#f5f5f7',
-        'foreground-secondary': '#86868b',
-        'foreground-tertiary': '#6e6e73',
+        background: '#F2F0EF',
+        'background-secondary': '#FFFFFF',
+        'background-elevated': '#E8E6E5',
+        foreground: '#021124',
+        'foreground-secondary': '#3d4f5f',
+        'foreground-tertiary': '#6b7a87',
         accent: '#E07A42',
-        'accent-hover': '#f08a52',
-        success: '#30d158',
-        border: 'rgba(255, 255, 255, 0.08)',
-        'border-strong': 'rgba(255, 255, 255, 0.12)',
+        'accent-hover': '#c96a35',
+        success: '#22c55e',
+        border: 'rgba(2, 17, 36, 0.08)',
+        'border-strong': 'rgba(2, 17, 36, 0.12)',
       },
       fontFamily: {
         sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
