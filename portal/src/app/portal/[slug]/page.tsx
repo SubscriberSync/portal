@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getClientBySlug, getDemoClient } from '@/lib/airtable'
 import { getIntakeSubmissions, getClientOnboardingData } from '@/lib/airtable-intake'
+import PortalHeader from '@/components/PortalHeader'
 import StatusBar from '@/components/StatusBar'
 import StatsGrid from '@/components/StatsGrid'
 import KlaviyoReference from '@/components/KlaviyoReference'
@@ -43,44 +44,12 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
   return (
     <main className="min-h-screen">
-      {/* Header - Clean, minimal */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#F2F0EF]/80 border-b border-border">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {client.logoUrl ? (
-                <img
-                  src={client.logoUrl}
-                  alt={client.company}
-                  className="h-9 w-auto"
-                />
-              ) : (
-                <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
-                  <span className="text-lg font-semibold text-white">
-                    {client.company.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">{client.company}</h1>
-                <p className="text-xs text-foreground-tertiary tracking-wide">Subscriber Portal</p>
-              </div>
-            </div>
-
-            {client.status === 'Live' ? (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20">
-                <div className="w-2 h-2 bg-success rounded-full" />
-                <span className="text-sm text-success font-medium">Live</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20">
-                <div className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
-                <span className="text-sm text-accent font-medium">{client.status}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      {/* Header with Pack Mode */}
+      <PortalHeader
+        company={client.company}
+        logoUrl={client.logoUrl}
+        status={client.status}
+      />
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-16 space-y-16">

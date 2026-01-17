@@ -1,7 +1,5 @@
-// Shipping data from a separate Airtable base
-const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN || process.env.AIRTABLE_API_KEY
-const SHIPPING_BASE_ID = 'appmtPTf4hLxhx437'
-const SHIPPING_TABLE_ID = 'tblt9Q0GjZBN4l6Xl'
+// Shipping data from Airtable
+import { config } from './config'
 
 export interface ShippingRecord {
   id: string
@@ -15,14 +13,22 @@ export interface ShippingRecord {
   country: string
   email?: string
   phone?: string
+  // Pack mode fields
+  batch?: string
+  box?: string
+  shirtSize?: string
+  packed?: boolean
 }
 
 // Fetch all shipping records from Airtable
 export async function getShippingRecords(): Promise<ShippingRecord[]> {
-  if (!AIRTABLE_TOKEN) {
+  if (!config.airtable.token) {
     console.error('[Shipping] Missing AIRTABLE_TOKEN')
     return []
   }
+
+  const { baseId, tables } = config.airtable.shipping
+  const f = config.fields.subscriber
 
   try {
     const allRecords: ShippingRecord[] = []
@@ -30,14 +36,14 @@ export async function getShippingRecords(): Promise<ShippingRecord[]> {
 
     // Paginate through all records
     do {
-      const url = new URL(`https://api.airtable.com/v0/${SHIPPING_BASE_ID}/${SHIPPING_TABLE_ID}`)
+      const url = new URL(`https://api.airtable.com/v0/${baseId}/${tables.subscribers}`)
       if (offset) {
         url.searchParams.set('offset', offset)
       }
 
       const response = await fetch(url.toString(), {
         headers: {
-          'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+          'Authorization': `Bearer ${config.airtable.token}`,
           'Content-Type': 'application/json',
         },
         cache: 'no-store',
@@ -52,16 +58,21 @@ export async function getShippingRecords(): Promise<ShippingRecord[]> {
 
       const records = data.records.map((record: any) => ({
         id: record.id,
-        firstName: record.fields['First Name'] || '',
-        lastName: record.fields['Last Name'] || '',
-        address: record.fields['Address'] || '',
-        address2: record.fields['Address 2'] || '',
-        city: record.fields['City'] || '',
-        state: record.fields['State'] || '',
-        zip: record.fields['Zip'] || '',
-        country: record.fields['Country'] || 'US',
-        email: record.fields['Email'] || '',
-        phone: record.fields['Phone'] || '',
+        firstName: record.fields[f.firstName] || '',
+        lastName: record.fields[f.lastName] || '',
+        address: record.fields[f.address] || '',
+        address2: record.fields[f.address2] || '',
+        city: record.fields[f.city] || '',
+        state: record.fields[f.state] || '',
+        zip: record.fields[f.zip] || '',
+        country: record.fields[f.country] || 'US',
+        email: record.fields[f.email] || '',
+        phone: record.fields[f.phone] || '',
+        // Pack mode fields
+        batch: record.fields[f.batch] || '',
+        box: record.fields[f.box] || '',
+        shirtSize: record.fields[f.shirtSize] || '',
+        packed: record.fields[f.packed] || false,
       }))
 
       allRecords.push(...records)
@@ -74,6 +85,50 @@ export async function getShippingRecords(): Promise<ShippingRecord[]> {
     console.error('[Shipping] Error fetching records:', error)
     return []
   }
+}
+
+// Get records grouped by batch for Pack Mode
+export interface PackBatch {
+  batch: string
+  box: string
+  total: number
+  packed: number
+  sizeBreakdown: Record<string, number>
+  records: ShippingRecord[]
+}
+
+export async function getPackingData(): Promise<PackBatch[]> {
+  const records = await getShippingRecords()
+
+  // Group by batch + box
+  const batches = new Map<string, PackBatch>()
+
+  for (const record of records) {
+    const key = `${record.batch || 'Unknown'}|${record.box || 'Unknown'}`
+
+    if (!batches.has(key)) {
+      batches.set(key, {
+        batch: record.batch || 'Unknown',
+        box: record.box || 'Unknown',
+        total: 0,
+        packed: 0,
+        sizeBreakdown: {},
+        records: [],
+      })
+    }
+
+    const batch = batches.get(key)!
+    batch.total++
+    if (record.packed) batch.packed++
+    batch.records.push(record)
+
+    // Track size breakdown
+    const size = record.shirtSize || 'N/A'
+    batch.sizeBreakdown[size] = (batch.sizeBreakdown[size] || 0) + 1
+  }
+
+  // Sort by batch name
+  return Array.from(batches.values()).sort((a, b) => a.batch.localeCompare(b.batch))
 }
 
 // Convert records to ShipStation CSV format

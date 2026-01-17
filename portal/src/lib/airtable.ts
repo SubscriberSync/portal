@@ -1,28 +1,27 @@
 import { ClientData } from './types'
-
-// Use same env vars as airtable-intake.ts for consistency
-const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN || process.env.AIRTABLE_API_KEY
-const BASE_ID = process.env.AIRTABLE_BASE_ID || 'appVyyEPy9cs8XBtB'
-const CLIENTS_TABLE_ID = 'tblEsjEgVXfHhARrX'
+import { config } from './config'
 
 export async function getClientBySlug(slug: string): Promise<ClientData | null> {
-  if (!AIRTABLE_TOKEN) {
+  if (!config.airtable.token) {
     console.log('[Airtable] No token configured, returning null')
     return null
   }
 
-  try {
-    console.log(`[Airtable] Fetching client with slug: ${slug} from base: ${BASE_ID}`)
+  const { baseId, tables } = config.airtable.portal
+  const f = config.fields.client
 
-    const formula = encodeURIComponent(`{Slug}="${slug}"`)
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}?filterByFormula=${formula}&maxRecords=1`
+  try {
+    console.log(`[Airtable] Fetching client with slug: ${slug} from base: ${baseId}`)
+
+    const formula = encodeURIComponent(`{${f.slug}}="${slug}"`)
+    const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}&maxRecords=1`
 
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
         'Content-Type': 'application/json',
       },
-      cache: 'no-store', // Never cache this request
+      cache: 'no-store',
     })
 
     if (!response.ok) {
@@ -39,18 +38,17 @@ export async function getClientBySlug(slug: string): Promise<ClientData | null> 
 
     const fields = data.records[0].fields
 
-    // Log the Portal Status field for debugging
-    console.log(`[Airtable] Found client: ${fields['Client']}, Portal Status: "${fields['Portal Status']}"`)
+    console.log(`[Airtable] Found client: ${fields[f.name]}, Portal Status: "${fields[f.status]}"`)
 
-    const status = (fields['Portal Status'] as ClientData['status']) || 'Building'
+    const status = (fields[f.status] as ClientData['status']) || 'Building'
 
     return {
-      company: (fields['Client'] as string) || '',
-      slug: (fields['Slug'] as string) || slug,
+      company: (fields[f.name] as string) || '',
+      slug: (fields[f.slug] as string) || slug,
       status,
-      logoUrl: fields['Logo URL'] as string | undefined,
-      airtableUrl: fields['Airtable URL'] as string | undefined,
-      loomUrl: fields['Loom URL'] as string | undefined,
+      logoUrl: fields[f.logoUrl] as string | undefined,
+      airtableUrl: fields[f.airtableUrl] as string | undefined,
+      loomUrl: fields[f.loomUrl] as string | undefined,
       totalSubscribers: (fields['Total Subscribers'] as number) || 0,
       activeSubscribers: (fields['Active Subscribers'] as number) || 0,
       pausedSubscribers: (fields['Paused Subscribers'] as number) || 0,

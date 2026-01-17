@@ -1,23 +1,20 @@
 import { IntakeSubmission, IntakeItemType, IntakeStatus, ClientOnboardingData, DiscordChannel } from './intake-types'
-
-// Use AIRTABLE_TOKEN if available, fall back to AIRTABLE_API_KEY
-const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN || process.env.AIRTABLE_API_KEY
-// Use AIRTABLE_BASE_ID if available, fall back to hardcoded SubscriberSync base
-const BASE_ID = process.env.AIRTABLE_BASE_ID || 'appVyyEPy9cs8XBtB'
-const INTAKE_TABLE_ID = 'tbl9Kvgjt5q0BeIQv'
-const CLIENTS_TABLE_ID = 'tblEsjEgVXfHhARrX'
+import { config } from './config'
 
 // Helper to get client record ID from slug
 async function getClientRecordId(clientSlug: string): Promise<string | null> {
-  if (!AIRTABLE_TOKEN) return null
+  if (!config.airtable.token) return null
+
+  const { baseId, tables } = config.airtable.portal
+  const slugField = config.fields.client.slug
 
   try {
-    const formula = encodeURIComponent(`{Slug}="${clientSlug}"`)
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}?filterByFormula=${formula}`
+    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
 
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
       },
     })
 
@@ -35,10 +32,13 @@ async function getClientRecordId(clientSlug: string): Promise<string | null> {
 
 // Get all intake submissions for a client
 export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSubmission[]> {
-  if (!AIRTABLE_TOKEN) {
+  if (!config.airtable.token) {
     console.error('Missing AIRTABLE_TOKEN')
     return []
   }
+
+  const { baseId, tables } = config.airtable.portal
+  const f = config.fields.intake
 
   try {
     // Get the client record ID first
@@ -46,16 +46,15 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
     console.log('[getIntakeSubmissions] clientSlug:', clientSlug, 'clientRecordId:', clientRecordId)
 
     // Fetch all intake records and filter client-side
-    // This is more reliable than complex Airtable formulas for linked records
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}`
+    const url = `https://api.airtable.com/v0/${baseId}/${tables.intake}`
     console.log('[getIntakeSubmissions] Fetching all intake records')
 
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
         'Content-Type': 'application/json',
       },
-      cache: 'no-store', // Never cache - always get fresh data
+      cache: 'no-store',
     })
 
     if (!response.ok) {
@@ -68,22 +67,20 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
 
     // Filter records that match our client (either by record ID or slug)
     const filteredRecords = data.records.filter((record: any) => {
-      const clientField = record.fields['Client']
+      const clientField = record.fields[f.client]
 
-      // If Client is an array (linked records), check if any ID matches
       if (Array.isArray(clientField)) {
         const matches = clientRecordId && clientField.includes(clientRecordId)
         if (matches) {
-          console.log('[getIntakeSubmissions] Found linked record match:', record.id, 'Item:', record.fields['Item'])
+          console.log('[getIntakeSubmissions] Found linked record match:', record.id, 'Item:', record.fields[f.item])
         }
         return matches
       }
 
-      // If Client is a string, check exact match
       if (typeof clientField === 'string') {
         const matches = clientField === clientSlug
         if (matches) {
-          console.log('[getIntakeSubmissions] Found slug match:', record.id, 'Item:', record.fields['Item'])
+          console.log('[getIntakeSubmissions] Found slug match:', record.id, 'Item:', record.fields[f.item])
         }
         return matches
       }
@@ -95,11 +92,11 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
 
     return filteredRecords.map((record: any) => ({
       id: record.id,
-      client: record.fields['Client'] || '',
-      item: record.fields['Item'] as IntakeItemType,
-      value: record.fields['Value'] || '',
-      status: (record.fields['Status'] as IntakeStatus) || 'Pending',
-      rejectionNote: record.fields['Rejection Note'],
+      client: record.fields[f.client] || '',
+      item: record.fields[f.item] as IntakeItemType,
+      value: record.fields[f.value] || '',
+      status: (record.fields[f.status] as IntakeStatus) || 'Pending',
+      rejectionNote: record.fields[f.rejectionNote],
       submittedAt: record.fields['Submitted At'],
       reviewedAt: record.fields['Reviewed At'],
       helpVideoUrl: record.fields['Help Video URL'],
@@ -116,9 +113,12 @@ export async function submitIntakeItem(data: {
   item: IntakeItemType
   value: string
 }): Promise<{ success: boolean; id?: string; error?: string }> {
-  if (!AIRTABLE_TOKEN) {
+  if (!config.airtable.token) {
     return { success: false, error: 'Missing configuration' }
   }
+
+  const { baseId, tables } = config.airtable.portal
+  const f = config.fields.intake
 
   try {
     // First check if there's an existing submission for this item
@@ -134,49 +134,47 @@ export async function submitIntakeItem(data: {
 
     // If rejected or pending, update existing record
     if (existingItem) {
-      const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}/${existingItem.id}`, {
+      const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tables.intake}/${existingItem.id}`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+          'Authorization': `Bearer ${config.airtable.token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           fields: {
-            'Value': data.value,
-            'Status': 'Submitted',
-            'Rejection Note': '', // Clear rejection note
+            [f.value]: data.value,
+            [f.status]: 'Submitted',
+            [f.rejectionNote]: '',
             'Submitted At': new Date().toISOString(),
           }
         })
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json()
         return { success: false, error: errorData.error?.message || 'Update failed' }
       }
-      
+
       return { success: true, id: existingItem.id }
     }
-    
+
     // Get client record ID for linked record
     const clientRecordId = await getClientRecordId(data.clientSlug)
-
-    // Create new submission - use linked record if available, otherwise use slug
     const clientFieldValue = clientRecordId ? [clientRecordId] : data.clientSlug
 
-    const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}`, {
+    const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tables.intake}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         records: [{
           fields: {
-            'Client': clientFieldValue,
-            'Item': data.item,
-            'Value': data.value,
-            'Status': 'Submitted',
+            [f.client]: clientFieldValue,
+            [f.item]: data.item,
+            [f.value]: data.value,
+            [f.status]: 'Submitted',
             'Submitted At': new Date().toISOString(),
           }
         }]
@@ -198,20 +196,23 @@ export async function submitIntakeItem(data: {
 
 // Get client onboarding data
 export async function getClientOnboardingData(clientSlug: string): Promise<ClientOnboardingData | null> {
-  if (!AIRTABLE_TOKEN) {
+  if (!config.airtable.token) {
     return null
   }
 
+  const { baseId, tables } = config.airtable.portal
+  const slugField = config.fields.client.slug
+
   try {
-    const formula = encodeURIComponent(`{Slug}="${clientSlug}"`)
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}?filterByFormula=${formula}`
-    
+    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
+
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
         'Content-Type': 'application/json',
       },
-      cache: 'no-store', // Never cache - always get fresh data
+      cache: 'no-store',
     })
 
     if (!response.ok) {
@@ -250,43 +251,43 @@ export async function getClientOnboardingData(clientSlug: string): Promise<Clien
 
 // Update Discord decision
 export async function updateDiscordDecision(
-  clientSlug: string, 
+  clientSlug: string,
   decision: 'Yes Setup' | 'Maybe Later' | 'No Thanks'
 ): Promise<boolean> {
-  if (!AIRTABLE_TOKEN) return false
+  if (!config.airtable.token) return false
+
+  const { baseId, tables } = config.airtable.portal
+  const slugField = config.fields.client.slug
 
   try {
-    // First get the record ID
-    const formula = encodeURIComponent(`{Slug}="${clientSlug}"`)
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}?filterByFormula=${formula}`
-    
+    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
+
     const findResponse = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
       },
     })
 
     if (!findResponse.ok) return false
-    
+
     const data = await findResponse.json()
     if (!data.records || data.records.length === 0) return false
-    
+
     const recordId = data.records[0].id
-    
-    // Update the record
+
     const updateFields: any = {
       'Discord Decision': decision,
     }
-    
-    // If skipping, mark step 2 complete
+
     if (decision === 'No Thanks') {
       updateFields['Step 2 Complete'] = true
     }
-    
-    const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}/${recordId}`, {
+
+    const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tables.clients}/${recordId}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ fields: updateFields })
@@ -314,29 +315,30 @@ export async function updateDiscordSetup(
     markComplete?: boolean
   }
 ): Promise<boolean> {
-  if (!AIRTABLE_TOKEN) return false
+  if (!config.airtable.token) return false
+
+  const { baseId, tables } = config.airtable.portal
+  const slugField = config.fields.client.slug
 
   try {
-    // First get the record ID
-    const formula = encodeURIComponent(`{Slug}="${clientSlug}"`)
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}?filterByFormula=${formula}`
-    
+    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
+
     const findResponse = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
       },
     })
 
     if (!findResponse.ok) return false
-    
+
     const data = await findResponse.json()
     if (!data.records || data.records.length === 0) return false
-    
+
     const recordId = data.records[0].id
-    
-    // Build update fields
+
     const updateFields: any = {}
-    
+
     if (setupData.newOrExisting) updateFields['Discord New or Existing'] = setupData.newOrExisting
     if (setupData.serverName) updateFields['Discord Server Name'] = setupData.serverName
     if (setupData.serverId) updateFields['Discord Server ID'] = setupData.serverId
@@ -346,11 +348,11 @@ export async function updateDiscordSetup(
     if (setupData.moderatorEmail) updateFields['Discord Moderator Email'] = setupData.moderatorEmail
     if (setupData.vibe) updateFields['Discord Vibe'] = setupData.vibe
     if (setupData.markComplete) updateFields['Step 2 Complete'] = true
-    
-    const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}/${recordId}`, {
+
+    const response = await fetch(`https://api.airtable.com/v0/${baseId}/${tables.clients}/${recordId}`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${config.airtable.token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ fields: updateFields })
