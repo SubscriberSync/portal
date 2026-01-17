@@ -74,7 +74,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
             ) : (
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20">
                 <div className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
-                <span className="text-sm text-accent font-medium">Building</span>
+                <span className="text-sm text-accent font-medium">{client.status}</span>
               </div>
             )}
           </div>
