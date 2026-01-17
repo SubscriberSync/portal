@@ -24,7 +24,6 @@ export async function POST(
     const validItems: IntakeItemType[] = [
       'Recharge API Key',
       'Klaviyo API Key',
-      'Shopify Product IDs',
       'Installment Name',
     ]
     

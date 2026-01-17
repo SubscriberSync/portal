@@ -102,15 +102,6 @@ export default function IntakeItem({
           'Copy the key',
           'Paste it here and submit',
         ]
-      case 'Shopify Product IDs':
-        return [
-          'Open your Shopify admin',
-          'Go to Products',
-          'Click on your subscription product',
-          'Look at the URL in your browser',
-          'Copy the number at the end (e.g., 8234567890123)',
-          'Paste each product ID on a new line',
-        ]
       case 'Installment Name':
         return [
           'Think about what you call each delivery',

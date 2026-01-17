@@ -1,8 +1,7 @@
 // Intake item types
-export type IntakeItemType = 
+export type IntakeItemType =
   | 'Recharge API Key'
   | 'Klaviyo API Key'
-  | 'Shopify Product IDs'
   | 'Installment Name'
 
 export type IntakeStatus = 'Pending' | 'Submitted' | 'Approved' | 'Rejected'
@@ -39,7 +38,6 @@ export interface ClientOnboardingData {
   step1Complete: boolean
   loomRecharge?: string
   loomKlaviyo?: string
-  loomShopifyProducts?: string
   
   // Step 2 - Discord
   discordDecision: DiscordDecision
@@ -63,7 +61,7 @@ export interface IntakeItemConfig {
   helpText: string
   multiline?: boolean
   sensitive?: boolean  // If true, input is masked (password field) and value is hidden in display
-  loomField: 'loomRecharge' | 'loomKlaviyo' | 'loomShopifyProducts' | null
+  loomField: 'loomRecharge' | 'loomKlaviyo' | null
 }
 
 export const INTAKE_ITEMS: IntakeItemConfig[] = [
@@ -84,15 +82,6 @@ export const INTAKE_ITEMS: IntakeItemConfig[] = [
     helpText: 'Found in Klaviyo → Settings → API Keys → Private',
     sensitive: true,
     loomField: 'loomKlaviyo',
-  },
-  {
-    type: 'Shopify Product IDs',
-    title: 'Shopify Product IDs',
-    description: 'The product IDs for your subscription box products.',
-    placeholder: '8234567890123\n8234567890124',
-    helpText: 'Found in Shopify → Products → Click product → ID in URL',
-    multiline: true,
-    loomField: 'loomShopifyProducts',
   },
   {
     type: 'Installment Name',

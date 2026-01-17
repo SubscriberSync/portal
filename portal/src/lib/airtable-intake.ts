@@ -237,7 +237,6 @@ export async function getClientOnboardingData(clientSlug: string): Promise<Clien
       step1Complete: f['Step 1 Complete'] || false,
       loomRecharge: f['Loom Recharge'],
       loomKlaviyo: f['Loom Klaviyo'],
-      loomShopifyProducts: f['Loom Shopify Products'],
       discordDecision: f['Discord Decision'] || 'Not Decided',
       discordNewOrExisting: f['Discord New or Existing'],
       discordServerName: f['Discord Server Name'],
