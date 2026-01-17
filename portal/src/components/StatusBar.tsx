@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { X } from 'lucide-react'
 import { ClientData, statusStages, getStatusIndex } from '@/lib/types'
 
 interface StatusBarProps {
@@ -7,11 +9,43 @@ interface StatusBarProps {
 }
 
 export default function StatusBar({ status }: StatusBarProps) {
+  const [isDismissed, setIsDismissed] = useState(false)
   const currentIndex = getStatusIndex(status)
   const progress = ((currentIndex + 1) / statusStages.length) * 100
 
+  // Check localStorage on mount to see if user has dismissed this
+  useEffect(() => {
+    if (status === 'Live') {
+      const dismissed = localStorage.getItem('statusBarDismissed')
+      if (dismissed === 'true') {
+        setIsDismissed(true)
+      }
+    }
+  }, [status])
+
+  const handleDismiss = () => {
+    setIsDismissed(true)
+    localStorage.setItem('statusBarDismissed', 'true')
+  }
+
+  // Don't render if dismissed and status is Live
+  if (isDismissed && status === 'Live') {
+    return null
+  }
+
   return (
-    <div className="p-8 rounded-2xl bg-background-secondary border border-border">
+    <div className="p-8 rounded-2xl bg-background-secondary border border-border relative">
+      {/* Dismiss button - only show when Live */}
+      {status === 'Live' && (
+        <button
+          onClick={handleDismiss}
+          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-background-elevated text-foreground-tertiary hover:text-foreground transition-colors"
+          title="Dismiss"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -20,7 +54,7 @@ export default function StatusBar({ status }: StatusBarProps) {
             {status === 'Live' ? 'Your system is live' : `Currently in ${status} phase`}
           </p>
         </div>
-        <div className="text-right">
+        <div className="text-right pr-8">
           <span className="text-3xl font-semibold text-foreground font-mono">
             {Math.round(progress)}%
           </span>
