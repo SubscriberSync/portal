@@ -109,14 +109,14 @@ export default function OnboardingSection({
   // If all complete and not showing, don't render
   if (isAllComplete) {
     return (
-      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6">
+      <div className="bg-success/10 border border-success/20 rounded-2xl p-6">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+          <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-success" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-slate-200">Setup Complete! 🎉</h3>
-            <p className="text-sm text-slate-400">
+            <h3 className="text-lg font-semibold text-foreground">Setup Complete!</h3>
+            <p className="text-sm text-foreground-secondary">
               Your SubscriberSync integration is configured and ready to go.
             </p>
           </div>
@@ -130,19 +130,19 @@ export default function OnboardingSection({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-copper to-amber-600 flex items-center justify-center">
-            <Rocket className="w-5 h-5 text-slate-900" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-amber-500 flex items-center justify-center">
+            <Rocket className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-slate-200">Get Started</h2>
-            <p className="text-sm text-slate-400">Complete setup to activate your dashboard</p>
+            <h2 className="text-lg font-semibold text-foreground">Get Started</h2>
+            <p className="text-sm text-foreground-secondary">Complete setup to activate your dashboard</p>
           </div>
         </div>
-        
+
         <button
           onClick={refreshData}
           disabled={isRefreshing}
-          className="p-2 rounded-lg hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200 disabled:opacity-50"
+          className="p-2 rounded-lg hover:bg-background-elevated transition-colors text-foreground-tertiary hover:text-foreground disabled:opacity-50"
           title="Refresh status"
         >
           <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />

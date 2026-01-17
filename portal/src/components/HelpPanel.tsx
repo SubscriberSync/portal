@@ -70,39 +70,39 @@ export default function HelpPanel({
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+      <div
+        className={`fixed inset-0 bg-foreground/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
       />
-      
+
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 h-full w-full max-w-lg bg-slate-900 border-l border-slate-700/50 shadow-2xl z-50 transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 h-full w-full max-w-lg bg-background-secondary border-l border-border shadow-2xl z-50 transition-transform duration-300 ease-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
-            <p className="text-sm text-slate-400 mt-1">{description}</p>
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+            <p className="text-sm text-foreground-secondary mt-1">{description}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200"
+            className="p-2 rounded-lg hover:bg-background-elevated transition-colors text-foreground-tertiary hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6 overflow-y-auto h-[calc(100%-88px)]">
           {/* Loom Video */}
           {loomUrl && (
             <div className="mb-6">
-              <div className="aspect-video rounded-xl overflow-hidden bg-slate-800 border border-slate-700/50">
+              <div className="aspect-video rounded-xl overflow-hidden bg-background-elevated border border-border">
                 <iframe
                   src={getLoomEmbedUrl(loomUrl)}
                   frameBorder="0"
@@ -112,41 +112,41 @@ export default function HelpPanel({
               </div>
             </div>
           )}
-          
+
           {/* Quick Reference */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 mb-6">
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 mb-6">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-amber-400">💡</span>
+              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-amber-600">💡</span>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-200 mb-1">Quick Reference</p>
-                <p className="text-sm text-slate-400">{helpText}</p>
+                <p className="text-sm font-medium text-foreground mb-1">Quick Reference</p>
+                <p className="text-sm text-foreground-secondary">{helpText}</p>
               </div>
             </div>
           </div>
-          
+
           {/* Step by Step (if provided) */}
           {steps && steps.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-slate-200 mb-4">Step by Step</h3>
+              <h3 className="text-sm font-medium text-foreground mb-4">Step by Step</h3>
               <div className="space-y-3">
                 {steps.map((step, index) => (
                   <div key={index} className="flex gap-3">
-                    <div className="w-6 h-6 rounded-full bg-copper/20 text-copper flex items-center justify-center flex-shrink-0 text-xs font-medium">
+                    <div className="w-6 h-6 rounded-full bg-accent/20 text-accent flex items-center justify-center flex-shrink-0 text-xs font-medium">
                       {index + 1}
                     </div>
-                    <p className="text-sm text-slate-300 pt-0.5">{step}</p>
+                    <p className="text-sm text-foreground-secondary pt-0.5">{step}</p>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          
+
           {/* No video fallback */}
           {!loomUrl && (
-            <div className="text-center py-8 text-slate-500">
-              <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3">
+            <div className="text-center py-8 text-foreground-tertiary">
+              <div className="w-12 h-12 rounded-full bg-background-elevated flex items-center justify-center mx-auto mb-3">
                 <span className="text-2xl">🎬</span>
               </div>
               <p className="text-sm">Video tutorial coming soon</p>

@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { Check, ChevronDown, ChevronUp, Lock, MessageCircle, Users, Loader2 } from 'lucide-react'
-import { 
-  ClientOnboardingData, 
-  DiscordChannel, 
+import {
+  ClientOnboardingData,
+  DiscordChannel,
   DISCORD_CHANNEL_OPTIONS,
   DiscordNewOrExisting,
   DiscordVibe
@@ -29,7 +29,7 @@ interface IntakeStep2Props {
   onRefresh: () => void
 }
 
-export default function IntakeStep2({ 
+export default function IntakeStep2({
   clientSlug,
   onboardingData,
   isUnlocked,
@@ -38,13 +38,13 @@ export default function IntakeStep2({
   onRefresh
 }: IntakeStep2Props) {
   const [isExpanded, setIsExpanded] = useState(
-    isUnlocked && 
-    !onboardingData.step2Complete && 
+    isUnlocked &&
+    !onboardingData.step2Complete &&
     onboardingData.discordDecision !== 'Maybe Later' &&
     onboardingData.discordDecision !== 'No Thanks'
   )
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // Form state
   const [newOrExisting, setNewOrExisting] = useState<DiscordNewOrExisting | undefined>(onboardingData.discordNewOrExisting)
   const [serverName, setServerName] = useState(onboardingData.discordServerName || '')
@@ -56,7 +56,7 @@ export default function IntakeStep2({
   const [moderatorName, setModeratorName] = useState(onboardingData.discordModeratorName || '')
   const [moderatorEmail, setModeratorEmail] = useState(onboardingData.discordModeratorEmail || '')
   const [vibe, setVibe] = useState<DiscordVibe | undefined>(onboardingData.discordVibe)
-  
+
   const handleDecision = async (decision: 'Yes Setup' | 'Maybe Later' | 'No Thanks') => {
     setIsLoading(true)
     const success = await onDecision(decision)
@@ -68,15 +68,15 @@ export default function IntakeStep2({
       }
     }
   }
-  
+
   const toggleChannel = (channel: DiscordChannel) => {
-    setSelectedChannels(prev => 
-      prev.includes(channel) 
+    setSelectedChannels(prev =>
+      prev.includes(channel)
         ? prev.filter(c => c !== channel)
         : [...prev, channel]
     )
   }
-  
+
   const handleSaveSetup = async () => {
     setIsLoading(true)
     const success = await onUpdateSetup({
@@ -94,7 +94,7 @@ export default function IntakeStep2({
       onRefresh()
     }
   }
-  
+
   const handleComplete = async () => {
     setIsLoading(true)
     const success = await onUpdateSetup({
@@ -113,110 +113,110 @@ export default function IntakeStep2({
       onRefresh()
     }
   }
-  
+
   // Locked state
   if (!isUnlocked) {
     return (
-      <div className="bg-slate-800/30 rounded-2xl border border-slate-700/30 overflow-hidden opacity-60">
+      <div className="bg-background-elevated/50 rounded-2xl border border-border overflow-hidden opacity-60">
         <div className="p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-slate-700/50 flex items-center justify-center">
-                <Lock className="w-5 h-5 text-slate-500" />
+              <div className="w-10 h-10 rounded-xl bg-foreground-tertiary/20 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-foreground-tertiary" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-400">Step 2: Discord Community</h3>
-                <p className="text-sm text-slate-500">Complete Step 1 to unlock</p>
+                <h3 className="font-semibold text-foreground-tertiary">Step 2: Discord Community</h3>
+                <p className="text-sm text-foreground-tertiary">Complete Step 1 to unlock</p>
               </div>
             </div>
-            <div className="px-3 py-1 rounded-full bg-slate-700/50 text-xs text-slate-500">
-              🔒 Locked
+            <div className="px-3 py-1 rounded-full bg-foreground-tertiary/20 text-xs text-foreground-tertiary">
+              Locked
             </div>
           </div>
         </div>
       </div>
     )
   }
-  
+
   // Completed state
   if (onboardingData.step2Complete && !isExpanded) {
     return (
-      <div className="bg-slate-800/30 rounded-2xl border border-emerald-500/20 overflow-hidden">
+      <div className="bg-success/5 rounded-2xl border border-success/20 overflow-hidden">
         <button
           onClick={() => setIsExpanded(true)}
-          className="w-full p-5 flex items-center justify-between hover:bg-slate-800/30 transition-colors"
+          className="w-full p-5 flex items-center justify-between hover:bg-success/10 transition-colors"
         >
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <Check className="w-5 h-5 text-emerald-400" />
+            <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
+              <Check className="w-5 h-5 text-success" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-slate-200">Step 2: Discord Community</h3>
-              <p className="text-sm text-emerald-400">
-                {onboardingData.discordDecision === 'No Thanks' 
-                  ? '✓ Skipped'
+              <h3 className="font-semibold text-foreground">Step 2: Discord Community</h3>
+              <p className="text-sm text-success">
+                {onboardingData.discordDecision === 'No Thanks'
+                  ? 'Skipped'
                   : onboardingData.discordDecision === 'Yes Setup'
-                    ? '✓ Setup submitted'
-                    : '✓ Complete'
+                    ? 'Setup submitted'
+                    : 'Complete'
                 }
               </p>
             </div>
           </div>
-          <ChevronDown className="w-5 h-5 text-slate-400" />
+          <ChevronDown className="w-5 h-5 text-foreground-tertiary" />
         </button>
       </div>
     )
   }
-  
+
   // Maybe Later collapsed state
   if (onboardingData.discordDecision === 'Maybe Later' && !isExpanded) {
     return (
-      <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+      <div className="bg-amber-50 rounded-2xl border border-amber-200 overflow-hidden">
         <button
           onClick={() => setIsExpanded(true)}
-          className="w-full p-5 flex items-center justify-between hover:bg-slate-800/30 transition-colors"
+          className="w-full p-5 flex items-center justify-between hover:bg-amber-100 transition-colors"
         >
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-amber-600" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-slate-200">Step 2: Discord Community</h3>
-              <p className="text-sm text-amber-400">Set aside for later - click to continue</p>
+              <h3 className="font-semibold text-foreground">Step 2: Discord Community</h3>
+              <p className="text-sm text-amber-600">Set aside for later - click to continue</p>
             </div>
           </div>
-          <ChevronDown className="w-5 h-5 text-slate-400" />
+          <ChevronDown className="w-5 h-5 text-foreground-tertiary" />
         </button>
       </div>
     )
   }
-  
+
   // Decision gate - hasn't decided yet
   if (onboardingData.discordDecision === 'Not Decided') {
     return (
-      <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
-        <div className="p-5 border-b border-slate-700/50">
+      <div className="bg-background-secondary rounded-2xl border border-border overflow-hidden">
+        <div className="p-5 border-b border-border">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Users className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-200">Step 2: Discord Community</h3>
-              <p className="text-sm text-slate-400">Build a private community for your subscribers</p>
+              <h3 className="font-semibold text-foreground">Step 2: Discord Community</h3>
+              <p className="text-sm text-foreground-secondary">Build a private community for your subscribers</p>
             </div>
           </div>
         </div>
-        
+
         <div className="p-5">
-          <p className="text-sm text-slate-300 mb-6">
+          <p className="text-sm text-foreground-secondary mb-6">
             Want a subscriber-only Discord server where members unlock channels based on their episode progress? We'll set it up and connect it to your subscription data.
           </p>
-          
+
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => handleDecision('Yes Setup')}
               disabled={isLoading}
-              className="px-5 py-2.5 bg-copper hover:bg-copper/90 disabled:bg-slate-700 text-slate-900 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:bg-background-elevated text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               Yes, set this up
@@ -224,14 +224,14 @@ export default function IntakeStep2({
             <button
               onClick={() => handleDecision('Maybe Later')}
               disabled={isLoading}
-              className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium transition-colors"
+              className="px-5 py-2.5 bg-background-elevated hover:bg-border text-foreground rounded-lg text-sm font-medium transition-colors"
             >
               Maybe later
             </button>
             <button
               onClick={() => handleDecision('No Thanks')}
               disabled={isLoading}
-              className="px-5 py-2.5 text-slate-400 hover:text-slate-300 text-sm font-medium transition-colors"
+              className="px-5 py-2.5 text-foreground-tertiary hover:text-foreground-secondary text-sm font-medium transition-colors"
             >
               Skip for now
             </button>
@@ -240,38 +240,38 @@ export default function IntakeStep2({
       </div>
     )
   }
-  
+
   // Setup form (Yes Setup selected)
   return (
-    <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+    <div className="bg-background-secondary rounded-2xl border border-border overflow-hidden">
       {/* Header */}
-      <div 
-        className="p-5 border-b border-slate-700/50 cursor-pointer hover:bg-slate-800/30"
+      <div
+        className="p-5 border-b border-border cursor-pointer hover:bg-background-elevated"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-              <Users className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Users className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-200">Step 2: Discord Community</h3>
-              <p className="text-sm text-slate-400">Configure your community settings</p>
+              <h3 className="font-semibold text-foreground">Step 2: Discord Community</h3>
+              <p className="text-sm text-foreground-secondary">Configure your community settings</p>
             </div>
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-slate-400" />
+            <ChevronUp className="w-5 h-5 text-foreground-tertiary" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-slate-400" />
+            <ChevronDown className="w-5 h-5 text-foreground-tertiary" />
           )}
         </div>
       </div>
-      
+
       {isExpanded && (
         <div className="p-5 space-y-6">
           {/* New or Existing */}
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-3">
+            <label className="block text-sm font-medium text-foreground mb-3">
               Server Setup
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -279,31 +279,31 @@ export default function IntakeStep2({
                 onClick={() => setNewOrExisting('Create New')}
                 className={`p-4 rounded-xl border text-left transition-colors ${
                   newOrExisting === 'Create New'
-                    ? 'border-copper bg-copper/10'
-                    : 'border-slate-700/50 hover:border-slate-600/50'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border hover:border-border-strong'
                 }`}
               >
-                <p className="font-medium text-slate-200">Create New</p>
-                <p className="text-xs text-slate-400 mt-1">We'll create a fresh server for you</p>
+                <p className="font-medium text-foreground">Create New</p>
+                <p className="text-xs text-foreground-secondary mt-1">We'll create a fresh server for you</p>
               </button>
               <button
                 onClick={() => setNewOrExisting('Connect Existing')}
                 className={`p-4 rounded-xl border text-left transition-colors ${
                   newOrExisting === 'Connect Existing'
-                    ? 'border-copper bg-copper/10'
-                    : 'border-slate-700/50 hover:border-slate-600/50'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border hover:border-border-strong'
                 }`}
               >
-                <p className="font-medium text-slate-200">Connect Existing</p>
-                <p className="text-xs text-slate-400 mt-1">Link an existing Discord server</p>
+                <p className="font-medium text-foreground">Connect Existing</p>
+                <p className="text-xs text-foreground-secondary mt-1">Link an existing Discord server</p>
               </button>
             </div>
           </div>
-          
+
           {/* Conditional fields based on new/existing */}
           {newOrExisting === 'Create New' && (
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Server Name
               </label>
               <input
@@ -311,14 +311,14 @@ export default function IntakeStep2({
                 value={serverName}
                 onChange={(e) => setServerName(e.target.value)}
                 placeholder="e.g., The Everlore Community"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:border-accent/50"
               />
             </div>
           )}
-          
+
           {newOrExisting === 'Connect Existing' && (
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Server ID
               </label>
               <input
@@ -326,17 +326,17 @@ export default function IntakeStep2({
                 value={serverId}
                 onChange={(e) => setServerId(e.target.value)}
                 placeholder="1234567890123456789"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50 font-mono"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:border-accent/50 font-mono"
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-foreground-tertiary mt-1">
                 Right-click your server icon → Copy Server ID
               </p>
             </div>
           )}
-          
+
           {/* Channels */}
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-3">
+            <label className="block text-sm font-medium text-foreground mb-3">
               Channels to Create
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -346,52 +346,52 @@ export default function IntakeStep2({
                   onClick={() => toggleChannel(channel.value)}
                   className={`p-3 rounded-lg border text-left transition-colors ${
                     selectedChannels.includes(channel.value)
-                      ? 'border-purple-500/50 bg-purple-500/10'
-                      : 'border-slate-700/50 hover:border-slate-600/50'
+                      ? 'border-purple-300 bg-purple-50'
+                      : 'border-border hover:border-border-strong'
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-4 h-4 rounded border flex items-center justify-center ${
                       selectedChannels.includes(channel.value)
-                        ? 'border-purple-400 bg-purple-400'
-                        : 'border-slate-600'
+                        ? 'border-purple-500 bg-purple-500'
+                        : 'border-foreground-tertiary'
                     }`}>
                       {selectedChannels.includes(channel.value) && (
-                        <Check className="w-3 h-3 text-slate-900" />
+                        <Check className="w-3 h-3 text-white" />
                       )}
                     </div>
-                    <span className="text-sm text-slate-200 font-mono">{channel.label}</span>
+                    <span className="text-sm text-foreground font-mono">{channel.label}</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 ml-6">{channel.description}</p>
+                  <p className="text-xs text-foreground-tertiary mt-1 ml-6">{channel.description}</p>
                 </button>
               ))}
             </div>
           </div>
-          
+
           {/* Episode Gating */}
-          <div className="flex items-start gap-3 p-4 bg-slate-900/30 rounded-xl">
+          <div className="flex items-start gap-3 p-4 bg-background-elevated rounded-xl">
             <button
               onClick={() => setEpisodeGated(!episodeGated)}
               className={`w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
                 episodeGated
-                  ? 'border-copper bg-copper'
-                  : 'border-slate-600 hover:border-slate-500'
+                  ? 'border-accent bg-accent'
+                  : 'border-foreground-tertiary hover:border-foreground-secondary'
               }`}
             >
-              {episodeGated && <Check className="w-3 h-3 text-slate-900" />}
+              {episodeGated && <Check className="w-3 h-3 text-white" />}
             </button>
             <div>
-              <p className="text-sm font-medium text-slate-200">Enable Episode Gating</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-sm font-medium text-foreground">Enable Episode Gating</p>
+              <p className="text-xs text-foreground-secondary mt-1">
                 Certain channels (like #spoilers) only visible to subscribers past a specific episode
               </p>
             </div>
           </div>
-          
+
           {/* Moderator Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Moderator Name
               </label>
               <input
@@ -399,11 +399,11 @@ export default function IntakeStep2({
                 value={moderatorName}
                 onChange={(e) => setModeratorName(e.target.value)}
                 placeholder="Your name"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:border-accent/50"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Moderator Email
               </label>
               <input
@@ -411,14 +411,14 @@ export default function IntakeStep2({
                 value={moderatorEmail}
                 onChange={(e) => setModeratorEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-copper/50"
+                className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:border-accent/50"
               />
             </div>
           </div>
-          
+
           {/* Vibe */}
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-3">
+            <label className="block text-sm font-medium text-foreground mb-3">
               Community Vibe
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -428,32 +428,32 @@ export default function IntakeStep2({
                   onClick={() => setVibe(v)}
                   className={`p-3 rounded-lg border text-center transition-colors ${
                     vibe === v
-                      ? 'border-copper bg-copper/10'
-                      : 'border-slate-700/50 hover:border-slate-600/50'
+                      ? 'border-accent bg-accent/10'
+                      : 'border-border hover:border-border-strong'
                   }`}
                 >
                   <span className="text-2xl mb-1 block">
                     {v === 'Casual & Friendly' ? '😊' : v === 'Professional' ? '💼' : '🎉'}
                   </span>
-                  <span className="text-xs text-slate-300">{v}</span>
+                  <span className="text-xs text-foreground-secondary">{v}</span>
                 </button>
               ))}
             </div>
           </div>
-          
+
           {/* Actions */}
-          <div className="flex justify-between pt-4 border-t border-slate-700/50">
+          <div className="flex justify-between pt-4 border-t border-border">
             <button
               onClick={handleSaveSetup}
               disabled={isLoading}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+              className="px-4 py-2 text-sm text-foreground-tertiary hover:text-foreground transition-colors"
             >
               Save Progress
             </button>
             <button
               onClick={handleComplete}
               disabled={isLoading || !newOrExisting}
-              className="px-5 py-2.5 bg-copper hover:bg-copper/90 disabled:bg-slate-700 disabled:text-slate-500 text-slate-900 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover disabled:bg-background-elevated disabled:text-foreground-tertiary text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
