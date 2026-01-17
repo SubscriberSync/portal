@@ -5,6 +5,32 @@ const BASE_ID = 'appVyyEPy9cs8XBtB'
 const INTAKE_TABLE_ID = 'tbl9Kvgjt5q0BeIQv'
 const CLIENTS_TABLE_ID = 'tblEsjEgVXfHhARrX'
 
+// Helper to get client record ID from slug
+async function getClientRecordId(clientSlug: string): Promise<string | null> {
+  if (!AIRTABLE_TOKEN) return null
+
+  try {
+    const formula = encodeURIComponent(`{Slug}="${clientSlug}"`)
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${CLIENTS_TABLE_ID}?filterByFormula=${formula}`
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+      },
+    })
+
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (!data.records || data.records.length === 0) return null
+
+    return data.records[0].id
+  } catch (error) {
+    console.error('Error fetching client record ID:', error)
+    return null
+  }
+}
+
 // Get all intake submissions for a client
 export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSubmission[]> {
   if (!AIRTABLE_TOKEN) {
@@ -13,9 +39,18 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
   }
 
   try {
-    const formula = encodeURIComponent(`{Client}="${clientSlug}"`)
+    // Get the client record ID first
+    const clientRecordId = await getClientRecordId(clientSlug)
+
+    // Build filter - support both linked record and text field
+    // For linked records, we need to check if the Client field contains the record ID
+    // For text fields, we check if it equals the slug
+    const formula = clientRecordId
+      ? encodeURIComponent(`OR({Client}="${clientSlug}", FIND("${clientRecordId}", ARRAYJOIN({Client})) > 0)`)
+      : encodeURIComponent(`{Client}="${clientSlug}"`)
+
     const url = `https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}?filterByFormula=${formula}`
-    
+
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
@@ -30,7 +65,7 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
     }
 
     const data = await response.json()
-    
+
     return data.records.map((record: any) => ({
       id: record.id,
       client: record.fields['Client'] || '',
@@ -93,7 +128,12 @@ export async function submitIntakeItem(data: {
       return { success: true, id: existingItem.id }
     }
     
-    // Create new submission
+    // Get client record ID for linked record
+    const clientRecordId = await getClientRecordId(data.clientSlug)
+
+    // Create new submission - use linked record if available, otherwise use slug
+    const clientFieldValue = clientRecordId ? [clientRecordId] : data.clientSlug
+
     const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}`, {
       method: 'POST',
       headers: {
@@ -103,7 +143,7 @@ export async function submitIntakeItem(data: {
       body: JSON.stringify({
         records: [{
           fields: {
-            'Client': data.clientSlug,
+            'Client': clientFieldValue,
             'Item': data.item,
             'Value': data.value,
             'Status': 'Submitted',
