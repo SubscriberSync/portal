@@ -58,7 +58,7 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
         'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      next: { revalidate: 10 } // Short cache for real-time updates
+      cache: 'no-store', // Never cache - always get fresh data
     })
 
     if (!response.ok) {
@@ -183,7 +183,7 @@ export async function getClientOnboardingData(clientSlug: string): Promise<Clien
         'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      next: { revalidate: 10 }
+      cache: 'no-store', // Never cache - always get fresh data
     })
 
     if (!response.ok) {
@@ -191,13 +191,13 @@ export async function getClientOnboardingData(clientSlug: string): Promise<Clien
     }
 
     const data = await response.json()
-    
+
     if (!data.records || data.records.length === 0) {
       return null
     }
 
     const f = data.records[0].fields
-    
+
     return {
       step1Complete: f['Step 1 Complete'] || false,
       loomRecharge: f['Loom Recharge'],
