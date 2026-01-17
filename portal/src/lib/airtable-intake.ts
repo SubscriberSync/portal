@@ -1,7 +1,9 @@
 import { IntakeSubmission, IntakeItemType, IntakeStatus, ClientOnboardingData, DiscordChannel } from './intake-types'
 
-const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN
-const BASE_ID = 'appVyyEPy9cs8XBtB'
+// Use AIRTABLE_TOKEN if available, fall back to AIRTABLE_API_KEY
+const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN || process.env.AIRTABLE_API_KEY
+// Use AIRTABLE_BASE_ID if available, fall back to hardcoded SubscriberSync base
+const BASE_ID = process.env.AIRTABLE_BASE_ID || 'appVyyEPy9cs8XBtB'
 const INTAKE_TABLE_ID = 'tbl9Kvgjt5q0BeIQv'
 const CLIENTS_TABLE_ID = 'tblEsjEgVXfHhARrX'
 
@@ -71,7 +73,7 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
       client: record.fields['Client'] || '',
       item: record.fields['Item'] as IntakeItemType,
       value: record.fields['Value'] || '',
-      status: record.fields['Status'] as IntakeStatus || 'Pending',
+      status: (record.fields['Status'] as IntakeStatus) || 'Pending',
       rejectionNote: record.fields['Rejection Note'],
       submittedAt: record.fields['Submitted At'],
       reviewedAt: record.fields['Reviewed At'],
@@ -199,6 +201,7 @@ export async function getClientOnboardingData(clientSlug: string): Promise<Clien
     return {
       step1Complete: f['Step 1 Complete'] || false,
       loomRecharge: f['Loom Recharge'],
+      loomKlaviyo: f['Loom Klaviyo'],
       loomShopifyProducts: f['Loom Shopify Products'],
       discordDecision: f['Discord Decision'] || 'Not Decided',
       discordNewOrExisting: f['Discord New or Existing'],

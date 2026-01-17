@@ -23,9 +23,9 @@ export async function getClientBySlug(slug: string): Promise<ClientData | null> 
     const fields = record.fields
 
     return {
-      company: (fields['Company'] as string) || '',
+      company: (fields['Client'] as string) || '',
       slug: (fields['Slug'] as string) || slug,
-      status: (fields['Status'] as ClientData['status']) || 'Building',
+      status: (fields['Portal Status'] as ClientData['status']) || 'Building',
       logoUrl: fields['Logo URL'] as string | undefined,
       airtableUrl: fields['Airtable URL'] as string | undefined,
       loomUrl: fields['Loom URL'] as string | undefined,
