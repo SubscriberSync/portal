@@ -44,11 +44,12 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
   return (
     <main className="min-h-screen">
-      {/* Header with Pack Mode */}
+      {/* Header with Pack Mode and Integration Status */}
       <PortalHeader
         company={client.company}
         logoUrl={client.logoUrl}
         status={client.status}
+        hasDiscord={!!client.discordServerId}
       />
 
       {/* Main Content */}
@@ -63,19 +64,6 @@ export default async function PortalPage({ params }: PortalPageProps) {
             <p className="text-body-lg text-foreground-secondary max-w-2xl">
               Your subscriber data flows automatically between Recharge, Airtable, and Klaviyo in real-time.
             </p>
-          </div>
-
-          {/* Integration Status */}
-          <div className="flex flex-wrap gap-3 mt-8">
-            {['Recharge', 'Airtable', 'Klaviyo'].map((integration) => (
-              <div
-                key={integration}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-background-elevated border border-border"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-success" />
-                <span className="text-sm text-foreground-secondary">{integration}</span>
-              </div>
-            ))}
           </div>
         </section>
 

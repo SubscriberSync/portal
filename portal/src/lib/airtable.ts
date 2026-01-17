@@ -54,6 +54,7 @@ export async function getClientBySlug(slug: string): Promise<ClientData | null> 
       pausedSubscribers: (fields['Paused Subscribers'] as number) || 0,
       cancelledSubscribers: (fields['Cancelled Subscribers'] as number) || 0,
       hostingRenewal: (fields['Hosting Renewal'] as string) || null,
+      discordServerId: (fields['Discord Server ID'] as string) || undefined,
     }
   } catch (error) {
     console.error('[Airtable] Error fetching client:', error)

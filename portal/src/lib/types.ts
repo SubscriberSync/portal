@@ -10,6 +10,8 @@ export interface ClientData {
   pausedSubscribers: number
   cancelledSubscribers: number
   hostingRenewal: string | null
+  // Integration fields
+  discordServerId?: string
 }
 
 export const statusStages = [

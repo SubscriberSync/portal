@@ -1,20 +1,43 @@
 'use client'
 
 import { useState } from 'react'
-import { Package } from 'lucide-react'
+import { Package, ChevronDown } from 'lucide-react'
 import PackModeView from './PackModeView'
+
+interface Integration {
+  name: string
+  connected: boolean
+  lastSync?: string
+}
 
 interface PortalHeaderProps {
   company: string
   logoUrl?: string
   status: string
+  hasDiscord?: boolean
 }
 
-export default function PortalHeader({ company, logoUrl, status }: PortalHeaderProps) {
+export default function PortalHeader({ company, logoUrl, status, hasDiscord }: PortalHeaderProps) {
   const [isPackMode, setIsPackMode] = useState(false)
+  const [showIntegrations, setShowIntegrations] = useState(false)
 
   // Only show Pack Mode button when Live
   const showPackMode = status === 'Live'
+
+  // Integration statuses (when Live, all core integrations are connected)
+  const integrations: Integration[] = [
+    { name: 'Shopify', connected: status === 'Live', lastSync: '2m ago' },
+    { name: 'Recharge', connected: status === 'Live', lastSync: '2m ago' },
+    { name: 'Klaviyo', connected: status === 'Live', lastSync: '2m ago' },
+    { name: 'Airtable', connected: status === 'Live', lastSync: '2m ago' },
+  ]
+
+  // Only add Discord if they have it configured
+  if (hasDiscord) {
+    integrations.push({ name: 'Discord', connected: true, lastSync: '1hr ago' })
+  }
+
+  const connectedCount = integrations.filter(i => i.connected).length
 
   if (isPackMode) {
     return <PackModeView onExit={() => setIsPackMode(false)} />
@@ -56,11 +79,56 @@ export default function PortalHeader({ company, logoUrl, status }: PortalHeaderP
               </button>
             )}
 
-            {/* Status Badge */}
+            {/* Integration Status Dropdown */}
             {status === 'Live' ? (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20">
-                <div className="w-2 h-2 bg-success rounded-full" />
-                <span className="text-sm text-success font-medium">Live</span>
+              <div className="relative">
+                <button
+                  onClick={() => setShowIntegrations(!showIntegrations)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20 hover:bg-success/15 transition-colors"
+                >
+                  <div className="w-2 h-2 bg-success rounded-full" />
+                  <span className="text-sm text-success font-medium">
+                    {connectedCount} Connected
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-success transition-transform ${showIntegrations ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown */}
+                {showIntegrations && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowIntegrations(false)}
+                    />
+                    {/* Menu */}
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-border overflow-hidden z-50">
+                      <div className="p-3 border-b border-border">
+                        <p className="text-xs font-medium text-foreground-tertiary uppercase tracking-wider">
+                          Integration Status
+                        </p>
+                      </div>
+                      <div className="p-2">
+                        {integrations.map((integration) => (
+                          <div
+                            key={integration.name}
+                            className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-background-elevated"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-2 h-2 rounded-full ${integration.connected ? 'bg-success' : 'bg-foreground-tertiary'}`} />
+                              <span className="text-sm font-medium text-foreground">{integration.name}</span>
+                            </div>
+                            {integration.connected && integration.lastSync && (
+                              <span className="text-xs text-foreground-tertiary">
+                                {integration.lastSync}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20">
