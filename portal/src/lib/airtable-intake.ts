@@ -43,15 +43,12 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
   try {
     // Get the client record ID first
     const clientRecordId = await getClientRecordId(clientSlug)
+    console.log('[getIntakeSubmissions] clientSlug:', clientSlug, 'clientRecordId:', clientRecordId)
 
-    // Build filter - support both linked record and text field
-    // For linked records, we need to check if the Client field contains the record ID
-    // For text fields, we check if it equals the slug
-    const formula = clientRecordId
-      ? encodeURIComponent(`OR({Client}="${clientSlug}", FIND("${clientRecordId}", ARRAYJOIN({Client})) > 0)`)
-      : encodeURIComponent(`{Client}="${clientSlug}"`)
-
-    const url = `https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}?filterByFormula=${formula}`
+    // Fetch all intake records and filter client-side
+    // This is more reliable than complex Airtable formulas for linked records
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}`
+    console.log('[getIntakeSubmissions] Fetching all intake records')
 
     const response = await fetch(url, {
       headers: {
@@ -67,8 +64,36 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
     }
 
     const data = await response.json()
+    console.log('[getIntakeSubmissions] Total records fetched:', data.records?.length || 0)
 
-    return data.records.map((record: any) => ({
+    // Filter records that match our client (either by record ID or slug)
+    const filteredRecords = data.records.filter((record: any) => {
+      const clientField = record.fields['Client']
+
+      // If Client is an array (linked records), check if any ID matches
+      if (Array.isArray(clientField)) {
+        const matches = clientRecordId && clientField.includes(clientRecordId)
+        if (matches) {
+          console.log('[getIntakeSubmissions] Found linked record match:', record.id, 'Item:', record.fields['Item'])
+        }
+        return matches
+      }
+
+      // If Client is a string, check exact match
+      if (typeof clientField === 'string') {
+        const matches = clientField === clientSlug
+        if (matches) {
+          console.log('[getIntakeSubmissions] Found slug match:', record.id, 'Item:', record.fields['Item'])
+        }
+        return matches
+      }
+
+      return false
+    })
+
+    console.log('[getIntakeSubmissions] Filtered records for client:', filteredRecords.length)
+
+    return filteredRecords.map((record: any) => ({
       id: record.id,
       client: record.fields['Client'] || '',
       item: record.fields['Item'] as IntakeItemType,
@@ -98,12 +123,15 @@ export async function submitIntakeItem(data: {
   try {
     // First check if there's an existing submission for this item
     const existing = await getIntakeSubmissions(data.clientSlug)
+    console.log('[submitIntakeItem] Looking for item:', data.item)
+    console.log('[submitIntakeItem] Existing submissions:', existing.map(s => ({ item: s.item, status: s.status, id: s.id })))
     const existingItem = existing.find(s => s.item === data.item)
-    
+    console.log('[submitIntakeItem] Found existing item:', existingItem ? { id: existingItem.id, item: existingItem.item, status: existingItem.status } : 'NONE')
+
     if (existingItem && existingItem.status === 'Approved') {
       return { success: false, error: 'This item has already been approved' }
     }
-    
+
     // If rejected or pending, update existing record
     if (existingItem) {
       const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${INTAKE_TABLE_ID}/${existingItem.id}`, {

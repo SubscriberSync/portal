@@ -25,9 +25,15 @@ export default function OnboardingSection({
   const refreshData = useCallback(async () => {
     setIsRefreshing(true)
     try {
-      const response = await fetch(`/api/intake/${clientSlug}`)
+      const response = await fetch(`/api/intake/${clientSlug}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      })
       if (response.ok) {
         const data = await response.json()
+        console.log('[OnboardingSection] Refreshed submissions:', data.submissions)
         setSubmissions(data.submissions)
         setOnboardingData(data.onboardingData)
       }
