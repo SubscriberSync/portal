@@ -27,7 +27,7 @@ export async function getShippingRecords(): Promise<ShippingRecord[]> {
     return []
   }
 
-  const { baseId, tables } = config.airtable.shipping
+  const { baseId, tables } = config.airtable.backstage
   const f = config.fields.subscriber
 
   try {

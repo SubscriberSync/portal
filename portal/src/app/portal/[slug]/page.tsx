@@ -49,7 +49,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         company={client.company}
         logoUrl={client.logoUrl}
         status={client.status}
-        hasDiscord={!!client.discordServerId}
+        integrations={client.integrations}
       />
 
       {/* Main Content */}

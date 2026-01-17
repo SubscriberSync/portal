@@ -6,7 +6,7 @@ This portal is designed to be used with multiple Airtable bases. Configure these
 
 ### Airtable Authentication
 ```
-AIRTABLE_TOKEN=pat_xxxxxxxxxxxxx
+AIRTABLE_TOKEN=your_personal_access_token_here
 ```
 Your Airtable Personal Access Token. Must have access to both the portal base and shipping base.
 
@@ -14,15 +14,20 @@ Your Airtable Personal Access Token. Must have access to both the portal base an
 
 ### Portal Base (Clients & Intake)
 ```
-AIRTABLE_PORTAL_BASE_ID=appXXXXXXXXXXXXXX
-AIRTABLE_CLIENTS_TABLE_ID=tblXXXXXXXXXXXXXX
-AIRTABLE_INTAKE_TABLE_ID=tblXXXXXXXXXXXXXX
+AIRTABLE_PORTAL_BASE_ID=appVyyEPy9cs8XBtB
+AIRTABLE_CLIENTS_TABLE_ID=tblEsjEgVXfHhARrX
+AIRTABLE_INTAKE_TABLE_ID=tbl9Kvgjt5q0BeIQv
+AIRTABLE_REQUESTS_TABLE_ID=tbl43z7z4A3DmI8Zb
+AIRTABLE_CREDENTIALS_TABLE_ID=tbl79QSaPz2MBS8K0
 ```
 
 ### Shipping Base (Subscribers & Packing)
 ```
-AIRTABLE_SHIPPING_BASE_ID=appXXXXXXXXXXXXXX
-AIRTABLE_SUBSCRIBERS_TABLE_ID=tblXXXXXXXXXXXXXX
+AIRTABLE_SHIPPING_BASE_ID=appmtPTf4hLxhx437
+AIRTABLE_SUBSCRIBERS_TABLE_ID=tblt9Q0GjZBN4l6Xl
+AIRTABLE_EVENTS_TABLE_ID=tblwDeNXF7Nv9gzEs
+AIRTABLE_PRODUCTS_TABLE_ID=tblb1rIMt2ibAp37H
+AIRTABLE_SHIPMENTS_TABLE_ID=tblYPiCjzrA1dDpqM
 ```
 
 ## Field Name Overrides (Optional)

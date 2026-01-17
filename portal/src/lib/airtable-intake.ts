@@ -1,7 +1,7 @@
 import { IntakeSubmission, IntakeItemType, IntakeStatus, ClientOnboardingData, DiscordChannel } from './intake-types'
 import { config } from './config'
 
-// Helper to get client record ID from slug
+// Helper to get client record ID from slug (case-insensitive)
 async function getClientRecordId(clientSlug: string): Promise<string | null> {
   if (!config.airtable.token) return null
 
@@ -9,7 +9,7 @@ async function getClientRecordId(clientSlug: string): Promise<string | null> {
   const slugField = config.fields.client.slug
 
   try {
-    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    const formula = encodeURIComponent(`LOWER({${slugField}})="${clientSlug.toLowerCase()}"`)
     const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
 
     const response = await fetch(url, {
@@ -90,17 +90,22 @@ export async function getIntakeSubmissions(clientSlug: string): Promise<IntakeSu
 
     console.log('[getIntakeSubmissions] Filtered records for client:', filteredRecords.length)
 
-    return filteredRecords.map((record: any) => ({
-      id: record.id,
-      client: record.fields[f.client] || '',
-      item: record.fields[f.item] as IntakeItemType,
-      value: record.fields[f.value] || '',
-      status: (record.fields[f.status] as IntakeStatus) || 'Pending',
-      rejectionNote: record.fields[f.rejectionNote],
-      submittedAt: record.fields['Submitted At'],
-      reviewedAt: record.fields['Reviewed At'],
-      helpVideoUrl: record.fields['Help Video URL'],
-    }))
+    return filteredRecords.map((record: any) => {
+      const item = record.fields[f.item]
+      const status = record.fields[f.status]
+      console.log('[getIntakeSubmissions] Mapping record:', record.id, 'Item:', item, 'Status:', status)
+      return {
+        id: record.id,
+        client: record.fields[f.client] || '',
+        item: item as IntakeItemType,
+        value: record.fields[f.value] || '',
+        status: (status as IntakeStatus) || 'Pending',
+        rejectionNote: record.fields[f.rejectionNote],
+        submittedAt: record.fields['Submitted At'],
+        reviewedAt: record.fields['Reviewed At'],
+        helpVideoUrl: record.fields['Help Video URL'],
+      }
+    })
   } catch (error) {
     console.error('Error fetching intake submissions:', error)
     return []
@@ -204,7 +209,8 @@ export async function getClientOnboardingData(clientSlug: string): Promise<Clien
   const slugField = config.fields.client.slug
 
   try {
-    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    // Case-insensitive slug lookup
+    const formula = encodeURIComponent(`LOWER({${slugField}})="${clientSlug.toLowerCase()}"`)
     const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
 
     const response = await fetch(url, {
@@ -260,7 +266,8 @@ export async function updateDiscordDecision(
   const slugField = config.fields.client.slug
 
   try {
-    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    // Case-insensitive slug lookup
+    const formula = encodeURIComponent(`LOWER({${slugField}})="${clientSlug.toLowerCase()}"`)
     const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
 
     const findResponse = await fetch(url, {
@@ -321,7 +328,8 @@ export async function updateDiscordSetup(
   const slugField = config.fields.client.slug
 
   try {
-    const formula = encodeURIComponent(`{${slugField}}="${clientSlug}"`)
+    // Case-insensitive slug lookup
+    const formula = encodeURIComponent(`LOWER({${slugField}})="${clientSlug.toLowerCase()}"`)
     const url = `https://api.airtable.com/v0/${baseId}/${tables.clients}?filterByFormula=${formula}`
 
     const findResponse = await fetch(url, {

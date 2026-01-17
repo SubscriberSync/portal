@@ -1,3 +1,16 @@
+export interface IntegrationStatus {
+  connected: boolean
+  lastSync?: string // ISO date string of last sync
+}
+
+export interface ClientIntegrations {
+  shopify: IntegrationStatus
+  recharge: IntegrationStatus
+  klaviyo: IntegrationStatus
+  airtable: IntegrationStatus
+  discord?: IntegrationStatus // Only present if Discord is configured
+}
+
 export interface ClientData {
   company: string
   slug: string
@@ -12,6 +25,8 @@ export interface ClientData {
   hostingRenewal: string | null
   // Integration fields
   discordServerId?: string
+  // Integration status (based on credentials in Airtable)
+  integrations?: ClientIntegrations
 }
 
 export const statusStages = [

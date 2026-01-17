@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Package, ChevronDown } from 'lucide-react'
 import PackModeView from './PackModeView'
+import { ClientIntegrations } from '@/lib/types'
 
 interface Integration {
   name: string
@@ -14,27 +15,49 @@ interface PortalHeaderProps {
   company: string
   logoUrl?: string
   status: string
-  hasDiscord?: boolean
+  integrations?: ClientIntegrations
 }
 
-export default function PortalHeader({ company, logoUrl, status, hasDiscord }: PortalHeaderProps) {
+export default function PortalHeader({ company, logoUrl, status, integrations: clientIntegrations }: PortalHeaderProps) {
   const [isPackMode, setIsPackMode] = useState(false)
   const [showIntegrations, setShowIntegrations] = useState(false)
 
   // Only show Pack Mode button when Live
   const showPackMode = status === 'Live'
 
-  // Integration statuses (when Live, all core integrations are connected)
-  const integrations: Integration[] = [
-    { name: 'Shopify', connected: status === 'Live', lastSync: '2m ago' },
-    { name: 'Recharge', connected: status === 'Live', lastSync: '2m ago' },
-    { name: 'Klaviyo', connected: status === 'Live', lastSync: '2m ago' },
-    { name: 'Airtable', connected: status === 'Live', lastSync: '2m ago' },
-  ]
+  // Build integration list from real data
+  const integrations: Integration[] = []
 
-  // Only add Discord if they have it configured
-  if (hasDiscord) {
-    integrations.push({ name: 'Discord', connected: true, lastSync: '1hr ago' })
+  if (clientIntegrations) {
+    integrations.push({
+      name: 'Shopify',
+      connected: clientIntegrations.shopify.connected,
+      lastSync: clientIntegrations.shopify.lastSync,
+    })
+    integrations.push({
+      name: 'Recharge',
+      connected: clientIntegrations.recharge.connected,
+      lastSync: clientIntegrations.recharge.lastSync,
+    })
+    integrations.push({
+      name: 'Klaviyo',
+      connected: clientIntegrations.klaviyo.connected,
+      lastSync: clientIntegrations.klaviyo.lastSync,
+    })
+    integrations.push({
+      name: 'Airtable',
+      connected: clientIntegrations.airtable.connected,
+      lastSync: clientIntegrations.airtable.lastSync,
+    })
+
+    // Only add Discord if configured
+    if (clientIntegrations.discord) {
+      integrations.push({
+        name: 'Discord',
+        connected: clientIntegrations.discord.connected,
+        lastSync: clientIntegrations.discord.lastSync,
+      })
+    }
   }
 
   const connectedCount = integrations.filter(i => i.connected).length
