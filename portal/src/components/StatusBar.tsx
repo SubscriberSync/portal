@@ -10,6 +10,7 @@ interface StatusBarProps {
 
 export default function StatusBar({ status }: StatusBarProps) {
   const [isDismissed, setIsDismissed] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
   const currentIndex = getStatusIndex(status)
   const progress = ((currentIndex + 1) / statusStages.length) * 100
 
@@ -21,6 +22,7 @@ export default function StatusBar({ status }: StatusBarProps) {
         setIsDismissed(true)
       }
     }
+    setIsLoaded(true)
   }, [status])
 
   const handleDismiss = () => {
@@ -30,6 +32,11 @@ export default function StatusBar({ status }: StatusBarProps) {
 
   // Don't render if dismissed and status is Live
   if (isDismissed && status === 'Live') {
+    return null
+  }
+
+  // Don't render until we've checked localStorage (prevents flash)
+  if (status === 'Live' && !isLoaded) {
     return null
   }
 
