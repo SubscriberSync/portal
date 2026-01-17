@@ -1,9 +1,11 @@
 import { notFound } from 'next/navigation'
 import { getClientBySlug, getDemoClient } from '@/lib/airtable'
+import { getIntakeSubmissions, getClientOnboardingData } from '@/lib/airtable-intake'
 import StatusBar from '@/components/StatusBar'
 import StatsGrid from '@/components/StatsGrid'
 import KlaviyoReference from '@/components/KlaviyoReference'
 import SupportSection from '@/components/SupportSection'
+import OnboardingSection from '@/components/OnboardingSection'
 
 interface PortalPageProps {
   params: { slug: string }
@@ -17,6 +19,22 @@ export default async function PortalPage({ params }: PortalPageProps) {
   if (!client) {
     client = getDemoClient(params.slug)
   }
+
+  // Fetch onboarding data
+  const [submissions, onboardingData] = await Promise.all([
+    getIntakeSubmissions(params.slug),
+    getClientOnboardingData(params.slug),
+  ])
+
+  // Default onboarding data if not found
+  const defaultOnboardingData = {
+    step1Complete: false,
+    discordDecision: 'Not Decided' as const,
+    step2Complete: false,
+  }
+
+  const onboarding = onboardingData || defaultOnboardingData
+  const isOnboardingComplete = onboarding.step1Complete && onboarding.step2Complete
 
   return (
     <main className="min-h-screen">
@@ -91,6 +109,17 @@ export default async function PortalPage({ params }: PortalPageProps) {
         <section className="animate-fade-up" style={{ animationDelay: '100ms' }}>
           <StatusBar status={client.status} />
         </section>
+
+        {/* Onboarding Section - Show when building and not complete */}
+        {client.status !== 'Live' && !isOnboardingComplete && (
+          <section className="animate-fade-up" style={{ animationDelay: '150ms' }}>
+            <OnboardingSection
+              clientSlug={params.slug}
+              initialSubmissions={submissions}
+              initialOnboardingData={onboarding}
+            />
+          </section>
+        )}
 
         {/* Stats - Only show when live */}
         {client.status === 'Live' && (
