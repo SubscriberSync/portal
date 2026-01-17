@@ -4,8 +4,6 @@ import StatusBar from '@/components/StatusBar'
 import StatsGrid from '@/components/StatsGrid'
 import KlaviyoReference from '@/components/KlaviyoReference'
 import SupportSection from '@/components/SupportSection'
-import AnimatedSection from '@/components/AnimatedSection'
-import HeroSection from '@/components/HeroSection'
 
 interface PortalPageProps {
   params: { slug: string }
@@ -22,45 +20,39 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
   return (
     <main className="min-h-screen">
-      {/* Header */}
-      <header className="border-b border-slate-800/50 backdrop-blur-xl bg-[#0a0c10]/70 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+      {/* Header - Clean, minimal */}
+      <header className="sticky top-0 z-50 backdrop-blur-xl bg-black/80 border-b border-white/[0.08]">
+        <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {client.logoUrl ? (
                 <img
                   src={client.logoUrl}
                   alt={client.company}
-                  className="h-10 w-auto"
+                  className="h-9 w-auto"
                 />
               ) : (
-                <div className="relative group">
-                  <div className="w-12 h-12 bg-gradient-to-br from-copper to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-copper/30 transition-transform duration-300 group-hover:scale-105">
-                    <span className="text-xl font-bold text-white">
-                      {client.company.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="absolute -inset-1 bg-copper/30 rounded-xl blur-lg -z-10 opacity-60 group-hover:opacity-100 transition-opacity" />
+                <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
+                  <span className="text-lg font-semibold text-white">
+                    {client.company.charAt(0)}
+                  </span>
                 </div>
               )}
               <div>
-                <h1 className="text-xl font-semibold text-slate-50">{client.company}</h1>
-                <p className="text-xs text-slate-500 font-data tracking-[0.2em]">SUBSCRIBER JOURNEY SYSTEM</p>
+                <h1 className="text-lg font-semibold text-foreground">{client.company}</h1>
+                <p className="text-xs text-foreground-tertiary tracking-wide">Subscriber Portal</p>
               </div>
             </div>
 
             {client.status === 'Live' ? (
-              <div className="flex items-center gap-2.5 px-5 py-2.5 glass rounded-full border border-emerald-500/30 shadow-glow-emerald">
-                <div className="relative">
-                  <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full" />
-                  <div className="absolute inset-0 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping" />
-                </div>
-                <span className="text-sm text-emerald-400 font-bold tracking-wide">LIVE</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 border border-success/20">
+                <div className="w-2 h-2 bg-success rounded-full" />
+                <span className="text-sm text-success font-medium">Live</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 px-5 py-2.5 glass rounded-full border border-copper/30 shadow-glow-sm">
-                <div className="w-2.5 h-2.5 bg-copper rounded-full animate-pulse" />
-                <span className="text-sm text-copper font-bold tracking-wide">BUILDING</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20">
+                <div className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
+                <span className="text-sm text-accent font-medium">Building</span>
               </div>
             )}
           </div>
@@ -68,129 +60,124 @@ export default async function PortalPage({ params }: PortalPageProps) {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-12 space-y-10">
-        {/* Hero Section */}
-        <AnimatedSection animation="fade-up" delay={0}>
-          <HeroSection company={client.company} status={client.status} />
-        </AnimatedSection>
+      <div className="max-w-5xl mx-auto px-6 py-16 space-y-16">
+        {/* Welcome Section */}
+        <section className="animate-fade-up">
+          <div className="space-y-4">
+            <h2 className="text-display text-foreground">
+              Welcome to your<br />
+              <span className="text-accent">Command Center</span>
+            </h2>
+            <p className="text-body-lg text-foreground-secondary max-w-2xl">
+              Your subscriber data flows automatically between Recharge, Airtable, and Klaviyo in real-time.
+            </p>
+          </div>
+
+          {/* Integration Status */}
+          <div className="flex flex-wrap gap-3 mt-8">
+            {['Recharge', 'Airtable', 'Klaviyo'].map((integration) => (
+              <div
+                key={integration}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-background-elevated border border-border"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-success" />
+                <span className="text-sm text-foreground-secondary">{integration}</span>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Status Bar */}
-        <AnimatedSection animation="fade-up" delay={100}>
+        <section className="animate-fade-up" style={{ animationDelay: '100ms' }}>
           <StatusBar status={client.status} />
-        </AnimatedSection>
+        </section>
 
         {/* Stats - Only show when live */}
         {client.status === 'Live' && (
           <>
-            <AnimatedSection animation="fade-up" delay={200}>
-              <section>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 glass rounded-xl flex items-center justify-center border border-slate-700/50">
-                    <span className="text-xl">📊</span>
-                  </div>
-                  <h2 className="text-xl font-bold text-slate-100">Subscriber Metrics</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-slate-700 via-slate-800 to-transparent" />
-                </div>
-                <StatsGrid client={client} />
-              </section>
-            </AnimatedSection>
+            <section className="animate-fade-up" style={{ animationDelay: '200ms' }}>
+              <div className="mb-8">
+                <h3 className="text-headline text-foreground mb-2">Subscriber Metrics</h3>
+                <p className="text-foreground-secondary">Real-time data from your system</p>
+              </div>
+              <StatsGrid client={client} />
+            </section>
 
             {/* Dashboard Link */}
             {client.airtableUrl && (
-              <AnimatedSection animation="fade-up" delay={300}>
-                <section className="glass-strong rounded-2xl border border-slate-700/50 p-6 relative overflow-hidden group">
-                  {/* Background effects */}
-                  <div className="absolute inset-0 grid-pattern opacity-30" />
-                  <div className="absolute -top-20 -right-20 w-48 h-48 bg-copper/10 rounded-full blur-3xl group-hover:bg-copper/20 transition-all duration-500" />
-
-                  <div className="relative">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-10 h-10 glass rounded-xl flex items-center justify-center border border-slate-700/50">
-                        <span className="text-xl">📋</span>
-                      </div>
-                      <h2 className="text-xl font-bold text-slate-100">Dashboard Access</h2>
+              <section className="animate-fade-up" style={{ animationDelay: '300ms' }}>
+                <div className="p-8 rounded-2xl bg-background-secondary border border-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-title text-foreground mb-1">Dashboard Access</h3>
+                      <p className="text-sm text-foreground-secondary">View and manage your data</p>
                     </div>
                     <a
                       href={client.airtableUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-copper to-orange-600 hover:from-copper-light hover:to-orange-500 text-white font-semibold rounded-xl transition-all duration-300 hover:shadow-glow-copper hover:scale-102 active:scale-98 shine"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white font-medium rounded-xl transition-colors duration-200"
                     >
-                      <span>Open Airtable</span>
-                      <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      Open Airtable
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     </a>
                   </div>
-                </section>
-              </AnimatedSection>
+                </div>
+              </section>
             )}
 
             {/* Video Walkthrough */}
             {client.loomUrl && (
-              <AnimatedSection animation="fade-up" delay={400}>
-                <section className="glass-strong rounded-2xl border border-slate-700/50 p-6 relative overflow-hidden">
-                  <div className="absolute inset-0 grid-pattern opacity-30" />
-
-                  <div className="relative">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-10 h-10 glass rounded-xl flex items-center justify-center border border-slate-700/50">
-                        <span className="text-xl">🎥</span>
-                      </div>
-                      <h2 className="text-xl font-bold text-slate-100">Video Walkthrough</h2>
-                    </div>
-                    <div className="aspect-video rounded-xl overflow-hidden glass border border-slate-700/50 shadow-card">
-                      <iframe
-                        src={client.loomUrl.replace('share', 'embed')}
-                        frameBorder="0"
-                        allowFullScreen
-                        className="w-full h-full"
-                      />
-                    </div>
-                  </div>
-                </section>
-              </AnimatedSection>
+              <section className="animate-fade-up" style={{ animationDelay: '400ms' }}>
+                <div className="mb-6">
+                  <h3 className="text-headline text-foreground mb-2">Video Walkthrough</h3>
+                  <p className="text-foreground-secondary">Learn how to use your system</p>
+                </div>
+                <div className="aspect-video rounded-2xl overflow-hidden bg-background-secondary border border-border">
+                  <iframe
+                    src={client.loomUrl.replace('share', 'embed')}
+                    frameBorder="0"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+              </section>
             )}
 
             {/* Klaviyo Reference */}
-            <AnimatedSection animation="fade-up" delay={500}>
+            <section className="animate-fade-up" style={{ animationDelay: '500ms' }}>
               <KlaviyoReference />
-            </AnimatedSection>
+            </section>
           </>
         )}
 
         {/* Support */}
-        <AnimatedSection animation="fade-up" delay={client.status === 'Live' ? 600 : 200}>
+        <section className="animate-fade-up" style={{ animationDelay: client.status === 'Live' ? '600ms' : '200ms' }}>
           <SupportSection client={client} />
-        </AnimatedSection>
+        </section>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/50 mt-16 relative overflow-hidden">
-        {/* Background effect */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0c10] to-transparent" />
-
-        <div className="max-w-6xl mx-auto px-6 py-8 relative">
+      {/* Footer - Clean and simple */}
+      <footer className="border-t border-border mt-16">
+        <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative group">
-                <div className="w-10 h-10 bg-gradient-to-br from-copper to-orange-600 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-                  <span className="text-sm font-bold text-white">S</span>
-                </div>
-                <div className="absolute -inset-0.5 bg-copper/20 rounded-lg blur-md -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                <span className="text-xs font-semibold text-white">S</span>
               </div>
-              <span className="text-slate-500 text-sm">
-                Powered by <span className="text-copper font-semibold hover:text-copper-light transition-colors">SubscriberSync</span>
+              <span className="text-sm text-foreground-tertiary">
+                Powered by <span className="text-foreground-secondary">SubscriberSync</span>
               </span>
             </div>
             <a
               href="https://subscribersync.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-slate-500 hover:text-copper transition-colors font-data tracking-wide group"
+              className="text-sm text-foreground-tertiary hover:text-foreground-secondary transition-colors"
             >
               subscribersync.com
-              <span className="inline-block transition-transform group-hover:translate-x-1 ml-1">→</span>
             </a>
           </div>
         </div>
