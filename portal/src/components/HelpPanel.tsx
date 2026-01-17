@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 interface HelpPanelProps {
@@ -13,14 +14,14 @@ interface HelpPanelProps {
   steps?: string[]
 }
 
-export default function HelpPanel({ 
-  isOpen, 
-  onClose, 
-  title, 
-  description, 
+export default function HelpPanel({
+  isOpen,
+  onClose,
+  title,
+  description,
   helpText,
   loomUrl,
-  steps 
+  steps
 }: HelpPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -29,12 +30,12 @@ export default function HelpPanel({
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
-    
+
     if (isOpen) {
       document.addEventListener('keydown', handleEscape)
       document.body.style.overflow = 'hidden'
     }
-    
+
     return () => {
       document.removeEventListener('keydown', handleEscape)
       document.body.style.overflow = ''
@@ -48,11 +49,11 @@ export default function HelpPanel({
         onClose()
       }
     }
-    
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
@@ -67,21 +68,24 @@ export default function HelpPanel({
     return url
   }
 
-  return (
+  // Don't render anything if not open
+  if (!isOpen) return null
+
+  // Use portal to render at document body level
+  if (typeof window === 'undefined') return null
+
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-foreground/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        className="fixed inset-0 bg-foreground/40 backdrop-blur-sm z-40 animate-fade-in"
+        onClick={onClose}
       />
 
       {/* Panel */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 h-full w-full max-w-lg bg-background-secondary border-l border-border shadow-2xl z-50 transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className="fixed right-0 top-0 h-full w-full max-w-lg bg-background-secondary border-l border-border shadow-2xl z-50 animate-slide-in-right"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
@@ -154,6 +158,7 @@ export default function HelpPanel({
           )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
