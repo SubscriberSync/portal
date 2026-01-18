@@ -47,6 +47,10 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
         <ClerkProvider
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+          signInFallbackRedirectUrl="/"
+          signUpFallbackRedirectUrl="/"
           appearance={{
             variables: {
               colorPrimary: '#e07a42',

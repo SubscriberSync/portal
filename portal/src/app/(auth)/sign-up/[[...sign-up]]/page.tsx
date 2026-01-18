@@ -1,18 +1,9 @@
 import { SignUp } from '@clerk/nextjs'
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
 
-export default async function SignUpPage() {
-  const { userId } = await auth()
-
-  // If already signed in, redirect to home (which will handle org routing)
-  if (userId) {
-    redirect('/')
-  }
-
+export default function SignUpPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0c0c0c]">
-      <SignUp afterSignInUrl="/" afterSignUpUrl="/" />
+      <SignUp />
     </div>
   )
 }
