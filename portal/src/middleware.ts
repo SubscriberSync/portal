@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -13,6 +14,15 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, request) => {
+  const host = request.headers.get('host') || ''
+
+  // Force www redirect in production
+  if (host === 'subscribersync.com') {
+    const url = new URL(request.url)
+    url.host = 'www.subscribersync.com'
+    return NextResponse.redirect(url, 308)
+  }
+
   // Protect all routes except public ones
   if (!isPublicRoute(request)) {
     await auth.protect()
