@@ -1,5 +1,7 @@
 // Intake item types
 export type IntakeItemType =
+  | 'Shopify API Key'
+  | 'Shopify API Secret'
   | 'Recharge API Key'
   | 'Klaviyo API Key'
   | 'Installment Name'
@@ -36,6 +38,7 @@ export type DiscordChannel =
 export interface ClientOnboardingData {
   // Step 1 tracking
   step1Complete: boolean
+  loomShopify?: string
   loomRecharge?: string
   loomKlaviyo?: string
   
@@ -61,10 +64,28 @@ export interface IntakeItemConfig {
   helpText: string
   multiline?: boolean
   sensitive?: boolean  // If true, input is masked (password field) and value is hidden in display
-  loomField: 'loomRecharge' | 'loomKlaviyo' | null
+  loomField: 'loomShopify' | 'loomRecharge' | 'loomKlaviyo' | null
 }
 
 export const INTAKE_ITEMS: IntakeItemConfig[] = [
+  {
+    type: 'Shopify API Key',
+    title: 'Shopify Admin API Key',
+    description: 'Your Shopify Admin API access token for order and product sync.',
+    placeholder: 'shpat_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    helpText: 'Found in Shopify → Settings → Apps → Develop apps → Your app → API credentials',
+    sensitive: true,
+    loomField: 'loomShopify',
+  },
+  {
+    type: 'Shopify API Secret',
+    title: 'Shopify API Secret',
+    description: 'Your Shopify API secret key for webhook verification.',
+    placeholder: 'shpss_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    helpText: 'Found in Shopify → Settings → Apps → Develop apps → Your app → API credentials',
+    sensitive: true,
+    loomField: 'loomShopify',
+  },
   {
     type: 'Recharge API Key',
     title: 'Recharge API Key',
