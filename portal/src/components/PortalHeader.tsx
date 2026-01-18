@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Package, ChevronDown } from 'lucide-react'
+import { Package, ChevronDown, Settings } from 'lucide-react'
 import { ClientIntegrations } from '@/lib/types'
 
 interface Integration {
@@ -95,6 +95,17 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
               >
                 <Package className="w-4 h-4" />
                 <span className="text-sm">Pack Mode</span>
+              </Link>
+            )}
+
+            {/* Admin Settings Button */}
+            {clientSlug && (
+              <Link
+                href={`/portal/${clientSlug}/admin`}
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-background-elevated hover:bg-border transition-colors"
+                title="Admin Settings"
+              >
+                <Settings className="w-4 h-4 text-foreground-secondary" />
               </Link>
             )}
 
