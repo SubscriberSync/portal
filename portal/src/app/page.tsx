@@ -3,11 +3,13 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 export default async function HomePage() {
-  const { userId, orgId, orgSlug } = await auth()
+  const { userId, orgSlug } = await auth()
 
-  // Not signed in - redirect to sign-in
+  // Not signed in - show landing page (marketing route group handles this)
+  // The (marketing)/page.tsx will be served for unauthenticated users
+  // But if they somehow land here, redirect to the marketing page
   if (!userId) {
-    redirect('/sign-in')
+    redirect('/')
   }
 
   // Has an active organization - redirect to their portal
@@ -15,7 +17,7 @@ export default async function HomePage() {
     redirect(`/portal/${orgSlug}`)
   }
 
-  // Signed in but no organization selected
+  // Signed in but no organization selected - show org selection
   const user = await currentUser()
 
   return (

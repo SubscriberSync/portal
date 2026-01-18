@@ -37,13 +37,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name, slug, status } = await request.json()
+    const { name, slug, status, isTestPortal } = await request.json()
 
     if (!name || !slug) {
       return NextResponse.json({ error: 'Missing name or slug' }, { status: 400 })
     }
 
-    const organization = await createOrganization({ name, slug, status })
+    const organization = await createOrganization({
+      name,
+      slug,
+      status,
+      is_test_portal: isTestPortal || false,
+    })
 
     if (!organization) {
       return NextResponse.json({ error: 'Failed to create organization' }, { status: 500 })

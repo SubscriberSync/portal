@@ -14,6 +14,8 @@ import {
   Clock,
   Search,
   LayoutDashboard,
+  CreditCard,
+  TestTube,
 } from 'lucide-react'
 import { Organization, IntakeSubmission } from '@/lib/supabase/data'
 
@@ -310,6 +312,7 @@ function OrganizationsTab({
             <tr className="border-b border-[rgba(245,240,232,0.06)]">
               <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Organization</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Status</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Subscription</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Onboarding</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Created</th>
               <th className="text-right px-6 py-4 text-sm font-medium text-[#6B6660]">Actions</th>
@@ -326,6 +329,13 @@ function OrganizationsTab({
                 </td>
                 <td className="px-6 py-4">
                   <StatusBadge status={org.status} />
+                </td>
+                <td className="px-6 py-4">
+                  <SubscriptionBadge
+                    status={org.subscription_status}
+                    isTestPortal={org.is_test_portal}
+                    failedPayments={org.failed_payment_count}
+                  />
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -542,10 +552,54 @@ function IntakeStatusBadge({ status }: { status: IntakeSubmission['status'] }) {
   )
 }
 
+// Subscription Badge Component
+function SubscriptionBadge({
+  status,
+  isTestPortal,
+  failedPayments,
+}: {
+  status: Organization['subscription_status']
+  isTestPortal: boolean | null
+  failedPayments: number | null
+}) {
+  if (isTestPortal) {
+    return (
+      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+        <TestTube className="w-3 h-3" />
+        Test Portal
+      </span>
+    )
+  }
+
+  const statusConfig: Record<string, { color: string; bg: string; border: string; label: string }> = {
+    active: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Active' },
+    trialing: { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', label: 'Trial' },
+    past_due: { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', label: 'Past Due' },
+    canceled: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Canceled' },
+    unpaid: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Unpaid' },
+    none: { color: 'text-[#6B6660]', bg: 'bg-[#252525]', border: 'border-[#333]', label: 'No Sub' },
+  }
+
+  const config = statusConfig[status || 'none'] || statusConfig.none
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${config.bg} ${config.color} ${config.border}`}>
+        <CreditCard className="w-3 h-3" />
+        {config.label}
+      </span>
+      {failedPayments && failedPayments > 0 && (
+        <span className="text-xs text-red-400">({failedPayments} failed)</span>
+      )}
+    </div>
+  )
+}
+
 // Create Organization Modal
 function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
+  const [isTestPortal, setIsTestPortal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -555,7 +609,7 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
     const res = await fetch('/api/admin/organizations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug }),
+      body: JSON.stringify({ name, slug, isTestPortal }),
     })
 
     if (res.ok) {
@@ -601,6 +655,23 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
             <p className="text-xs text-[#6B6660] mt-1">
               Portal URL: subscribersync.com/portal/{slug || 'slug'}
             </p>
+          </div>
+          <div>
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] hover:border-[rgba(245,240,232,0.15)] transition-colors">
+              <input
+                type="checkbox"
+                checked={isTestPortal}
+                onChange={(e) => setIsTestPortal(e.target.checked)}
+                className="w-4 h-4 rounded bg-[#252525] border-[#4A4743] text-[#e07a42] focus:ring-[#e07a42] focus:ring-offset-0"
+              />
+              <div className="flex items-center gap-2">
+                <TestTube className="w-4 h-4 text-purple-400" />
+                <div>
+                  <span className="text-sm text-[#F5F0E8]">Create as Test Portal</span>
+                  <p className="text-xs text-[#6B6660]">No payment required - for testing and demos</p>
+                </div>
+              </div>
+            </label>
           </div>
           <div className="flex gap-3 pt-4">
             <button

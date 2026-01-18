@@ -12,6 +12,16 @@ export interface Organization {
   hosting_renewal: string | null
   airtable_url: string | null
   loom_url: string | null
+  // Subscription fields
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  subscription_status: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | null
+  subscription_started_at: string | null
+  subscription_current_period_end: string | null
+  failed_payment_count: number | null
+  last_payment_failed_at: string | null
+  is_test_portal: boolean | null
+  // Timestamps
   created_at: string
   updated_at: string
 }
@@ -46,7 +56,7 @@ export interface DiscordConfig {
 export interface Integration {
   id: string
   organization_id: string
-  type: 'shopify' | 'recharge' | 'klaviyo' | 'discord'
+  type: 'shopify' | 'recharge' | 'klaviyo' | 'discord' | 'shipstation'
   credentials_encrypted: Record<string, unknown> | null
   connected: boolean
   last_sync_at: string | null
@@ -81,14 +91,50 @@ export interface Shipment {
   subscriber_id: string | null
   type: 'Subscription' | 'One-Off' | null
   sequence_id: number | null
-  status: 'Unfulfilled' | 'Packed' | 'Flagged' | 'Merged' | 'Shipped' | 'Delivered'
+  // Updated status flow: unfulfilled -> ready_to_pack -> packed -> shipped -> delivered
+  status: 'Unfulfilled' | 'Ready to Pack' | 'Packed' | 'Flagged' | 'Merged' | 'Shipped' | 'Delivered'
   flag_reason: string | null
   product_name: string | null
+  variant_name: string | null  // e.g., "Small", "Medium", "Large"
   gift_note: string | null
   tracking_number: string | null
+  carrier: string | null
+  order_number: string | null
+  shopify_order_id: string | null
+  shopify_line_item_id: string | null
+  shipstation_order_id: string | null
+  shipstation_shipment_id: string | null
+  // Batch & Release fields
+  print_batch_id: string | null  // Groups orders printed together
+  print_sequence: number | null  // Order within batch (1, 2, 3...) matches physical label stack
+  shipping_label_url: string | null  // PDF link from ShipStation
+  // Financial tracking
+  financial_status: 'pending' | 'paid' | 'partially_paid' | 'refunded' | 'voided' | null
+  // Weight for shipping calculations
+  weight_oz: number | null
+  // Error tracking for failed label purchases
+  error_log: string | null
+  // Merge tracking
+  merged_into_id: string | null  // If merged, points to the parent shipment
+  merged_shipment_ids: string[] | null  // Parent shipment stores child IDs
+  // Timestamps
   packed_at: string | null
   shipped_at: string | null
+  label_purchased_at: string | null
   created_at: string
+  updated_at: string
+}
+
+export interface PrintBatch {
+  id: string
+  organization_id: string
+  batch_number: number
+  total_labels: number
+  successful_labels: number
+  failed_labels: number
+  label_pdf_url: string | null
+  created_at: string
+  created_by: string | null
 }
 
 // ===================
@@ -528,6 +574,10 @@ export async function createOrganization(data: {
   name: string
   slug: string
   status?: Organization['status']
+  is_test_portal?: boolean
+  stripe_customer_id?: string
+  stripe_subscription_id?: string
+  subscription_status?: Organization['subscription_status']
 }): Promise<Organization | null> {
   const supabase = createServiceClient()
 
@@ -543,6 +593,10 @@ export async function createOrganization(data: {
       status: data.status || 'Discovery',
       step1_complete: false,
       step2_complete: false,
+      is_test_portal: data.is_test_portal || false,
+      stripe_customer_id: data.stripe_customer_id || null,
+      stripe_subscription_id: data.stripe_subscription_id || null,
+      subscription_status: data.is_test_portal ? 'active' : (data.subscription_status || 'none'),
     })
     .select()
     .single()
@@ -569,4 +623,175 @@ export async function deleteOrganization(id: string): Promise<boolean> {
   }
 
   return true
+}
+
+// ===================
+// Pending Checkout Functions
+// ===================
+
+export interface PendingCheckout {
+  id: string
+  stripe_checkout_session_id: string
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  customer_email: string
+  customer_name: string | null
+  company_name: string
+  organization_slug: string
+  status: 'pending' | 'completed' | 'expired' | 'failed'
+  clerk_organization_id: string | null
+  clerk_invitation_id: string | null
+  invitation_sent_at: string | null
+  invitation_accepted_at: string | null
+  organization_id: string | null
+  created_at: string
+  expires_at: string
+  completed_at: string | null
+}
+
+export async function createPendingCheckout(data: {
+  stripe_checkout_session_id: string
+  stripe_customer_id?: string
+  stripe_subscription_id?: string
+  customer_email: string
+  customer_name?: string
+  company_name: string
+  organization_slug: string
+}): Promise<PendingCheckout | null> {
+  const supabase = createServiceClient()
+
+  const { data: checkout, error } = await supabase
+    .from('pending_checkouts')
+    .insert({
+      stripe_checkout_session_id: data.stripe_checkout_session_id,
+      stripe_customer_id: data.stripe_customer_id || null,
+      stripe_subscription_id: data.stripe_subscription_id || null,
+      customer_email: data.customer_email,
+      customer_name: data.customer_name || null,
+      company_name: data.company_name,
+      organization_slug: data.organization_slug,
+      status: 'pending',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[createPendingCheckout] Error:', error)
+    return null
+  }
+
+  return checkout as PendingCheckout
+}
+
+export async function getPendingCheckoutBySessionId(sessionId: string): Promise<PendingCheckout | null> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('pending_checkouts')
+    .select('*')
+    .eq('stripe_checkout_session_id', sessionId)
+    .single()
+
+  if (error || !data) {
+    return null
+  }
+
+  return data as PendingCheckout
+}
+
+export async function updatePendingCheckout(
+  sessionId: string,
+  updates: Partial<Omit<PendingCheckout, 'id' | 'stripe_checkout_session_id' | 'created_at'>>
+): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from('pending_checkouts')
+    .update(updates)
+    .eq('stripe_checkout_session_id', sessionId)
+
+  if (error) {
+    console.error('[updatePendingCheckout] Error:', error)
+    return false
+  }
+
+  return true
+}
+
+export async function getOrganizationByStripeCustomerId(customerId: string): Promise<Organization | null> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('stripe_customer_id', customerId)
+    .single()
+
+  if (error || !data) {
+    return null
+  }
+
+  return data as Organization
+}
+
+export async function getOrganizationByStripeSubscriptionId(subscriptionId: string): Promise<Organization | null> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('stripe_subscription_id', subscriptionId)
+    .single()
+
+  if (error || !data) {
+    return null
+  }
+
+  return data as Organization
+}
+
+// ===================
+// Subscription Event Logging
+// ===================
+
+export async function logSubscriptionEvent(data: {
+  organization_id?: string
+  stripe_event_id: string
+  event_type: string
+  event_data: Record<string, unknown>
+}): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from('subscription_events')
+    .insert({
+      organization_id: data.organization_id || null,
+      stripe_event_id: data.stripe_event_id,
+      event_type: data.event_type,
+      event_data: data.event_data,
+    })
+
+  if (error) {
+    // Duplicate event is OK (idempotency)
+    if (error.code === '23505') {
+      console.log('[logSubscriptionEvent] Duplicate event, skipping:', data.stripe_event_id)
+      return true
+    }
+    console.error('[logSubscriptionEvent] Error:', error)
+    return false
+  }
+
+  return true
+}
+
+export async function isEventProcessed(stripeEventId: string): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { data } = await supabase
+    .from('subscription_events')
+    .select('id')
+    .eq('stripe_event_id', stripeEventId)
+    .single()
+
+  return !!data
 }
