@@ -7,7 +7,8 @@ export const ADMIN_EMAILS = [
 
 export function isAdmin(email: string | null | undefined): boolean {
   if (!email) return false
-  return ADMIN_EMAILS.includes(email.toLowerCase() as typeof ADMIN_EMAILS[number])
+  const lowerEmail = email.toLowerCase()
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === lowerEmail)
 }
 
 // Intake item validation rules for auto-approval
