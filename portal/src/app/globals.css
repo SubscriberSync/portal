@@ -3,41 +3,51 @@
 @tailwind utilities;
 
 /* ============================================
-   BACKSTAGE — Premium Portal Design System
-   Refined. Luxurious. Commanding.
+   BACKSTAGE — Liquid Glass Design System
+   Warm ember glowing through frosted glass.
    ============================================ */
 
 :root {
-  /* Core Palette - Dark Luxury */
-  --background: #0D0D0D;
-  --background-secondary: #151515;
-  --background-elevated: #1A1A1A;
-  --background-surface: #1E1E1E;
+  /* Core Palette - Deep Black Base */
+  --background: #0c0c0c;
+  --background-secondary: #111111;
+  --background-elevated: #161616;
+  --background-surface: #1a1a1a;
 
-  /* Text Hierarchy */
-  --foreground: #F5F0E8;
-  --foreground-secondary: #A8A39B;
-  --foreground-tertiary: #6B6660;
-  --foreground-muted: #4A4743;
+  /* Glass Surfaces */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-bg-hover: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-hover: rgba(255, 255, 255, 0.1);
+  --glass-inset: rgba(255, 255, 255, 0.05);
 
-  /* Accent - Champagne Gold */
-  --accent: #C9A962;
-  --accent-light: #D4B977;
-  --accent-dark: #A8893F;
-  --accent-glow: rgba(201, 169, 98, 0.15);
+  /* Text Hierarchy - Cool & Refined */
+  --foreground: #ffffff;
+  --foreground-secondary: #e4e4e7;
+  --foreground-tertiary: #a1a1aa;
+  --foreground-muted: #71717a;
 
-  /* Status Colors */
-  --success: #5CB87A;
-  --success-glow: rgba(92, 184, 122, 0.12);
-  --warning: #D4A853;
-  --warning-glow: rgba(212, 168, 83, 0.12);
-  --error: #D47070;
-  --error-glow: rgba(212, 112, 112, 0.12);
+  /* Accent - Burnt Orange */
+  --accent: #e07a42;
+  --accent-light: #e8935f;
+  --accent-dark: #c96a35;
+  --accent-glow: rgba(224, 122, 66, 0.15);
+  --accent-glow-strong: rgba(224, 122, 66, 0.25);
+
+  /* Status Colors - Orange as Success */
+  --success: #e07a42;
+  --success-glow: rgba(224, 122, 66, 0.12);
+  --warning: #fbbf24;
+  --warning-glow: rgba(251, 191, 36, 0.12);
+  --error: #ef4444;
+  --error-glow: rgba(239, 68, 68, 0.12);
+  --info: #3b82f6;
+  --info-glow: rgba(59, 130, 246, 0.12);
 
   /* Borders & Dividers */
-  --border: rgba(245, 240, 232, 0.06);
-  --border-strong: rgba(245, 240, 232, 0.1);
-  --border-accent: rgba(201, 169, 98, 0.25);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+  --border-accent: rgba(224, 122, 66, 0.3);
 }
 
 /* Base Typography */
@@ -48,7 +58,7 @@ html {
 }
 
 body {
-  font-family: var(--font-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* ============================================
@@ -235,53 +245,106 @@ body {
 }
 
 /* ============================================
-   CARDS & SURFACES
+   LIQUID GLASS SURFACES
    ============================================ */
 
+/* Base Glass Panel */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px var(--glass-inset) inset,
+    0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.glass-panel-hover {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px var(--glass-inset) inset,
+    0 20px 40px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px var(--glass-inset) inset,
+    0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* Accent Glow Effect */
+.accent-glow {
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+
+.accent-glow-strong {
+  box-shadow: 0 0 40px var(--accent-glow-strong);
+}
+
+/* Legacy surface classes mapped to glass */
 .surface {
-  background: var(--background-secondary);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
 }
 
 .surface-elevated {
-  background: var(--background-elevated);
-  border: 1px solid var(--border-strong);
+  background: var(--glass-bg-hover);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border-hover);
   border-radius: 20px;
 }
 
 .surface-glass {
-  background: rgba(21, 21, 21, 0.7);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
+  box-shadow:
+    0 0 0 1px var(--glass-inset) inset,
+    0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .surface-interactive {
-  background: var(--background-secondary);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .surface-interactive:hover {
-  border-color: var(--border-strong);
-  background: var(--background-elevated);
-  transform: translateY(-1px);
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-hover);
+  transform: translateY(-2px);
 }
 
-/* Premium Card Style */
+/* Premium Card - Glass with Orange Top Accent */
 .card-premium {
-  background: linear-gradient(
-    135deg,
-    var(--background-secondary) 0%,
-    var(--background-elevated) 100%
-  );
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   position: relative;
   overflow: hidden;
+  box-shadow:
+    0 0 0 1px var(--glass-inset) inset,
+    0 20px 40px rgba(0, 0, 0, 0.3);
 }
 
 .card-premium::before {
@@ -297,7 +360,7 @@ body {
     var(--accent) 50%,
     transparent 100%
   );
-  opacity: 0.3;
+  opacity: 0.5;
 }
 
 /* ============================================
@@ -315,46 +378,66 @@ body {
   cursor: pointer;
 }
 
+/* Primary - Solid Burnt Orange */
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-  color: #0D0D0D;
+  background: var(--accent);
+  color: #0c0c0c;
   padding: 14px 28px;
   font-weight: 600;
   border: none;
-  box-shadow: 0 4px 16px var(--accent-glow);
+  box-shadow: 0 4px 20px var(--accent-glow);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+  background: var(--accent-light);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--accent-glow);
+  box-shadow: 0 8px 30px var(--accent-glow-strong);
 }
 
 .btn-primary:active {
   transform: translateY(0);
+  background: var(--accent-dark);
 }
 
+/* Secondary - Glass Style */
 .btn-secondary {
-  background: var(--background-elevated);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--foreground);
   padding: 14px 28px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--glass-border);
 }
 
 .btn-secondary:hover {
-  background: var(--background-surface);
-  border-color: var(--border-accent);
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
 }
 
+/* Ghost - Minimal */
 .btn-ghost {
   background: transparent;
-  color: var(--foreground-secondary);
+  color: var(--foreground-tertiary);
   padding: 10px 16px;
 }
 
 .btn-ghost:hover {
-  background: var(--background-elevated);
+  background: var(--glass-bg);
   color: var(--foreground);
+}
+
+/* Orange Outline Button */
+.btn-outline-accent {
+  background: transparent;
+  color: var(--accent);
+  padding: 14px 28px;
+  border: 1px solid var(--accent);
+  font-weight: 600;
+}
+
+.btn-outline-accent:hover {
+  background: var(--accent-glow);
+  border-color: var(--accent-light);
 }
 
 /* ============================================
@@ -370,18 +453,20 @@ body {
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .status-live {
-  background: var(--success-glow);
-  color: var(--success);
-  border: 1px solid rgba(92, 184, 122, 0.2);
-}
-
-.status-building {
   background: var(--accent-glow);
   color: var(--accent);
   border: 1px solid var(--border-accent);
+}
+
+.status-building {
+  background: var(--warning-glow);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
 .status-dot {
@@ -411,7 +496,7 @@ body {
 
 .progress-track {
   height: 4px;
-  background: var(--background-surface);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 100px;
   overflow: hidden;
 }
@@ -421,6 +506,7 @@ body {
   background: linear-gradient(90deg, var(--accent-dark) 0%, var(--accent) 100%);
   border-radius: 100px;
   transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 /* ============================================
@@ -429,27 +515,29 @@ body {
 
 .divider {
   height: 1px;
-  background: var(--border);
+  background: var(--glass-border);
 }
 
 .divider-fade {
   height: 1px;
-  background: linear-gradient(to right, transparent, var(--border-strong), transparent);
+  background: linear-gradient(to right, transparent, var(--glass-border-hover), transparent);
 }
 
-.divider-gold {
+.divider-accent {
   height: 1px;
   background: linear-gradient(to right, transparent, var(--accent), transparent);
-  opacity: 0.2;
+  opacity: 0.3;
 }
 
 /* ============================================
-   INPUTS
+   INPUTS - Glass Style
    ============================================ */
 
 input, textarea, select {
-  background: var(--background-elevated);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   padding: 14px 18px;
   color: var(--foreground);
@@ -468,6 +556,7 @@ select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
+  background: var(--glass-bg-hover);
 }
 
 /* ============================================
@@ -510,7 +599,7 @@ select:focus {
    SPECIAL EFFECTS
    ============================================ */
 
-/* Gold accent underline */
+/* Orange accent underline */
 .accent-underline {
   position: relative;
   display: inline-block;
@@ -532,7 +621,54 @@ select:focus {
 }
 
 .glow-on-hover:hover {
-  box-shadow: 0 0 40px var(--accent-glow);
+  box-shadow: 0 0 40px var(--accent-glow-strong);
+}
+
+/* Ember glow - warm orange radiating through glass */
+.ember-glow {
+  position: relative;
+}
+
+.ember-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--accent-glow-strong), transparent 50%);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.ember-glow:hover::before {
+  opacity: 1;
+}
+
+/* Glass shine effect */
+.glass-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  transform: skewX(-15deg);
+  transition: left 0.6s ease;
+}
+
+.glass-shine:hover::after {
+  left: 150%;
 }
 
 /* ============================================

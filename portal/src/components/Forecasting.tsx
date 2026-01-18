@@ -71,22 +71,22 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
     <div className="space-y-8">
       {/* Section Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 rounded-xl bg-[rgba(224,122,66,0.15)] border border-[rgba(224,122,66,0.2)] flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-[#e07a42]" />
         </div>
         <div>
-          <h3 className="text-headline text-foreground">Inventory Forecast</h3>
-          <p className="text-foreground-secondary text-sm">Plan your next 3 months of inventory</p>
+          <h3 className="text-headline text-white">Inventory Forecast</h3>
+          <p className="text-[#71717a] text-sm">Plan your next 3 months of inventory</p>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Sequence Histogram - Takes 2 columns */}
-        <div className="lg:col-span-2 p-6 rounded-2xl bg-background-secondary border border-border">
+        {/* Sequence Histogram - Glass Panel */}
+        <div className="lg:col-span-2 p-6 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
           <div className="flex items-center justify-between mb-6">
-            <h4 className="font-semibold text-foreground">Subscribers by Episode</h4>
+            <h4 className="font-semibold text-white">Subscribers by Episode</h4>
             {data?.totalActive && (
-              <span className="text-sm text-foreground-tertiary">
+              <span className="text-sm text-[#71717a]">
                 {data.totalActive} active subscribers
               </span>
             )}
@@ -95,8 +95,8 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
           {isLoading ? (
             <div className="h-[300px] flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-foreground-tertiary">Loading forecast...</span>
+                <div className="w-8 h-8 border-2 border-[#e07a42] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-[#71717a]">Loading forecast...</span>
               </div>
             </div>
           ) : chartData.length > 0 ? (
@@ -107,21 +107,21 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#6b7a87', fontSize: 12 }}
+                    tick={{ fill: '#71717a', fontSize: 12 }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#6b7a87', fontSize: 12 }}
+                    tick={{ fill: '#71717a', fontSize: 12 }}
                   />
                   <Tooltip
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload
                         return (
-                          <div className="bg-foreground text-white px-3 py-2 rounded-lg shadow-lg">
+                          <div className="bg-[rgba(255,255,255,0.1)] backdrop-blur-xl text-white px-3 py-2 rounded-lg shadow-lg border border-[rgba(255,255,255,0.1)]">
                             <p className="font-medium">{data.name}</p>
-                            <p className="text-sm opacity-90">{data.subscribers} subscribers</p>
+                            <p className="text-sm text-[#e4e4e7]">{data.subscribers} subscribers</p>
                           </div>
                         )
                       }
@@ -142,7 +142,7 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
                   </Bar>
                   <defs>
                     <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#E07A42" />
+                      <stop offset="0%" stopColor="#e07a42" />
                       <stop offset="100%" stopColor="#c96a35" />
                     </linearGradient>
                   </defs>
@@ -150,25 +150,25 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-foreground-tertiary">
+            <div className="h-[300px] flex items-center justify-center text-[#71717a]">
               No episode data available
             </div>
           )}
 
-          {/* Forecast Insight */}
+          {/* Forecast Insight - Glass with Orange accent */}
           {nextMonthForecast.length > 0 && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-xl">
+            <div className="mt-6 p-4 bg-[rgba(224,122,66,0.1)] border border-[rgba(224,122,66,0.2)] rounded-xl backdrop-blur-sm">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                <div className="w-8 h-8 rounded-lg bg-[rgba(224,122,66,0.2)] flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-4 h-4 text-[#e07a42]" />
                 </div>
                 <div>
-                  <p className="font-medium text-purple-900 mb-1">Next Month Forecast</p>
-                  <p className="text-sm text-purple-700">
+                  <p className="font-medium text-[#e07a42] mb-1">Next Month Forecast</p>
+                  <p className="text-sm text-[#e4e4e7]">
                     {nextMonthForecast.map((f, i) => (
                       <span key={f.currentBox}>
                         {i > 0 && ' + '}
-                        <span className="font-semibold">{f.units}</span> units of Box {f.nextBox}
+                        <span className="font-semibold text-white">{f.units}</span> units of Box {f.nextBox}
                       </span>
                     ))}
                   </p>
@@ -178,19 +178,19 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
           )}
         </div>
 
-        {/* Sidecar Counter - 1 column */}
-        <div className="p-6 rounded-2xl bg-background-secondary border border-border">
+        {/* Sidecar Counter - Glass Panel */}
+        <div className="p-6 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
           <div className="flex items-center gap-2 mb-6">
-            <Package className="w-5 h-5 text-amber-500" />
-            <h4 className="font-semibold text-foreground">Add-On Products</h4>
+            <Package className="w-5 h-5 text-[#e07a42]" />
+            <h4 className="font-semibold text-white">Add-On Products</h4>
           </div>
 
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-background-elevated rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-background-elevated rounded w-1/2" />
+                  <div className="h-4 bg-[rgba(255,255,255,0.03)] rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-[rgba(255,255,255,0.03)] rounded w-1/2" />
                 </div>
               ))}
             </div>
@@ -199,24 +199,24 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
               {data.sidecars.map((sidecar) => (
                 <div
                   key={sidecar.name}
-                  className="p-4 bg-background-elevated rounded-xl hover:bg-border/50 transition-colors"
+                  className="p-4 bg-[rgba(255,255,255,0.02)] rounded-xl hover:bg-[rgba(255,255,255,0.04)] transition-colors border border-[rgba(255,255,255,0.04)]"
                 >
                   <div className="mb-2">
-                    <span className="text-sm font-medium text-foreground line-clamp-1">
+                    <span className="text-sm font-medium text-white line-clamp-1">
                       {sidecar.name}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span className="text-foreground-secondary">
-                        <span className="font-semibold text-foreground">{sidecar.unitsToPack}</span> to pack
+                      <div className="w-2 h-2 rounded-full bg-[#e07a42]" />
+                      <span className="text-[#a1a1aa]">
+                        <span className="font-semibold text-white">{sidecar.unitsToPack}</span> to pack
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-green-400" />
-                      <span className="text-foreground-secondary">
-                        <span className="font-semibold text-foreground">{sidecar.velocity}</span>/mo
+                      <div className="w-2 h-2 rounded-full bg-[#e8935f]" />
+                      <span className="text-[#a1a1aa]">
+                        <span className="font-semibold text-white">{sidecar.velocity}</span>/mo
                       </span>
                     </div>
                   </div>
@@ -224,17 +224,17 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
               ))}
 
               {/* Total Summary */}
-              <div className="mt-4 pt-4 border-t border-border">
+              <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-foreground-secondary">Total to Pack</span>
-                  <span className="text-lg font-bold text-foreground">
+                  <span className="text-sm text-[#a1a1aa]">Total to Pack</span>
+                  <span className="text-lg font-bold text-[#e07a42]">
                     {data.sidecars.reduce((sum, s) => sum + s.unitsToPack, 0)}
                   </span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-foreground-tertiary text-sm py-12">
+            <div className="h-full flex items-center justify-center text-[#71717a] text-sm py-12">
               No add-on products
             </div>
           )}

@@ -61,17 +61,17 @@ export default async function PortalPage({ params }: PortalPageProps) {
         <section className="animate-in">
           <div className="space-y-6">
             <div className="space-y-4">
-              <h2 className="text-display">
+              <h2 className="text-display text-white">
                 Welcome to<br />
-                <span className="text-[#C9A962]">Backstage</span>
+                <span className="text-[#e07a42]">Backstage</span>
               </h2>
-              <p className="text-lg text-[#A8A39B] max-w-2xl leading-relaxed">
+              <p className="text-lg text-[#a1a1aa] max-w-2xl leading-relaxed">
                 Your subscriber data flows seamlessly between Recharge, Airtable, and Klaviyo—all in real-time.
               </p>
             </div>
 
-            {/* Decorative line */}
-            <div className="w-24 h-px bg-gradient-to-r from-[#C9A962] to-transparent" />
+            {/* Decorative line - Orange */}
+            <div className="w-24 h-px bg-gradient-to-r from-[#e07a42] to-transparent" />
           </div>
         </section>
 
@@ -113,23 +113,23 @@ export default async function PortalPage({ params }: PortalPageProps) {
               <Forecasting clientSlug={params.slug} />
             </section>
 
-            {/* Dashboard Link */}
+            {/* Dashboard Link - Glass Panel */}
             {client.airtableUrl && (
               <section className="animate-in stagger-4">
-                <div className="relative p-8 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] overflow-hidden">
+                <div className="relative p-8 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
                   {/* Top accent line */}
-                  <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[rgba(245,240,232,0.1)] to-transparent" />
+                  <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.1)] to-transparent" />
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-[#F5F0E8] mb-1">Dashboard Access</h3>
-                      <p className="text-sm text-[#6B6660]">View and manage your subscriber data</p>
+                      <h3 className="text-lg font-semibold text-white mb-1">Dashboard Access</h3>
+                      <p className="text-sm text-[#71717a]">View and manage your subscriber data</p>
                     </div>
                     <a
                       href={client.airtableUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#C9A962] to-[#A8893F] text-[#0D0D0D] font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#C9A962]/20 hover:scale-[1.02]"
+                      className="group inline-flex items-center gap-2 px-6 py-3 bg-[#e07a42] text-[#0c0c0c] font-semibold rounded-xl transition-all hover:bg-[#e8935f] hover:shadow-lg hover:shadow-[#e07a42]/25 hover:scale-[1.02]"
                     >
                       Open Airtable
                       <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,10 +145,10 @@ export default async function PortalPage({ params }: PortalPageProps) {
             {client.loomUrl && (
               <section className="animate-in stagger-5">
                 <div className="mb-6">
-                  <h3 className="text-headline text-[#F5F0E8] mb-2">Video Walkthrough</h3>
-                  <p className="text-sm text-[#6B6660]">Learn how to use your system</p>
+                  <h3 className="text-headline text-white mb-2">Video Walkthrough</h3>
+                  <p className="text-sm text-[#71717a]">Learn how to use your system</p>
                 </div>
-                <div className="aspect-video rounded-2xl overflow-hidden bg-[#151515] border border-[rgba(245,240,232,0.06)]">
+                <div className="aspect-video rounded-2xl overflow-hidden bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)]">
                   <iframe
                     src={client.loomUrl.replace('share', 'embed')}
                     frameBorder="0"
@@ -159,27 +159,27 @@ export default async function PortalPage({ params }: PortalPageProps) {
               </section>
             )}
 
-            {/* Klaviyo Integration */}
+            {/* Klaviyo Integration - Glass with Orange accent */}
             <section className="animate-in stagger-5">
-              <div className="relative p-8 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] overflow-hidden">
+              <div className="relative p-8 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
                 {/* Top accent line */}
-                <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#9333ea]/30 to-transparent" />
+                <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#e07a42]/40 to-transparent" />
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-12 h-12 rounded-xl bg-[rgba(224,122,66,0.15)] flex items-center justify-center shadow-lg shadow-[#e07a42]/20 border border-[rgba(224,122,66,0.2)]">
+                      <svg className="w-6 h-6 text-[#e07a42]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-[#F5F0E8] mb-1">Klaviyo Integration</h3>
-                      <p className="text-sm text-[#6B6660]">View all synced properties and events for flows & segments</p>
+                      <h3 className="text-lg font-semibold text-white mb-1">Klaviyo Integration</h3>
+                      <p className="text-sm text-[#71717a]">View all synced properties and events for flows & segments</p>
                     </div>
                   </div>
                   <Link
                     href={`/portal/${params.slug}/klaviyo`}
-                    className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-purple-500/20 hover:scale-[1.02]"
+                    className="group inline-flex items-center gap-2 px-6 py-3 bg-[#e07a42] text-[#0c0c0c] font-semibold rounded-xl transition-all hover:bg-[#e8935f] hover:shadow-lg hover:shadow-[#e07a42]/25 hover:scale-[1.02]"
                   >
                     View Properties
                     <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -198,25 +198,25 @@ export default async function PortalPage({ params }: PortalPageProps) {
         </section>
       </div>
 
-      {/* Footer - Premium and refined */}
-      <footer className="border-t border-[rgba(245,240,232,0.06)] mt-16">
+      {/* Footer - Glass style */}
+      <footer className="border-t border-[rgba(255,255,255,0.06)] mt-16">
         <div className="max-w-5xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="relative w-8 h-8 bg-gradient-to-br from-[#C9A962] to-[#8B7355] rounded-lg flex items-center justify-center">
-                <span className="text-xs font-bold text-[#0D0D0D]">B</span>
+              <div className="relative w-8 h-8 bg-[#e07a42] rounded-lg flex items-center justify-center shadow-lg shadow-[#e07a42]/20">
+                <span className="text-xs font-bold text-[#0c0c0c]">B</span>
                 {/* Shine overlay */}
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/20 to-transparent" />
               </div>
-              <span className="text-sm text-[#6B6660]">
-                Powered by <span className="text-[#A8A39B] font-medium">Backstage</span>
+              <span className="text-sm text-[#71717a]">
+                Powered by <span className="text-[#a1a1aa] font-medium">Backstage</span>
               </span>
             </div>
             <a
               href="https://subscribersync.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-[#6B6660] hover:text-[#C9A962] transition-colors"
+              className="text-sm text-[#71717a] hover:text-[#e07a42] transition-colors"
             >
               subscribersync.com
             </a>

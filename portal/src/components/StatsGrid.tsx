@@ -27,41 +27,41 @@ function StatCard({
   label,
   value,
   icon: Icon,
-  accentColor = 'gold',
+  accentColor = 'orange',
   isLoading = false,
   delay = 0,
 }: {
   label: string
   value: number
   icon: React.ElementType
-  accentColor?: 'gold' | 'success' | 'warning' | 'muted'
+  accentColor?: 'orange' | 'success' | 'warning' | 'muted'
   isLoading?: boolean
   delay?: number
 }) {
   const colorStyles = {
-    gold: {
-      icon: 'text-[#C9A962]',
-      iconBg: 'bg-[#C9A962]/10',
-      value: 'text-[#C9A962]',
-      border: 'border-[#C9A962]/10',
+    orange: {
+      icon: 'text-[#e07a42]',
+      iconBg: 'bg-[rgba(224,122,66,0.1)]',
+      value: 'text-[#e07a42]',
+      hasAccentLine: true,
     },
     success: {
-      icon: 'text-[#5CB87A]',
-      iconBg: 'bg-[#5CB87A]/10',
-      value: 'text-[#5CB87A]',
-      border: 'border-[#5CB87A]/10',
+      icon: 'text-[#e07a42]',
+      iconBg: 'bg-[rgba(224,122,66,0.1)]',
+      value: 'text-[#e07a42]',
+      hasAccentLine: false,
     },
     warning: {
-      icon: 'text-[#D4A853]',
-      iconBg: 'bg-[#D4A853]/10',
-      value: 'text-[#D4A853]',
-      border: 'border-[#D4A853]/10',
+      icon: 'text-[#fbbf24]',
+      iconBg: 'bg-[rgba(251,191,36,0.1)]',
+      value: 'text-[#fbbf24]',
+      hasAccentLine: false,
     },
     muted: {
-      icon: 'text-[#6B6660]',
-      iconBg: 'bg-[#6B6660]/10',
-      value: 'text-[#6B6660]',
-      border: 'border-[rgba(245,240,232,0.06)]',
+      icon: 'text-[#71717a]',
+      iconBg: 'bg-[rgba(255,255,255,0.03)]',
+      value: 'text-[#71717a]',
+      hasAccentLine: false,
     },
   }
 
@@ -69,31 +69,28 @@ function StatCard({
 
   return (
     <div
-      className={`relative p-6 rounded-2xl bg-[#151515] border ${colors.border} overflow-hidden animate-in`}
+      className="relative p-6 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] overflow-hidden animate-in shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]"
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-
-      {/* Top accent line for gold cards */}
-      {accentColor === 'gold' && (
-        <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#C9A962]/40 to-transparent" />
+      {/* Top accent line for primary cards */}
+      {colors.hasAccentLine && (
+        <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#e07a42]/50 to-transparent" />
       )}
 
       <div className="relative">
         {/* Icon */}
-        <div className={`w-10 h-10 rounded-xl ${colors.iconBg} flex items-center justify-center mb-4`}>
+        <div className={`w-10 h-10 rounded-xl ${colors.iconBg} flex items-center justify-center mb-4 backdrop-blur-sm`}>
           <Icon className={`w-5 h-5 ${colors.icon}`} />
         </div>
 
         {/* Label */}
-        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#6B6660] mb-2">
+        <p className="text-[11px] font-semibold tracking-[0.12em] uppercase text-[#71717a] mb-2">
           {label}
         </p>
 
         {/* Value */}
         {isLoading ? (
-          <div className="h-12 w-24 rounded-lg bg-[#1A1A1A] animate-shimmer" />
+          <div className="h-12 w-24 rounded-lg bg-[rgba(255,255,255,0.03)] animate-shimmer" />
         ) : (
           <p className={`text-4xl font-semibold font-mono tracking-tight ${colors.value}`}>
             {value.toLocaleString()}
@@ -146,17 +143,17 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
       {/* Header with Date Range Selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-headline text-[#F5F0E8] mb-1">Subscriber Overview</h2>
-          <p className="text-sm text-[#6B6660]">Real-time metrics from your subscriber base</p>
+          <h2 className="text-headline text-white mb-1">Subscriber Overview</h2>
+          <p className="text-sm text-[#71717a]">Real-time metrics from your subscriber base</p>
         </div>
 
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-2.5 px-4 py-2.5 bg-[#151515] border border-[rgba(245,240,232,0.08)] rounded-xl hover:bg-[#1A1A1A] hover:border-[rgba(245,240,232,0.12)] transition-all"
+            className="flex items-center gap-2.5 px-4 py-2.5 bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] rounded-xl hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.1)] transition-all"
           >
-            <span className="text-sm font-medium text-[#F5F0E8]">{selectedOption?.label}</span>
-            <ChevronDown className={`w-4 h-4 text-[#6B6660] transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-medium text-white">{selectedOption?.label}</span>
+            <ChevronDown className={`w-4 h-4 text-[#71717a] transition-transform duration-200 ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
 
           {showDropdown && (
@@ -165,7 +162,7 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
                 className="fixed inset-0 z-40"
                 onClick={() => setShowDropdown(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-48 bg-[#151515] rounded-xl shadow-2xl border border-[rgba(245,240,232,0.08)] overflow-hidden z-50 animate-in">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-[rgba(255,255,255,0.03)] backdrop-blur-xl rounded-xl shadow-2xl border border-[rgba(255,255,255,0.08)] overflow-hidden z-50 animate-in">
                 {DATE_RANGE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
@@ -175,8 +172,8 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
                     }}
                     className={`w-full px-4 py-3 text-left text-sm transition-colors ${
                       dateRange === option.value
-                        ? 'text-[#C9A962] font-medium bg-[#C9A962]/5'
-                        : 'text-[#A8A39B] hover:bg-[#1A1A1A] hover:text-[#F5F0E8]'
+                        ? 'text-[#e07a42] font-medium bg-[rgba(224,122,66,0.1)]'
+                        : 'text-[#a1a1aa] hover:bg-[rgba(255,255,255,0.03)] hover:text-white'
                     }`}
                   >
                     {option.label}
@@ -194,7 +191,7 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
           label="Total Subscribers"
           value={stats?.total ?? 0}
           icon={Users}
-          accentColor="gold"
+          accentColor="orange"
           isLoading={isLoading}
           delay={0}
         />
@@ -224,31 +221,31 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
         />
       </div>
 
-      {/* Summary Bar */}
-      <div className="flex items-center justify-center gap-8 py-5 px-6 rounded-2xl bg-[#151515]/50 border border-[rgba(245,240,232,0.04)]">
+      {/* Summary Bar - Glass */}
+      <div className="flex items-center justify-center gap-8 py-5 px-6 rounded-2xl bg-[rgba(255,255,255,0.02)] backdrop-blur-xl border border-[rgba(255,255,255,0.04)]">
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#5CB87A]" />
-          <span className="text-sm text-[#A8A39B]">
-            <span className="text-[#5CB87A] font-semibold">{activeRate}%</span> active rate
+          <div className="w-2.5 h-2.5 rounded-full bg-[#e07a42]" />
+          <span className="text-sm text-[#a1a1aa]">
+            <span className="text-[#e07a42] font-semibold">{activeRate}%</span> active rate
           </span>
         </div>
 
-        <div className="w-px h-4 bg-[rgba(245,240,232,0.08)]" />
+        <div className="w-px h-4 bg-[rgba(255,255,255,0.08)]" />
 
         <div className="flex items-center gap-3">
           <div className="relative w-2.5 h-2.5">
-            <div className="absolute inset-0 bg-[#C9A962] rounded-full" />
-            <div className="absolute inset-0 bg-[#C9A962] rounded-full animate-ping opacity-40" />
+            <div className="absolute inset-0 bg-[#e07a42] rounded-full" />
+            <div className="absolute inset-0 bg-[#e07a42] rounded-full animate-ping opacity-40" />
           </div>
-          <span className="text-sm text-[#A8A39B]">
+          <span className="text-sm text-[#a1a1aa]">
             Real-time sync
           </span>
         </div>
 
         {isLoading && (
           <>
-            <div className="w-px h-4 bg-[rgba(245,240,232,0.08)]" />
-            <span className="text-xs text-[#6B6660] font-medium">Refreshing...</span>
+            <div className="w-px h-4 bg-[rgba(255,255,255,0.08)]" />
+            <span className="text-xs text-[#71717a] font-medium">Refreshing...</span>
           </>
         )}
       </div>

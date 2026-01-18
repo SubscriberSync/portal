@@ -10,17 +10,45 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#F2F0EF',
-        'background-secondary': '#FFFFFF',
-        'background-elevated': '#E8E6E5',
-        foreground: '#021124',
-        'foreground-secondary': '#3d4f5f',
-        'foreground-tertiary': '#6b7a87',
-        accent: '#E07A42',
-        'accent-hover': '#c96a35',
-        success: '#22c55e',
-        border: 'rgba(2, 17, 36, 0.08)',
-        'border-strong': 'rgba(2, 17, 36, 0.12)',
+        // Core - Deep Black
+        background: '#0c0c0c',
+        'background-secondary': '#111111',
+        'background-elevated': '#161616',
+        'background-surface': '#1a1a1a',
+
+        // Glass Surfaces
+        glass: {
+          DEFAULT: 'rgba(255, 255, 255, 0.03)',
+          hover: 'rgba(255, 255, 255, 0.06)',
+          border: 'rgba(255, 255, 255, 0.06)',
+          'border-hover': 'rgba(255, 255, 255, 0.1)',
+        },
+
+        // Text - Cool & Refined
+        foreground: '#ffffff',
+        'foreground-secondary': '#e4e4e7',
+        'foreground-tertiary': '#a1a1aa',
+        'foreground-muted': '#71717a',
+
+        // Accent - Burnt Orange
+        accent: {
+          DEFAULT: '#e07a42',
+          light: '#e8935f',
+          dark: '#c96a35',
+        },
+        'accent-glow': 'rgba(224, 122, 66, 0.15)',
+        'accent-glow-strong': 'rgba(224, 122, 66, 0.25)',
+
+        // Status Colors
+        success: '#e07a42', // Orange as success for differentiation
+        warning: '#fbbf24',
+        error: '#ef4444',
+        info: '#3b82f6',
+
+        // Borders
+        border: 'rgba(255, 255, 255, 0.06)',
+        'border-strong': 'rgba(255, 255, 255, 0.1)',
+        'border-accent': 'rgba(224, 122, 66, 0.3)',
       },
       fontFamily: {
         sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
@@ -38,11 +66,22 @@ const config: Config = {
         '2xl': '20px',
         '3xl': '24px',
       },
+      backdropBlur: {
+        'glass': '20px',
+        'glass-lg': '24px',
+      },
+      boxShadow: {
+        'glass': '0 0 0 1px rgba(255,255,255,0.05) inset, 0 20px 40px rgba(0,0,0,0.3)',
+        'glass-hover': '0 0 0 1px rgba(255,255,255,0.05) inset, 0 25px 50px rgba(0,0,0,0.4)',
+        'accent-glow': '0 0 30px rgba(224, 122, 66, 0.15)',
+        'accent-glow-strong': '0 0 40px rgba(224, 122, 66, 0.25)',
+      },
       animation: {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'fade-up': 'fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'scale-up': 'scale-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'ember-pulse': 'ember-pulse 3s ease-in-out infinite',
       },
       keyframes: {
         'fade-in': {
@@ -60,6 +99,10 @@ const config: Config = {
         'pulse-soft': {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.6' },
+        },
+        'ember-pulse': {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(224, 122, 66, 0.15)' },
+          '50%': { boxShadow: '0 0 40px rgba(224, 122, 66, 0.3)' },
         },
       },
       transitionTimingFunction: {

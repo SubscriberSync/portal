@@ -41,15 +41,15 @@ export default function StatusBar({ status }: StatusBarProps) {
   }
 
   return (
-    <div className="relative p-8 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] overflow-hidden">
+    <div className="relative p-8 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] overflow-hidden shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
       {/* Top accent line */}
-      <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#C9A962]/30 to-transparent" />
+      <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#e07a42]/40 to-transparent" />
 
       {/* Dismiss button - only show when Live */}
       {status === 'Live' && (
         <button
           onClick={handleDismiss}
-          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-[#1A1A1A] text-[#6B6660] hover:text-[#A8A39B] transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-lg hover:bg-[rgba(255,255,255,0.03)] text-[#71717a] hover:text-[#a1a1aa] transition-colors"
           title="Dismiss"
         >
           <X className="w-5 h-5" />
@@ -59,24 +59,24 @@ export default function StatusBar({ status }: StatusBarProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h3 className="text-lg font-semibold text-[#F5F0E8]">Build Progress</h3>
-          <p className="text-sm text-[#6B6660] mt-1">
+          <h3 className="text-lg font-semibold text-white">Build Progress</h3>
+          <p className="text-sm text-[#71717a] mt-1">
             {status === 'Live' ? 'Your system is live and running' : `Currently in ${status} phase`}
           </p>
         </div>
         <div className="text-right pr-8">
-          <span className="text-4xl font-semibold text-[#C9A962] font-mono tracking-tight">
+          <span className="text-4xl font-semibold text-[#e07a42] font-mono tracking-tight">
             {Math.round(progress)}%
           </span>
-          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#6B6660] mt-1">Complete</p>
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#71717a] mt-1">Complete</p>
         </div>
       </div>
 
       {/* Progress Bar */}
       <div className="relative mb-10">
-        <div className="h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#A8893F] to-[#C9A962] rounded-full transition-all duration-1000 ease-out"
+            className="h-full bg-gradient-to-r from-[#c96a35] to-[#e07a42] rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(224,122,66,0.4)]"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -95,10 +95,10 @@ export default function StatusBar({ status }: StatusBarProps) {
               <div
                 className={`
                   w-11 h-11 rounded-xl flex items-center justify-center text-lg
-                  transition-all duration-300 border
-                  ${isCompleted ? 'bg-[#C9A962]/10 border-[#C9A962]/20 text-[#C9A962]' : ''}
-                  ${isCurrent ? 'bg-gradient-to-br from-[#C9A962] to-[#A8893F] border-transparent text-[#0D0D0D] shadow-lg shadow-[#C9A962]/20' : ''}
-                  ${isPending ? 'bg-[#1A1A1A] border-[rgba(245,240,232,0.06)] text-[#4A4743]' : ''}
+                  transition-all duration-300 border backdrop-blur-sm
+                  ${isCompleted ? 'bg-[rgba(224,122,66,0.1)] border-[rgba(224,122,66,0.2)] text-[#e07a42]' : ''}
+                  ${isCurrent ? 'bg-[#e07a42] border-transparent text-[#0c0c0c] shadow-lg shadow-[#e07a42]/25' : ''}
+                  ${isPending ? 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.06)] text-[#71717a]' : ''}
                 `}
               >
                 {isCompleted ? (
@@ -112,9 +112,9 @@ export default function StatusBar({ status }: StatusBarProps) {
               <span
                 className={`
                   text-xs font-medium mt-3 transition-colors duration-300
-                  ${isCompleted ? 'text-[#C9A962]' : ''}
-                  ${isCurrent ? 'text-[#F5F0E8]' : ''}
-                  ${isPending ? 'text-[#4A4743]' : ''}
+                  ${isCompleted ? 'text-[#e07a42]' : ''}
+                  ${isCurrent ? 'text-white' : ''}
+                  ${isPending ? 'text-[#71717a]' : ''}
                 `}
               >
                 {stage.label}
@@ -125,24 +125,24 @@ export default function StatusBar({ status }: StatusBarProps) {
       </div>
 
       {/* Current Status Description */}
-      <div className="mt-10 pt-6 border-t border-[rgba(245,240,232,0.06)]">
+      <div className="mt-10 pt-6 border-t border-[rgba(255,255,255,0.06)]">
         <div className="flex items-center gap-4">
           <div
             className={`
-              w-12 h-12 rounded-xl flex items-center justify-center text-2xl border
+              w-12 h-12 rounded-xl flex items-center justify-center text-2xl border backdrop-blur-sm
               ${status === 'Live'
-                ? 'bg-[#5CB87A]/10 border-[#5CB87A]/20'
-                : 'bg-[#C9A962]/10 border-[#C9A962]/20'
+                ? 'bg-[rgba(224,122,66,0.1)] border-[rgba(224,122,66,0.2)]'
+                : 'bg-[rgba(224,122,66,0.1)] border-[rgba(224,122,66,0.2)]'
               }
             `}
           >
             {statusStages[currentIndex].icon}
           </div>
           <div>
-            <p className={`font-semibold ${status === 'Live' ? 'text-[#5CB87A]' : 'text-[#F5F0E8]'}`}>
+            <p className={`font-semibold ${status === 'Live' ? 'text-[#e07a42]' : 'text-white'}`}>
               {statusStages[currentIndex].label}
             </p>
-            <p className="text-sm text-[#6B6660] mt-0.5">
+            <p className="text-sm text-[#71717a] mt-0.5">
               {statusStages[currentIndex].description}
             </p>
           </div>

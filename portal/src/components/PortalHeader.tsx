@@ -63,9 +63,9 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
   const connectedCount = integrations.filter(i => i.connected).length
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0D0D0D]/80 border-b border-[rgba(245,240,232,0.06)]">
-      {/* Subtle gold accent line at top */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#C9A962]/30 to-transparent" />
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#0c0c0c]/80 border-b border-[rgba(255,255,255,0.06)]">
+      {/* Subtle orange accent line at top */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#e07a42]/40 to-transparent" />
 
       <div className="max-w-5xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
@@ -78,8 +78,8 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
                 className="h-9 w-auto"
               />
             ) : (
-              <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#C9A962] to-[#8B7355] flex items-center justify-center shadow-lg shadow-[#C9A962]/20">
-                <span className="text-lg font-semibold text-[#0D0D0D]">
+              <div className="relative w-11 h-11 rounded-xl bg-[#e07a42] flex items-center justify-center shadow-lg shadow-[#e07a42]/25">
+                <span className="text-lg font-semibold text-[#0c0c0c]">
                   {company.charAt(0)}
                 </span>
                 {/* Shine effect */}
@@ -88,9 +88,9 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold text-[#F5F0E8] tracking-tight">{company}</h1>
+                <h1 className="text-lg font-semibold text-white tracking-tight">{company}</h1>
               </div>
-              <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#6B6660]">
+              <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#71717a]">
                 Backstage
               </p>
             </div>
@@ -98,22 +98,22 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
 
           {/* Right: Navigation & Status */}
           <div className="flex items-center gap-3">
-            {/* Subscribers Button */}
+            {/* Subscribers Button - Glass Style */}
             {showPackMode && clientSlug && (
               <Link
                 href={`/portal/${clientSlug}/subscribers`}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#1A1A1A] hover:bg-[#1E1E1E] text-[#A8A39B] hover:text-[#F5F0E8] font-medium transition-all border border-[rgba(245,240,232,0.06)] hover:border-[rgba(245,240,232,0.1)]"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,255,255,0.03)] backdrop-blur-xl hover:bg-[rgba(255,255,255,0.06)] text-[#a1a1aa] hover:text-white font-medium transition-all border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.1)]"
               >
                 <Users className="w-4 h-4" />
                 <span className="text-sm">Subscribers</span>
               </Link>
             )}
 
-            {/* Pack Mode Button - Premium Gold Style */}
+            {/* Pack Mode Button - Solid Orange */}
             {showPackMode && clientSlug && (
               <Link
                 href={`/portal/${clientSlug}/pack`}
-                className="group relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#C9A962] to-[#A8893F] text-[#0D0D0D] font-semibold transition-all hover:shadow-lg hover:shadow-[#C9A962]/25 hover:scale-[1.02]"
+                className="group relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#e07a42] text-[#0c0c0c] font-semibold transition-all hover:bg-[#e8935f] hover:shadow-lg hover:shadow-[#e07a42]/30 hover:scale-[1.02]"
               >
                 <Package className="w-4 h-4" />
                 <span className="text-sm">Pack Mode</span>
@@ -122,14 +122,14 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
               </Link>
             )}
 
-            {/* Admin Settings Button */}
+            {/* Admin Settings Button - Glass */}
             {clientSlug && (
               <Link
                 href={`/portal/${clientSlug}/admin`}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-[#1A1A1A] hover:bg-[#1E1E1E] border border-[rgba(245,240,232,0.06)] hover:border-[rgba(245,240,232,0.1)] transition-all"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(255,255,255,0.03)] backdrop-blur-xl hover:bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.1)] transition-all"
                 title="Admin Settings"
               >
-                <Settings className="w-4 h-4 text-[#6B6660] hover:text-[#A8A39B]" />
+                <Settings className="w-4 h-4 text-[#71717a] hover:text-[#a1a1aa]" />
               </Link>
             )}
 
@@ -138,19 +138,19 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
               <div className="relative">
                 <button
                   onClick={() => setShowIntegrations(!showIntegrations)}
-                  className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#5CB87A]/10 border border-[#5CB87A]/20 hover:bg-[#5CB87A]/15 transition-all"
+                  className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[rgba(224,122,66,0.1)] border border-[rgba(224,122,66,0.2)] hover:bg-[rgba(224,122,66,0.15)] transition-all backdrop-blur-xl"
                 >
                   <div className="relative w-2 h-2">
-                    <div className="absolute inset-0 bg-[#5CB87A] rounded-full" />
-                    <div className="absolute inset-0 bg-[#5CB87A] rounded-full animate-ping opacity-50" />
+                    <div className="absolute inset-0 bg-[#e07a42] rounded-full" />
+                    <div className="absolute inset-0 bg-[#e07a42] rounded-full animate-ping opacity-50" />
                   </div>
-                  <span className="text-sm text-[#5CB87A] font-medium">
+                  <span className="text-sm text-[#e07a42] font-medium">
                     {connectedCount} Connected
                   </span>
-                  <ChevronDown className={`w-4 h-4 text-[#5CB87A] transition-transform duration-200 ${showIntegrations ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-[#e07a42] transition-transform duration-200 ${showIntegrations ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Dropdown */}
+                {/* Dropdown - Glass Panel */}
                 {showIntegrations && (
                   <>
                     {/* Backdrop */}
@@ -159,12 +159,12 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
                       onClick={() => setShowIntegrations(false)}
                     />
                     {/* Menu */}
-                    <div className="absolute right-0 top-full mt-3 w-72 bg-[#151515] rounded-2xl shadow-2xl border border-[rgba(245,240,232,0.08)] overflow-hidden z-50 animate-in">
+                    <div className="absolute right-0 top-full mt-3 w-72 bg-[rgba(255,255,255,0.03)] backdrop-blur-xl rounded-2xl shadow-2xl border border-[rgba(255,255,255,0.08)] overflow-hidden z-50 animate-in">
                       {/* Header */}
-                      <div className="px-5 py-4 border-b border-[rgba(245,240,232,0.06)]">
+                      <div className="px-5 py-4 border-b border-[rgba(255,255,255,0.06)]">
                         <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-[#C9A962]" />
-                          <p className="text-xs font-semibold tracking-[0.1em] uppercase text-[#C9A962]">
+                          <Sparkles className="w-4 h-4 text-[#e07a42]" />
+                          <p className="text-xs font-semibold tracking-[0.1em] uppercase text-[#e07a42]">
                             Integrations
                           </p>
                         </div>
@@ -174,15 +174,15 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
                         {integrations.map((integration, idx) => (
                           <div
                             key={integration.name}
-                            className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[#1A1A1A] transition-colors"
+                            className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[rgba(255,255,255,0.03)] transition-colors"
                             style={{ animationDelay: `${idx * 50}ms` }}
                           >
                             <div className="flex items-center gap-3">
-                              <div className={`w-2.5 h-2.5 rounded-full ${integration.connected ? 'bg-[#5CB87A]' : 'bg-[#4A4743]'}`} />
-                              <span className="text-sm font-medium text-[#F5F0E8]">{integration.name}</span>
+                              <div className={`w-2.5 h-2.5 rounded-full ${integration.connected ? 'bg-[#e07a42]' : 'bg-[#71717a]'}`} />
+                              <span className="text-sm font-medium text-white">{integration.name}</span>
                             </div>
                             {integration.connected && integration.lastSync && (
-                              <span className="text-xs text-[#6B6660] font-mono">
+                              <span className="text-xs text-[#71717a] font-mono">
                                 {integration.lastSync}
                               </span>
                             )}
@@ -194,11 +194,11 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
                 )}
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#C9A962]/10 border border-[#C9A962]/20">
+              <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[rgba(251,191,36,0.1)] border border-[rgba(251,191,36,0.2)] backdrop-blur-xl">
                 <div className="relative w-2 h-2">
-                  <div className="absolute inset-0 bg-[#C9A962] rounded-full animate-pulse" />
+                  <div className="absolute inset-0 bg-[#fbbf24] rounded-full animate-pulse" />
                 </div>
-                <span className="text-sm text-[#C9A962] font-medium">{status}</span>
+                <span className="text-sm text-[#fbbf24] font-medium">{status}</span>
               </div>
             )}
           </div>
