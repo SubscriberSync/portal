@@ -13,38 +13,38 @@ interface IntakeStep1Props {
   onRefresh: () => void
 }
 
-export default function IntakeStep1({ 
+export default function IntakeStep1({
   clientSlug,
-  submissions, 
+  submissions,
   onboardingData,
   onSubmitItem,
   onRefresh
 }: IntakeStep1Props) {
   const [isExpanded, setIsExpanded] = useState(!onboardingData.step1Complete)
-  
+
   // Get submission for each item
   const getSubmission = (itemType: IntakeItemType): IntakeSubmission | undefined => {
     return submissions.find(s => s.item === itemType)
   }
-  
+
   // Get Loom URL for each item type
   const getLoomUrl = (loomField: string | null): string | undefined => {
     if (!loomField) return undefined
     return (onboardingData as any)[loomField]
   }
-  
+
   // Calculate progress
-  const approvedCount = INTAKE_ITEMS.filter(item => 
+  const approvedCount = INTAKE_ITEMS.filter(item =>
     getSubmission(item.type)?.status === 'Approved'
   ).length
-  const submittedCount = INTAKE_ITEMS.filter(item => 
+  const submittedCount = INTAKE_ITEMS.filter(item =>
     getSubmission(item.type)?.status === 'Submitted'
   ).length
   const totalCount = INTAKE_ITEMS.length
-  
+
   const allApproved = approvedCount === totalCount
   const progressPercent = (approvedCount / totalCount) * 100
-  
+
   // Handle submission
   const handleSubmit = useCallback(async (itemType: IntakeItemType, value: string) => {
     const result = await onSubmitItem(itemType, value)
@@ -53,53 +53,59 @@ export default function IntakeStep1({
     }
     return result
   }, [onSubmitItem, onRefresh])
-  
+
   // Completed state
   if (allApproved && !isExpanded) {
     return (
-      <div className="bg-success/5 rounded-2xl border border-success/20 overflow-hidden">
+      <div className="relative rounded-2xl bg-[#5CB87A]/5 border border-[#5CB87A]/15 overflow-hidden">
+        {/* Top accent line */}
+        <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#5CB87A]/30 to-transparent" />
+
         <button
           onClick={() => setIsExpanded(true)}
-          className="w-full p-5 flex items-center justify-between hover:bg-success/10 transition-colors"
+          className="w-full p-5 flex items-center justify-between hover:bg-[#5CB87A]/10 transition-colors"
         >
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-success/20 flex items-center justify-center">
-              <Check className="w-5 h-5 text-success" />
+            <div className="w-11 h-11 rounded-xl bg-[#5CB87A]/15 border border-[#5CB87A]/20 flex items-center justify-center">
+              <Check className="w-5 h-5 text-[#5CB87A]" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-foreground">Step 1: Connect Your Systems</h3>
-              <p className="text-sm text-success">✓ All credentials approved</p>
+              <h3 className="font-semibold text-[#F5F0E8]">Step 1: Connect Your Systems</h3>
+              <p className="text-sm text-[#5CB87A]">All credentials approved</p>
             </div>
           </div>
-          <ChevronDown className="w-5 h-5 text-foreground-tertiary" />
+          <ChevronDown className="w-5 h-5 text-[#6B6660]" />
         </button>
       </div>
     )
   }
-  
+
   return (
-    <div className="bg-background-secondary rounded-2xl border border-border overflow-hidden">
+    <div className="relative rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] overflow-hidden">
+      {/* Top accent line */}
+      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#C9A962]/25 to-transparent" />
+
       {/* Header */}
       <div
-        className={`p-5 border-b border-border ${allApproved ? 'cursor-pointer hover:bg-background-elevated' : ''}`}
+        className={`p-5 border-b border-[rgba(245,240,232,0.06)] ${allApproved ? 'cursor-pointer hover:bg-[#1A1A1A]' : ''}`}
         onClick={allApproved ? () => setIsExpanded(!isExpanded) : undefined}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${
               allApproved
-                ? 'bg-success/20'
-                : 'bg-accent/20'
+                ? 'bg-[#5CB87A]/10 border-[#5CB87A]/20'
+                : 'bg-[#C9A962]/10 border-[#C9A962]/20'
             }`}>
               {allApproved ? (
-                <Check className="w-5 h-5 text-success" />
+                <Check className="w-5 h-5 text-[#5CB87A]" />
               ) : (
-                <Zap className="w-5 h-5 text-accent" />
+                <Zap className="w-5 h-5 text-[#C9A962]" />
               )}
             </div>
             <div>
-              <h3 className="font-semibold text-foreground">Step 1: Connect Your Systems</h3>
-              <p className="text-sm text-foreground-secondary">
+              <h3 className="font-semibold text-[#F5F0E8]">Step 1: Connect Your Systems</h3>
+              <p className="text-sm text-[#6B6660]">
                 {allApproved
                   ? 'All credentials approved'
                   : submittedCount > 0
@@ -118,11 +124,11 @@ export default function IntakeStep1({
                 return (
                   <div
                     key={i}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      sub?.status === 'Approved' ? 'bg-success' :
-                      sub?.status === 'Submitted' ? 'bg-amber-500' :
-                      sub?.status === 'Rejected' ? 'bg-red-500' :
-                      'bg-foreground-tertiary/30'
+                    className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                      sub?.status === 'Approved' ? 'bg-[#5CB87A]' :
+                      sub?.status === 'Submitted' ? 'bg-[#D4A853]' :
+                      sub?.status === 'Rejected' ? 'bg-[#D47070]' :
+                      'bg-[#4A4743]'
                     }`}
                     title={`${item.title}: ${sub?.status || 'Pending'}`}
                   />
@@ -131,9 +137,9 @@ export default function IntakeStep1({
             </div>
             {allApproved && (
               isExpanded ? (
-                <ChevronUp className="w-5 h-5 text-foreground-tertiary" />
+                <ChevronUp className="w-5 h-5 text-[#6B6660]" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-foreground-tertiary" />
+                <ChevronDown className="w-5 h-5 text-[#6B6660]" />
               )
             )}
           </div>
@@ -141,9 +147,9 @@ export default function IntakeStep1({
 
         {/* Progress bar */}
         {!allApproved && (
-          <div className="mt-4 h-1.5 bg-background-elevated rounded-full overflow-hidden">
+          <div className="mt-4 h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-accent to-amber-500 transition-all duration-500 rounded-full"
+              className="h-full bg-gradient-to-r from-[#A8893F] to-[#C9A962] transition-all duration-500 rounded-full"
               style={{ width: `${progressPercent}%` }}
             />
           </div>

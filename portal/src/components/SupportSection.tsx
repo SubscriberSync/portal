@@ -1,6 +1,7 @@
 'use client'
 
 import { ClientData } from '@/lib/types'
+import { Mail, Wrench, Calendar, Shield } from 'lucide-react'
 
 interface SupportSectionProps {
   client: ClientData
@@ -17,49 +18,60 @@ export default function SupportSection({ client }: SupportSectionProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Section Header */}
       <div>
-        <h3 className="text-headline text-foreground mb-2">Support</h3>
-        <p className="text-foreground-secondary">Get help when you need it</p>
+        <h3 className="text-headline text-[#F5F0E8] mb-2">Concierge</h3>
+        <p className="text-sm text-[#6B6660]">White-glove support when you need it</p>
       </div>
 
       {/* Support Cards */}
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-5">
         {/* Email Support */}
-        <div className="p-6 rounded-2xl bg-background-secondary border border-border">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">📧</span>
+        <div className="group relative p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] hover:border-[rgba(245,240,232,0.1)] transition-all overflow-hidden">
+          {/* Subtle hover glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#C9A962]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          <div className="relative flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#C9A962]/10 border border-[#C9A962]/20 flex items-center justify-center flex-shrink-0">
+              <Mail className="w-5 h-5 text-[#C9A962]" />
             </div>
-            <div>
-              <h4 className="font-medium text-foreground mb-1">Need Help?</h4>
-              <p className="text-sm text-foreground-secondary mb-3">
-                Questions or issues with your system
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#F5F0E8] mb-1.5">Direct Line</h4>
+              <p className="text-sm text-[#6B6660] mb-4 leading-relaxed">
+                Questions or issues with your system? We're here to help.
               </p>
               <a
                 href="mailto:travis@subscribersync.com"
-                className="text-accent hover:text-accent-hover transition-colors font-medium"
+                className="inline-flex items-center gap-2 text-[#C9A962] hover:text-[#D4B977] transition-colors font-medium text-sm"
               >
-                travis@subscribersync.com
+                <span>travis@subscribersync.com</span>
+                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 12L12 4M12 4H5M12 4V11" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </a>
             </div>
           </div>
         </div>
 
         {/* Custom Changes */}
-        <div className="p-6 rounded-2xl bg-background-secondary border border-border">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-xl">🛠</span>
+        <div className="group relative p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] hover:border-[rgba(245,240,232,0.1)] transition-all overflow-hidden">
+          {/* Subtle hover glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#8B7355]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          <div className="relative flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#8B7355]/10 border border-[#8B7355]/20 flex items-center justify-center flex-shrink-0">
+              <Wrench className="w-5 h-5 text-[#8B7355]" />
             </div>
-            <div>
-              <h4 className="font-medium text-foreground mb-1">Need Changes?</h4>
-              <p className="text-sm text-foreground-secondary mb-3">
-                Custom modifications available
+            <div className="flex-1">
+              <h4 className="font-semibold text-[#F5F0E8] mb-1.5">Custom Work</h4>
+              <p className="text-sm text-[#6B6660] mb-4 leading-relaxed">
+                Need modifications? We build to your specifications.
               </p>
-              <p className="text-3xl font-semibold text-foreground">
-                $150<span className="text-sm text-foreground-secondary font-normal ml-1">/ request</span>
-              </p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-semibold text-[#F5F0E8] tracking-tight">$150</span>
+                <span className="text-sm text-[#6B6660]">per request</span>
+              </div>
             </div>
           </div>
         </div>
@@ -67,24 +79,28 @@ export default function SupportSection({ client }: SupportSectionProps) {
 
       {/* Hosting Renewal */}
       {client.hostingRenewal && (
-        <div className="p-6 rounded-2xl bg-background-secondary border border-border">
+        <div className="relative p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] overflow-hidden">
+          {/* Top accent line */}
+          <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[rgba(245,240,232,0.1)] to-transparent" />
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-background-elevated flex items-center justify-center">
-                <span className="text-xl">📅</span>
+              <div className="w-12 h-12 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.08)] flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-[#A8A39B]" />
               </div>
               <div>
-                <p className="text-xs text-foreground-tertiary uppercase tracking-wider mb-1">
+                <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-[#6B6660] mb-1">
                   Hosting Renewal
                 </p>
-                <p className="text-lg font-medium text-foreground">
+                <p className="text-lg font-medium text-[#F5F0E8]">
                   {formatDate(client.hostingRenewal)}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-success" />
-              <span className="text-xs text-success font-medium">Auto-reminder enabled</span>
+
+            <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#5CB87A]/10 border border-[#5CB87A]/15">
+              <Shield className="w-4 h-4 text-[#5CB87A]" />
+              <span className="text-xs text-[#5CB87A] font-medium">Auto-renew enabled</span>
             </div>
           </div>
         </div>
