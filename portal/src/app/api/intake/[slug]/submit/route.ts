@@ -7,6 +7,7 @@ import {
   getIntakeSubmissions,
 } from '@/lib/supabase/data'
 import { IntakeItemType } from '@/lib/intake-types'
+import { shouldAutoApprove, validateIntakeItem } from '@/lib/admin'
 
 export async function POST(
   request: NextRequest,
@@ -34,6 +35,8 @@ export async function POST(
 
     // Validate item type
     const validItems: IntakeItemType[] = [
+      'Shopify API Key',
+      'Shopify API Secret',
       'Recharge API Key',
       'Klaviyo API Key',
       'Installment Name',
@@ -49,39 +52,46 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Organization not found' }, { status: 404 })
     }
 
-    // Map frontend item types to database item types
-    const itemTypeMap: Record<string, 'Shopify API Key' | 'Shopify API Secret' | 'Recharge API Key' | 'Klaviyo API Key' | 'Installment Name'> = {
-      'Recharge API Key': 'Recharge API Key',
-      'Klaviyo API Key': 'Klaviyo API Key',
-      'Installment Name': 'Installment Name',
-    }
+    // Validate the submitted value
+    const validation = validateIntakeItem(item, value)
 
-    const dbItemType = itemTypeMap[item]
-    if (!dbItemType) {
-      return NextResponse.json({ success: false, error: 'Invalid item type' }, { status: 400 })
-    }
+    // Determine if we should auto-approve
+    const autoApprove = shouldAutoApprove(item, value)
 
-    // Upsert the submission
-    const submission = await upsertIntakeSubmission(organization.id, dbItemType, value)
+    // Upsert the submission with appropriate status
+    const submission = await upsertIntakeSubmission(
+      organization.id,
+      item,
+      value,
+      autoApprove ? 'Approved' : 'Submitted'
+    )
 
     if (!submission) {
       return NextResponse.json({ success: false, error: 'Failed to save submission' }, { status: 500 })
     }
 
-    // Check if all required items are submitted to mark step1 complete
+    // Check if all required items are approved to mark step1 complete
     const allSubmissions = await getIntakeSubmissions(organization.id)
     const requiredItems = ['Recharge API Key', 'Klaviyo API Key', 'Installment Name']
-    const submittedItems = allSubmissions
-      .filter(s => s.status === 'Submitted' || s.status === 'Approved')
+
+    // Only count approved items for step completion
+    const approvedItems = allSubmissions
+      .filter(s => s.status === 'Approved')
       .map(s => s.item_type)
 
-    const allRequiredSubmitted = requiredItems.every(item => submittedItems.includes(item as typeof allSubmissions[0]['item_type']))
+    const allRequiredApproved = requiredItems.every(item =>
+      approvedItems.includes(item as typeof allSubmissions[0]['item_type'])
+    )
 
-    if (allRequiredSubmitted && !organization.step1_complete) {
+    if (allRequiredApproved && !organization.step1_complete) {
       await updateOrganization(organization.id, { step1_complete: true })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      autoApproved: autoApprove,
+      validationError: validation.valid ? undefined : validation.error,
+    })
   } catch (error) {
     console.error('Error submitting intake item:', error)
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })

@@ -190,7 +190,8 @@ export async function getIntakeSubmissions(organizationId: string): Promise<Inta
 export async function upsertIntakeSubmission(
   organizationId: string,
   itemType: IntakeSubmission['item_type'],
-  value: string
+  value: string,
+  status: IntakeSubmission['status'] = 'Submitted'
 ): Promise<IntakeSubmission | null> {
   const supabase = createServiceClient()
 
@@ -200,8 +201,9 @@ export async function upsertIntakeSubmission(
       organization_id: organizationId,
       item_type: itemType,
       value_encrypted: value,
-      status: 'Submitted',
+      status,
       submitted_at: new Date().toISOString(),
+      reviewed_at: status === 'Approved' ? new Date().toISOString() : null,
     }, { onConflict: 'organization_id,item_type' })
     .select()
     .single()
@@ -413,6 +415,156 @@ export async function updateShipment(id: string, updates: Partial<Shipment>): Pr
 
   if (error) {
     console.error('[updateShipment] Error:', error)
+    return false
+  }
+
+  return true
+}
+
+// ===================
+// Admin Functions (for admin dashboard)
+// ===================
+
+export async function getAllOrganizations(): Promise<Organization[]> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[getAllOrganizations] Error:', error)
+    return []
+  }
+
+  return (data || []) as Organization[]
+}
+
+export async function getAllIntakeSubmissions(): Promise<(IntakeSubmission & { organization_name?: string })[]> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('intake_submissions')
+    .select(`
+      *,
+      organizations (name)
+    `)
+    .order('submitted_at', { ascending: false })
+
+  if (error) {
+    console.error('[getAllIntakeSubmissions] Error:', error)
+    return []
+  }
+
+  return (data || []).map((item: any) => ({
+    ...item,
+    organization_name: item.organizations?.name,
+  }))
+}
+
+export async function getOrganizationStats(): Promise<{
+  totalOrgs: number
+  liveOrgs: number
+  pendingIntake: number
+  totalSubscribers: number
+}> {
+  const supabase = createServiceClient()
+
+  // Get org counts
+  const { count: totalOrgs } = await supabase
+    .from('organizations')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: liveOrgs } = await supabase
+    .from('organizations')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'Live')
+
+  // Get pending intake count
+  const { count: pendingIntake } = await supabase
+    .from('intake_submissions')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'Submitted')
+
+  // Get total subscribers
+  const { count: totalSubscribers } = await supabase
+    .from('subscribers')
+    .select('*', { count: 'exact', head: true })
+
+  return {
+    totalOrgs: totalOrgs || 0,
+    liveOrgs: liveOrgs || 0,
+    pendingIntake: pendingIntake || 0,
+    totalSubscribers: totalSubscribers || 0,
+  }
+}
+
+export async function updateIntakeSubmissionStatus(
+  id: string,
+  status: IntakeSubmission['status'],
+  rejectionNote?: string
+): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from('intake_submissions')
+    .update({
+      status,
+      rejection_note: rejectionNote || null,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[updateIntakeSubmissionStatus] Error:', error)
+    return false
+  }
+
+  return true
+}
+
+export async function createOrganization(data: {
+  name: string
+  slug: string
+  status?: Organization['status']
+}): Promise<Organization | null> {
+  const supabase = createServiceClient()
+
+  // Generate a unique ID for the organization
+  const id = `org_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+  const { data: org, error } = await supabase
+    .from('organizations')
+    .insert({
+      id,
+      name: data.name,
+      slug: data.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+      status: data.status || 'Discovery',
+      step1_complete: false,
+      step2_complete: false,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[createOrganization] Error:', error)
+    return null
+  }
+
+  return org as Organization
+}
+
+export async function deleteOrganization(id: string): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from('organizations')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('[deleteOrganization] Error:', error)
     return false
   }
 
