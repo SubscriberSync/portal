@@ -46,7 +46,77 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
-        <ClerkProvider>
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorPrimary: '#e07a42',
+              colorText: '#F5F0E8',
+              colorTextSecondary: '#a1a1aa',
+              colorBackground: '#1a1a1a',
+              colorInputBackground: '#252525',
+              colorInputText: '#F5F0E8',
+              colorNeutral: '#F5F0E8',
+            },
+            elements: {
+              formButtonPrimary: {
+                backgroundColor: '#e07a42',
+                color: '#ffffff',
+                '&:hover': {
+                  backgroundColor: '#c86a35',
+                },
+              },
+              card: {
+                backgroundColor: '#1a1a1a',
+                borderColor: '#333',
+              },
+              headerTitle: {
+                color: '#F5F0E8',
+              },
+              headerSubtitle: {
+                color: '#a1a1aa',
+              },
+              socialButtonsBlockButton: {
+                borderColor: '#333',
+                color: '#F5F0E8',
+                '&:hover': {
+                  backgroundColor: '#252525',
+                },
+              },
+              formFieldLabel: {
+                color: '#a1a1aa',
+              },
+              formFieldInput: {
+                backgroundColor: '#252525',
+                borderColor: '#333',
+                color: '#F5F0E8',
+                '&:focus': {
+                  borderColor: '#e07a42',
+                },
+              },
+              footerActionLink: {
+                color: '#e07a42',
+                '&:hover': {
+                  color: '#c86a35',
+                },
+              },
+              identityPreviewText: {
+                color: '#F5F0E8',
+              },
+              identityPreviewEditButton: {
+                color: '#e07a42',
+              },
+              formFieldSuccessText: {
+                color: '#5CB87A',
+              },
+              alert: {
+                color: '#F5F0E8',
+              },
+              alertText: {
+                color: '#F5F0E8',
+              },
+            },
+          }}
+        >
           <Providers>
             {children}
           </Providers>
