@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Package, ChevronDown, Settings, Users, Sparkles } from 'lucide-react'
 import { ClientIntegrations } from '@/lib/types'
+import ThemeToggle from './ThemeToggle'
 
 interface Integration {
   name: string
@@ -132,6 +133,9 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
                 <Settings className="w-4 h-4 text-[#71717a] hover:text-[#a1a1aa]" />
               </Link>
             )}
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Integration Status Dropdown */}
             {status === 'Live' ? (
