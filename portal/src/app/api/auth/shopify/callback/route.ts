@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { exchangeShopifyCode } from '@/lib/oauth'
-import { upsertIntegration, updateOrganization, getOrganizationById } from '@/lib/supabase/data'
+import { upsertIntegration } from '@/lib/supabase/data'
+import crypto from 'crypto'
+
+// Webhook topics to register
+const WEBHOOK_TOPICS = [
+  'orders/create',
+  'orders/updated',
+  'orders/fulfilled',
+  'orders/cancelled',
+  'customers/create',
+  'customers/update',
+]
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -46,12 +57,56 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL(`/portal/${orgSlug}?error=shopify_auth_failed`, request.url))
     }
 
+    // Generate webhook secret for HMAC validation
+    const webhookSecret = crypto.randomBytes(32).toString('hex')
+
+    // Register webhooks for order and customer events
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.subscribersync.com'
+    const webhookAddress = `${appUrl}/api/webhooks/shopify?org_id=${orgId}`
+
+    let webhooksRegistered = 0
+    for (const topic of WEBHOOK_TOPICS) {
+      try {
+        const response = await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
+          method: 'POST',
+          headers: {
+            'X-Shopify-Access-Token': tokenData.access_token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            webhook: {
+              topic: topic,
+              address: webhookAddress,
+              format: 'json',
+            },
+          }),
+        })
+
+        if (response.ok) {
+          webhooksRegistered++
+        } else {
+          const error = await response.text()
+          // Webhook might already exist, that's fine
+          if (error.includes('already exists') || error.includes('already taken')) {
+            webhooksRegistered++
+          } else {
+            console.error(`[Shopify Callback] Webhook ${topic} failed:`, error)
+          }
+        }
+      } catch (err) {
+        console.error(`[Shopify Callback] Webhook ${topic} error:`, err)
+      }
+    }
+
+    console.log(`[Shopify Callback] Registered ${webhooksRegistered}/${WEBHOOK_TOPICS.length} webhooks`)
+
     // Store the integration in Supabase
     const integration = await upsertIntegration(orgId, 'shopify', {
       credentials_encrypted: {
         access_token: tokenData.access_token,
         shop: shop,
         scope: tokenData.scope,
+        webhook_secret: webhookSecret,
       },
       connected: true,
       last_sync_at: new Date().toISOString(),
@@ -62,8 +117,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL(`/portal/${orgSlug}?error=save_failed`, request.url))
     }
 
-    // Check if this completes step 1 (all integrations connected)
-    // For now, just mark Shopify as connected
     console.log('[Shopify Callback] Successfully connected Shopify for org:', orgId)
 
     // Redirect back to portal with success

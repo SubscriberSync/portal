@@ -46,8 +46,9 @@ export default function IntakeStep1Connect({
   const isKlaviyoConnected = klaviyoIntegration?.connected || false
   const isRechargeConnected = rechargeIntegration?.connected || false
 
-  // Calculate progress
+  // Calculate progress - All 4 integrations required
   const steps = [
+    { name: 'Shopify', done: isShopifyConnected },
     { name: 'Recharge', done: isRechargeConnected },
     { name: 'Klaviyo', done: isKlaviyoConnected },
     { name: 'Installment Name', done: installmentSaved },
@@ -260,6 +261,63 @@ export default function IntakeStep1Connect({
       {/* Content */}
       {isExpanded && (
         <div className="p-5 space-y-4">
+          {/* Shopify Connection */}
+          <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#95BF47]/10 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#95BF47">
+                    <path d="M15.337 3.415c-.193-.15-.476-.197-.753-.163-.277.03-.55.1-.8.183a7.478 7.478 0 00-.707.26c-.097-.603-.27-1.126-.524-1.546-.535-.893-1.308-1.364-2.236-1.36-1.02.004-1.948.539-2.762 1.6-.577.747-1.024 1.69-1.16 2.42-.84.26-1.427.44-1.44.446-.425.13-.438.145-.494.55-.04.31-1.04 8.01-1.04 8.01L12.29 15l4.71-1.15s-1.16-8.787-1.226-9.223c-.067-.436-.067-.5-.067-.5l-.37-.712z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-[#F5F0E8]">Shopify</h4>
+                  <p className="text-sm text-[#6B6660]">
+                    {isShopifyConnected ? 'Connected - Syncing orders' : 'Connect your Shopify store'}
+                  </p>
+                </div>
+              </div>
+
+              {isShopifyConnected ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#5CB87A]/10 border border-[#5CB87A]/20">
+                  <Check className="w-4 h-4 text-[#5CB87A]" />
+                  <span className="text-sm text-[#5CB87A] font-medium">Connected</span>
+                </div>
+              ) : showShopifyInput ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="your-store.myshopify.com"
+                    value={shopifyStore}
+                    onChange={(e) => setShopifyStore(e.target.value)}
+                    className="px-3 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] text-sm placeholder-[#6B6660] focus:outline-none focus:border-[#95BF47]/50 w-56"
+                    onKeyDown={(e) => e.key === 'Enter' && handleConnectShopify()}
+                  />
+                  <button
+                    onClick={handleConnectShopify}
+                    disabled={isConnectingShopify || !shopifyStore.trim()}
+                    className="px-4 py-2 rounded-lg bg-[#95BF47] hover:bg-[#7ea33d] text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isConnectingShopify ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4" />
+                    )}
+                    Connect
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowShopifyInput(true)}
+                  className="px-4 py-2 rounded-lg bg-[#95BF47] hover:bg-[#7ea33d] text-white font-medium text-sm transition-colors flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Connect Shopify
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Recharge Connection */}
           <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]">
             <div className="flex items-center justify-between">
@@ -272,7 +330,7 @@ export default function IntakeStep1Connect({
                 <div>
                   <h4 className="font-medium text-[#F5F0E8]">Recharge</h4>
                   <p className="text-sm text-[#6B6660]">
-                    {isRechargeConnected ? 'Connected - Syncing subscribers' : 'Connect your subscription platform'}
+                    {isRechargeConnected ? 'Connected - Syncing subscriptions' : 'Connect your subscription platform'}
                   </p>
                 </div>
               </div>
