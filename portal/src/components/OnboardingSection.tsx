@@ -3,22 +3,31 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Sparkles, RefreshCw, CheckCircle2, ArrowRight } from 'lucide-react'
 import { IntakeSubmission, ClientOnboardingData, IntakeItemType, DiscordChannel } from '@/lib/intake-types'
-import IntakeStep1 from './IntakeStep1'
+import IntakeStep1Connect from './IntakeStep1Connect'
 import IntakeStep2 from './IntakeStep2'
+
+interface Integration {
+  type: 'shopify' | 'klaviyo'
+  connected: boolean
+  lastSync?: string
+}
 
 interface OnboardingSectionProps {
   clientSlug: string
   initialSubmissions: IntakeSubmission[]
   initialOnboardingData: ClientOnboardingData
+  initialIntegrations?: Integration[]
 }
 
 export default function OnboardingSection({
   clientSlug,
   initialSubmissions,
   initialOnboardingData,
+  initialIntegrations = [],
 }: OnboardingSectionProps) {
   const [submissions, setSubmissions] = useState(initialSubmissions)
   const [onboardingData, setOnboardingData] = useState(initialOnboardingData)
+  const [integrations, setIntegrations] = useState(initialIntegrations)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // Refresh data from server
@@ -207,12 +216,12 @@ export default function OnboardingSection({
         </div>
       </div>
 
-      {/* Step 1: Technical Setup */}
-      <IntakeStep1
+      {/* Step 1: Connect Your Apps */}
+      <IntakeStep1Connect
         clientSlug={clientSlug}
-        submissions={submissions}
+        integrations={integrations}
         onboardingData={onboardingData}
-        onSubmitItem={handleSubmitItem}
+        installmentName={submissions.find(s => s.item === 'Installment Name')?.value}
         onRefresh={refreshData}
       />
 
