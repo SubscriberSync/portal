@@ -7,7 +7,7 @@ import IntakeStep1Connect from './IntakeStep1Connect'
 import IntakeStep2 from './IntakeStep2'
 
 interface Integration {
-  type: 'shopify' | 'klaviyo'
+  type: 'shopify' | 'klaviyo' | 'recharge'
   connected: boolean
   lastSync?: string
 }

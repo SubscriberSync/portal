@@ -200,7 +200,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
               initialSubmissions={transformedSubmissions}
               initialOnboardingData={onboardingData}
               initialIntegrations={integrations.map(i => ({
-                type: i.type as 'shopify' | 'klaviyo',
+                type: i.type as 'shopify' | 'klaviyo' | 'recharge',
                 connected: i.connected,
                 lastSync: i.last_sync_at || undefined,
               }))}

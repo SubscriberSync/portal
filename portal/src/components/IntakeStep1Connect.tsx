@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp, Zap, Loader2, ExternalLink, AlertCircle 
 import { ClientOnboardingData } from '@/lib/intake-types'
 
 interface Integration {
-  type: 'shopify' | 'klaviyo'
+  type: 'shopify' | 'klaviyo' | 'recharge'
   connected: boolean
   lastSync?: string
 }
@@ -28,21 +28,27 @@ export default function IntakeStep1Connect({
   const [isExpanded, setIsExpanded] = useState(!onboardingData.step1Complete)
   const [isConnectingShopify, setIsConnectingShopify] = useState(false)
   const [isConnectingKlaviyo, setIsConnectingKlaviyo] = useState(false)
+  const [isConnectingRecharge, setIsConnectingRecharge] = useState(false)
   const [shopifyStore, setShopifyStore] = useState('')
   const [showShopifyInput, setShowShopifyInput] = useState(false)
+  const [rechargeApiKey, setRechargeApiKey] = useState('')
+  const [showRechargeInput, setShowRechargeInput] = useState(false)
+  const [rechargeError, setRechargeError] = useState('')
   const [installmentName, setInstallmentName] = useState(initialInstallmentName || '')
   const [isSavingInstallment, setIsSavingInstallment] = useState(false)
   const [installmentSaved, setInstallmentSaved] = useState(!!initialInstallmentName)
 
   const shopifyIntegration = integrations.find(i => i.type === 'shopify')
   const klaviyoIntegration = integrations.find(i => i.type === 'klaviyo')
+  const rechargeIntegration = integrations.find(i => i.type === 'recharge')
 
   const isShopifyConnected = shopifyIntegration?.connected || false
   const isKlaviyoConnected = klaviyoIntegration?.connected || false
+  const isRechargeConnected = rechargeIntegration?.connected || false
 
   // Calculate progress
   const steps = [
-    { name: 'Shopify', done: isShopifyConnected },
+    { name: 'Recharge', done: isRechargeConnected },
     { name: 'Klaviyo', done: isKlaviyoConnected },
     { name: 'Installment Name', done: installmentSaved },
   ]
@@ -50,7 +56,39 @@ export default function IntakeStep1Connect({
   const allComplete = completedCount === steps.length
   const progressPercent = (completedCount / steps.length) * 100
 
-  // Connect Shopify
+  // Connect Recharge
+  const handleConnectRecharge = async () => {
+    if (!rechargeApiKey.trim()) {
+      setShowRechargeInput(true)
+      return
+    }
+
+    setIsConnectingRecharge(true)
+    setRechargeError('')
+    try {
+      const response = await fetch('/api/integrations/recharge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: rechargeApiKey.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        setShowRechargeInput(false)
+        setRechargeApiKey('')
+        onRefresh()
+      } else {
+        setRechargeError(data.error || 'Failed to connect')
+      }
+    } catch (error) {
+      console.error('Error connecting Recharge:', error)
+      setRechargeError('Connection failed')
+    }
+    setIsConnectingRecharge(false)
+  }
+
+  // Connect Shopify (optional, for additional data)
   const handleConnectShopify = async () => {
     if (!shopifyStore.trim()) {
       setShowShopifyInput(true)
@@ -222,58 +260,69 @@ export default function IntakeStep1Connect({
       {/* Content */}
       {isExpanded && (
         <div className="p-5 space-y-4">
-          {/* Shopify Connection */}
+          {/* Recharge Connection */}
           <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#95BF47]/10 flex items-center justify-center">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#95BF47">
-                    <path d="M15.337 3.415c-.193-.15-.476-.197-.753-.163-.277.03-.55.1-.8.183a7.478 7.478 0 00-.707.26c-.097-.603-.27-1.126-.524-1.546-.535-.893-1.308-1.364-2.236-1.36-1.02.004-1.948.539-2.762 1.6-.577.747-1.024 1.69-1.16 2.42-.84.26-1.427.44-1.44.446-.425.13-.438.145-.494.55-.04.31-.988 7.64-1.038 8.046l7.87 1.477 4.27-1.04s-1.16-8.787-1.226-9.223c-.067-.436-.067-.5-.067-.5l-.933-.15z"/>
+                <div className="w-10 h-10 rounded-lg bg-[#5C6BC0]/10 flex items-center justify-center">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#5C6BC0">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-[#F5F0E8]">Shopify</h4>
+                  <h4 className="font-medium text-[#F5F0E8]">Recharge</h4>
                   <p className="text-sm text-[#6B6660]">
-                    {isShopifyConnected ? 'Connected' : 'Connect your Shopify store'}
+                    {isRechargeConnected ? 'Connected - Syncing subscribers' : 'Connect your subscription platform'}
                   </p>
                 </div>
               </div>
 
-              {isShopifyConnected ? (
+              {isRechargeConnected ? (
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#5CB87A]/10 border border-[#5CB87A]/20">
                   <Check className="w-4 h-4 text-[#5CB87A]" />
                   <span className="text-sm text-[#5CB87A] font-medium">Connected</span>
                 </div>
-              ) : showShopifyInput ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="your-store.myshopify.com"
-                    value={shopifyStore}
-                    onChange={(e) => setShopifyStore(e.target.value)}
-                    className="px-3 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] text-sm placeholder-[#6B6660] focus:outline-none focus:border-[#95BF47]/50 w-56"
-                    onKeyDown={(e) => e.key === 'Enter' && handleConnectShopify()}
-                  />
-                  <button
-                    onClick={handleConnectShopify}
-                    disabled={isConnectingShopify || !shopifyStore.trim()}
-                    className="px-4 py-2 rounded-lg bg-[#95BF47] hover:bg-[#7ea33d] text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+              ) : showRechargeInput ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      placeholder="Recharge API Key"
+                      value={rechargeApiKey}
+                      onChange={(e) => setRechargeApiKey(e.target.value)}
+                      className="px-3 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] text-sm placeholder-[#6B6660] focus:outline-none focus:border-[#5C6BC0]/50 w-56"
+                      onKeyDown={(e) => e.key === 'Enter' && handleConnectRecharge()}
+                    />
+                    <button
+                      onClick={handleConnectRecharge}
+                      disabled={isConnectingRecharge || !rechargeApiKey.trim()}
+                      className="px-4 py-2 rounded-lg bg-[#5C6BC0] hover:bg-[#4a5ab0] text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isConnectingRecharge ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Connect'
+                      )}
+                    </button>
+                  </div>
+                  {rechargeError && (
+                    <p className="text-xs text-red-400">{rechargeError}</p>
+                  )}
+                  <a
+                    href="https://support.rechargepayments.com/hc/en-us/articles/360008683274-Creating-an-API-Token"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#6B6660] hover:text-[#C9A962] flex items-center gap-1"
                   >
-                    {isConnectingShopify ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="w-4 h-4" />
-                    )}
-                    Connect
-                  </button>
+                    How to get your API key <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowShopifyInput(true)}
-                  className="px-4 py-2 rounded-lg bg-[#95BF47] hover:bg-[#7ea33d] text-white font-medium text-sm transition-colors flex items-center gap-2"
+                  onClick={() => setShowRechargeInput(true)}
+                  className="px-4 py-2 rounded-lg bg-[#5C6BC0] hover:bg-[#4a5ab0] text-white font-medium text-sm transition-colors flex items-center gap-2"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  Connect Shopify
+                  Connect Recharge
                 </button>
               )}
             </div>
