@@ -1,10 +1,11 @@
 'use client'
 
-import { ClientData } from '@/lib/types'
 import { Mail, Wrench, Calendar, Shield } from 'lucide-react'
 
 interface SupportSectionProps {
-  client: ClientData
+  client: {
+    hostingRenewal?: string | null
+  }
 }
 
 export default function SupportSection({ client }: SupportSectionProps) {

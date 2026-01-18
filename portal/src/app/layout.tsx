@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, IBM_Plex_Mono } from 'next/font/google'
+import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 import Providers from '@/components/Providers'
 
@@ -45,9 +46,11 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
-        <Providers>
-          {children}
-        </Providers>
+        <ClerkProvider>
+          <Providers>
+            {children}
+          </Providers>
+        </ClerkProvider>
       </body>
     </html>
   )

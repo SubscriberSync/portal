@@ -9,8 +9,8 @@ export type IntakeItemType =
 export type IntakeStatus = 'Pending' | 'Submitted' | 'Approved' | 'Rejected'
 
 export interface IntakeSubmission {
-  id: string
-  client: string
+  id?: string
+  client?: string
   item: IntakeItemType
   value: string
   status: IntakeStatus

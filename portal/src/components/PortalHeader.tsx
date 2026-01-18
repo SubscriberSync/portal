@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Package, ChevronDown, Settings, Users, Sparkles } from 'lucide-react'
+import { UserButton, OrganizationSwitcher } from '@clerk/nextjs'
 import { ClientIntegrations } from '@/lib/types'
 import ThemeToggle from './ThemeToggle'
 
@@ -136,6 +137,25 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
 
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* Organization Switcher */}
+            <OrganizationSwitcher
+              appearance={{
+                elements: {
+                  rootBox: 'flex items-center',
+                  organizationSwitcherTrigger: 'px-3 py-2 rounded-full bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.1)] transition-all',
+                },
+              }}
+            />
+
+            {/* User Button */}
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: 'w-9 h-9 rounded-full border-2 border-[rgba(255,255,255,0.1)]',
+                },
+              }}
+            />
 
             {/* Integration Status Dropdown */}
             {status === 'Live' ? (

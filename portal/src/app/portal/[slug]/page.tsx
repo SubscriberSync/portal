@@ -1,7 +1,13 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getClientBySlug, getDemoClient } from '@/lib/airtable'
-import { getIntakeSubmissions, getClientOnboardingData } from '@/lib/airtable-intake'
+import { auth } from '@clerk/nextjs/server'
+import {
+  getOrganizationBySlug,
+  getIntakeSubmissions,
+  getDiscordConfig,
+  getIntegrations,
+  upsertOrganization
+} from '@/lib/supabase/data'
 import PortalHeader from '@/components/PortalHeader'
 import StatusBar from '@/components/StatusBar'
 import SupportSection from '@/components/SupportSection'
@@ -10,6 +16,8 @@ import CriticalAlerts from '@/components/CriticalAlerts'
 import PackReadyCounter from '@/components/PackReadyCounter'
 import StatsGrid from '@/components/StatsGrid'
 import Forecasting from '@/components/Forecasting'
+import { ClientIntegrations } from '@/lib/types'
+import { IntakeSubmission as SupabaseIntakeSubmission, DiscordConfig } from '@/lib/supabase/data'
 
 // Force dynamic rendering - don't cache this page
 export const dynamic = 'force-dynamic'
@@ -19,30 +27,134 @@ interface PortalPageProps {
   params: { slug: string }
 }
 
-export default async function PortalPage({ params }: PortalPageProps) {
-  let client = process.env.AIRTABLE_API_KEY
-    ? await getClientBySlug(params.slug)
-    : null
+// Transform Supabase intake submissions to the format expected by components
+function transformSubmissions(submissions: SupabaseIntakeSubmission[]) {
+  return submissions.map(s => ({
+    item: s.item_type,
+    value: s.value_encrypted || '',
+    status: s.status,
+    rejectionNote: s.rejection_note || undefined,
+    submittedAt: s.submitted_at || undefined,
+    reviewedAt: s.reviewed_at || undefined,
+  }))
+}
 
-  if (!client) {
-    client = getDemoClient(params.slug)
+// Transform Supabase integrations to the format expected by components
+function transformIntegrations(integrations: Awaited<ReturnType<typeof getIntegrations>>): ClientIntegrations {
+  const findIntegration = (type: string) => integrations.find(i => i.type === type)
+
+  return {
+    shopify: {
+      connected: findIntegration('shopify')?.connected || false,
+      lastSync: findIntegration('shopify')?.last_sync_at || undefined,
+    },
+    recharge: {
+      connected: findIntegration('recharge')?.connected || false,
+      lastSync: findIntegration('recharge')?.last_sync_at || undefined,
+    },
+    klaviyo: {
+      connected: findIntegration('klaviyo')?.connected || false,
+      lastSync: findIntegration('klaviyo')?.last_sync_at || undefined,
+    },
+    airtable: {
+      connected: false, // No longer using Airtable
+      lastSync: undefined,
+    },
+    discord: findIntegration('discord') ? {
+      connected: findIntegration('discord')?.connected || false,
+      lastSync: findIntegration('discord')?.last_sync_at || undefined,
+    } : undefined,
+  }
+}
+
+// Transform Discord config to onboarding format
+function transformDiscordConfig(config: DiscordConfig | null) {
+  if (!config) {
+    return {
+      decision: 'Not Decided' as const,
+      newOrExisting: undefined,
+      serverName: undefined,
+      serverId: undefined,
+      channels: [],
+      episodeGated: false,
+      moderatorName: undefined,
+      moderatorEmail: undefined,
+      vibe: undefined,
+    }
   }
 
-  // Fetch onboarding data
-  const [submissions, onboardingData] = await Promise.all([
-    getIntakeSubmissions(params.slug),
-    getClientOnboardingData(params.slug),
+  return {
+    decision: config.decision,
+    newOrExisting: config.new_or_existing || undefined,
+    serverName: config.server_name || undefined,
+    serverId: config.server_id || undefined,
+    channels: config.channels.map(name => ({ name, enabled: true })),
+    episodeGated: config.episode_gated,
+    moderatorName: config.moderator_name || undefined,
+    moderatorEmail: config.moderator_email || undefined,
+    vibe: config.vibe || undefined,
+  }
+}
+
+export default async function PortalPage({ params }: PortalPageProps) {
+  // Get Clerk auth to verify user has access
+  const { orgId, orgSlug } = await auth()
+
+  // Verify the user has access to this organization
+  if (orgSlug !== params.slug) {
+    // User is trying to access a different org than their active one
+    notFound()
+  }
+
+  // Get or create organization in Supabase
+  let organization = await getOrganizationBySlug(params.slug)
+
+  if (!organization && orgId) {
+    // Organization doesn't exist in Supabase yet - create it
+    organization = await upsertOrganization({
+      id: orgId,
+      name: params.slug, // Will be updated by webhook
+      slug: params.slug,
+      status: 'Building',
+    })
+  }
+
+  if (!organization) {
+    notFound()
+  }
+
+  // Fetch all data in parallel
+  const [submissions, discordConfig, integrations] = await Promise.all([
+    getIntakeSubmissions(organization.id),
+    getDiscordConfig(organization.id),
+    getIntegrations(organization.id),
   ])
 
-  // Default onboarding data if not found
-  const defaultOnboardingData = {
-    step1Complete: false,
-    discordDecision: 'Not Decided' as const,
-    step2Complete: false,
+  // Transform data for components
+  const transformedSubmissions = transformSubmissions(submissions)
+  const transformedIntegrations = transformIntegrations(integrations)
+  const transformedDiscord = transformDiscordConfig(discordConfig)
+
+  // Build onboarding data
+  const onboardingData = {
+    step1Complete: organization.step1_complete,
+    discordDecision: transformedDiscord.decision,
+    discordSetup: transformedDiscord,
+    step2Complete: organization.step2_complete,
   }
 
-  const onboarding = onboardingData || defaultOnboardingData
-  const isOnboardingComplete = onboarding.step1Complete && onboarding.step2Complete
+  const isOnboardingComplete = organization.step1_complete && organization.step2_complete
+
+  // Build client object for components
+  const client = {
+    company: organization.name,
+    logoUrl: organization.logo_url || undefined,
+    status: organization.status,
+    airtableUrl: organization.airtable_url || undefined,
+    loomUrl: organization.loom_url || undefined,
+    hostingRenewal: organization.hosting_renewal,
+    integrations: transformedIntegrations,
+  }
 
   return (
     <main className="min-h-screen">
@@ -85,8 +197,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
           <section className="animate-in stagger-2">
             <OnboardingSection
               clientSlug={params.slug}
-              initialSubmissions={submissions}
-              initialOnboardingData={onboarding}
+              initialSubmissions={transformedSubmissions}
+              initialOnboardingData={onboardingData}
             />
           </section>
         )}
