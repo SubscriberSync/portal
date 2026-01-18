@@ -40,12 +40,12 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-border px-6 py-4">
+      <div className="bg-[var(--glass-bg)] backdrop-blur-xl border-b border-[var(--glass-border)] px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
               href={`/portal/${clientSlug}`}
-              className="text-foreground-secondary hover:text-foreground transition-colors"
+              className="text-[var(--foreground-tertiary)] hover:text-[var(--foreground)] transition-colors"
             >
               &larr; Back to Portal
             </Link>
@@ -108,20 +108,20 @@ function BillingSection({ clientSlug }: { clientSlug: string }) {
   };
 
   return (
-    <section className="bg-background-secondary rounded-2xl border border-border p-6">
+    <section className="bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] p-6 shadow-[0_0_0_1px_var(--glass-inset)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-          <CreditCard className="w-5 h-5 text-green-600" />
+        <div className="w-10 h-10 rounded-xl bg-[rgba(92,184,122,0.15)] border border-[rgba(92,184,122,0.2)] flex items-center justify-center flex-shrink-0">
+          <CreditCard className="w-5 h-5 text-[#5CB87A]" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-foreground mb-1">Billing & Subscription</h2>
-          <p className="text-sm text-foreground-secondary mb-4">
+          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">Billing & Subscription</h2>
+          <p className="text-sm text-[var(--foreground-tertiary)] mb-4">
             Manage your subscription, update payment methods, and view invoices
           </p>
           <button
             onClick={handleOpenBillingPortal}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-foreground text-white font-medium rounded-xl hover:bg-foreground/90 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--foreground)] text-[var(--background)] font-medium rounded-xl hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -138,14 +138,14 @@ function BillingSection({ clientSlug }: { clientSlug: string }) {
 
 function ApiKeysSection({ clientSlug, apiKeys }: { clientSlug: string; apiKeys: ApiKeyField[] }) {
   return (
-    <section className="bg-background-secondary rounded-2xl border border-border p-6">
+    <section className="bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] p-6 shadow-[0_0_0_1px_var(--glass-inset)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
       <div className="flex items-start gap-4 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-          <Key className="w-5 h-5 text-purple-600" />
+        <div className="w-10 h-10 rounded-xl bg-[rgba(168,85,247,0.15)] border border-[rgba(168,85,247,0.2)] flex items-center justify-center flex-shrink-0">
+          <Key className="w-5 h-5 text-[#a855f7]" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-1">API Keys</h2>
-          <p className="text-sm text-foreground-secondary">
+          <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">API Keys</h2>
+          <p className="text-sm text-[var(--foreground-tertiary)]">
             Update your integration credentials if they need to be rotated
           </p>
         </div>
@@ -157,8 +157,8 @@ function ApiKeysSection({ clientSlug, apiKeys }: { clientSlug: string; apiKeys: 
         ))}
       </div>
 
-      <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-        <p className="text-sm text-amber-800">
+      <div className="mt-6 p-4 bg-[rgba(224,122,66,0.1)] border border-[rgba(224,122,66,0.2)] rounded-xl">
+        <p className="text-sm text-[var(--accent)]">
           <strong>Security Note:</strong> API keys are encrypted and stored securely. For security
           reasons, existing keys are not displayed. Only enter a new key if you need to update it.
         </p>
@@ -213,8 +213,8 @@ function ApiKeyInput({ clientSlug, field }: { clientSlug: string; field: ApiKeyF
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-foreground">{field.label}</label>
-      <p className="text-xs text-foreground-tertiary">{field.description}</p>
+      <label className="block text-sm font-medium text-[var(--foreground)]">{field.label}</label>
+      <p className="text-xs text-[var(--foreground-muted)]">{field.description}</p>
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
@@ -222,12 +222,12 @@ function ApiKeyInput({ clientSlug, field }: { clientSlug: string; field: ApiKeyF
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={field.placeholder}
-            className="w-full px-4 py-2.5 pr-10 bg-white border border-border rounded-xl text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent font-mono text-sm"
+            className="w-full px-4 py-2.5 pr-10 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20 focus:border-[var(--accent)] font-mono text-sm"
           />
           <button
             type="button"
             onClick={() => setShowValue(!showValue)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-tertiary hover:text-foreground transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
           >
             {showValue ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           </button>
@@ -235,7 +235,7 @@ function ApiKeyInput({ clientSlug, field }: { clientSlug: string; field: ApiKeyF
         <button
           onClick={handleSave}
           disabled={!value.trim() || isSaving}
-          className="px-4 py-2.5 bg-accent text-white font-medium rounded-xl hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2.5 bg-[var(--accent)] text-[#0c0c0c] font-medium rounded-xl hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isSaving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -245,7 +245,7 @@ function ApiKeyInput({ clientSlug, field }: { clientSlug: string; field: ApiKeyF
           {saved ? 'Saved' : 'Update'}
         </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
 }

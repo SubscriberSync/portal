@@ -22,26 +22,26 @@ function maskValue(value: string): string {
 const STATUS_CONFIG: Record<IntakeStatus, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
   Pending: {
     icon: null,
-    color: 'text-foreground-tertiary',
-    bg: 'bg-background-elevated',
+    color: 'text-[var(--foreground-tertiary)]',
+    bg: 'bg-[var(--glass-bg)]',
     label: '',
   },
   Submitted: {
     icon: <Clock className="w-4 h-4" />,
-    color: 'text-amber-600',
-    bg: 'bg-amber-100',
+    color: 'text-[#e07a42]',
+    bg: 'bg-[rgba(224,122,66,0.15)]',
     label: 'Awaiting Review',
   },
   Approved: {
     icon: <Check className="w-4 h-4" />,
-    color: 'text-success',
-    bg: 'bg-success/10',
+    color: 'text-[#5CB87A]',
+    bg: 'bg-[rgba(92,184,122,0.15)]',
     label: 'Approved',
   },
   Rejected: {
     icon: <AlertTriangle className="w-4 h-4" />,
-    color: 'text-red-600',
-    bg: 'bg-red-100',
+    color: 'text-[#ef4444]',
+    bg: 'bg-[rgba(239,68,68,0.15)]',
     label: 'Needs Revision',
   },
 }
@@ -121,15 +121,15 @@ export default function IntakeItem({
       : `${submission?.value?.substring(0, 30)}${(submission?.value?.length || 0) > 30 ? '...' : ''}`
 
     return (
-      <div className="bg-success/5 rounded-xl p-4 border border-success/20">
+      <div className="bg-[rgba(92,184,122,0.1)] rounded-xl p-4 border border-[rgba(92,184,122,0.2)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg ${statusConfig.bg} flex items-center justify-center ${statusConfig.color}`}>
               {statusConfig.icon}
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">{config.title}</p>
-              <p className="text-xs text-success font-mono">✓ {displayValue}</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{config.title}</p>
+              <p className="text-xs text-[#5CB87A] font-mono">✓ {displayValue}</p>
             </div>
           </div>
         </div>
@@ -144,16 +144,16 @@ export default function IntakeItem({
       : `${submission?.value?.substring(0, 40)}${(submission?.value?.length || 0) > 40 ? '...' : ''}`
 
     return (
-      <div className="bg-amber-50 rounded-xl p-5 border border-amber-200">
+      <div className="bg-[rgba(224,122,66,0.1)] rounded-xl p-5 border border-[rgba(224,122,66,0.2)]">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className={`w-8 h-8 rounded-lg ${statusConfig.bg} flex items-center justify-center ${statusConfig.color}`}>
               {statusConfig.icon || <Clock className="w-4 h-4" />}
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">{config.title}</p>
-              <p className="text-xs text-amber-600 mt-1">{statusConfig.label || 'Awaiting Review'}</p>
-              <p className="text-xs text-foreground-tertiary mt-2 font-mono">{displayValue}</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{config.title}</p>
+              <p className="text-xs text-[#e07a42] mt-1">{statusConfig.label || 'Awaiting Review'}</p>
+              <p className="text-xs text-[var(--foreground-tertiary)] mt-2 font-mono">{displayValue}</p>
             </div>
           </div>
         </div>
@@ -164,23 +164,23 @@ export default function IntakeItem({
   // Pending or Rejected - editable
   return (
     <>
-      <div className={`bg-background-secondary rounded-xl p-5 border transition-colors ${
-        status === 'Rejected' ? 'border-red-300' : 'border-border hover:border-border-strong'
+      <div className={`bg-[var(--glass-bg)] backdrop-blur-xl rounded-xl p-5 border transition-colors shadow-[0_0_0_1px_var(--glass-inset)_inset,0_10px_20px_rgba(0,0,0,0.2)] ${
+        status === 'Rejected' ? 'border-[rgba(239,68,68,0.3)]' : 'border-[var(--glass-border)] hover:border-[var(--glass-border-hover)]'
       }`}>
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-foreground">{config.title}</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{config.title}</p>
               <button
                 onClick={() => setShowHelp(true)}
-                className="p-1 rounded-md hover:bg-background-elevated text-foreground-tertiary hover:text-foreground transition-colors"
+                className="p-1 rounded-md hover:bg-[var(--glass-bg-hover)] text-[var(--foreground-tertiary)] hover:text-[var(--foreground)] transition-colors"
                 title="Need help?"
               >
                 <HelpCircle className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-xs text-foreground-secondary mt-1">{config.description}</p>
+            <p className="text-xs text-[var(--foreground-secondary)] mt-1">{config.description}</p>
           </div>
 
           {status === 'Rejected' && (
@@ -193,8 +193,8 @@ export default function IntakeItem({
 
         {/* Rejection note */}
         {status === 'Rejected' && submission?.rejectionNote && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-xs text-red-700">{submission.rejectionNote}</p>
+          <div className="mb-4 p-3 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)]">
+            <p className="text-xs text-[#ef4444]">{submission.rejectionNote}</p>
           </div>
         )}
 
@@ -207,7 +207,7 @@ export default function IntakeItem({
               placeholder={config.placeholder}
               disabled={disabled || isSubmitting}
               rows={3}
-              className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 disabled:opacity-50 font-mono resize-none"
+              className="flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/30 disabled:opacity-50 font-mono resize-none"
             />
           ) : (
             <div className="flex-1 relative">
@@ -217,7 +217,7 @@ export default function IntakeItem({
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={config.placeholder}
                 disabled={disabled || isSubmitting}
-                className="w-full bg-background border border-border rounded-lg px-3 py-2 pr-10 text-sm text-foreground placeholder:text-foreground-tertiary focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 disabled:opacity-50 font-mono"
+                className="w-full bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg px-3 py-2 pr-10 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-muted)] focus:outline-none focus:border-[var(--accent)]/50 focus:ring-1 focus:ring-[var(--accent)]/30 disabled:opacity-50 font-mono"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSubmit()
                 }}
@@ -226,7 +226,7 @@ export default function IntakeItem({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-foreground-tertiary hover:text-foreground transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -238,7 +238,7 @@ export default function IntakeItem({
           <button
             onClick={handleSubmit}
             disabled={!value.trim() || isSubmitting || disabled}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover disabled:bg-background-elevated disabled:text-foreground-tertiary text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-[var(--accent)] hover:opacity-90 disabled:bg-[var(--glass-bg)] disabled:text-[var(--foreground-muted)] text-[#0c0c0c] rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -253,7 +253,7 @@ export default function IntakeItem({
 
         {/* Error */}
         {error && (
-          <p className="text-xs text-red-600 mt-2">{error}</p>
+          <p className="text-xs text-[#ef4444] mt-2">{error}</p>
         )}
       </div>
       
