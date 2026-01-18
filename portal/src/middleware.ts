@@ -15,17 +15,20 @@ const isPublicRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, request) => {
   const host = request.headers.get('host') || ''
+  const url = new URL(request.url)
 
   // Force www redirect in production
   if (host === 'subscribersync.com') {
-    const url = new URL(request.url)
     url.host = 'www.subscribersync.com'
     return NextResponse.redirect(url, 308)
   }
 
   // Protect all routes except public ones
   if (!isPublicRoute(request)) {
-    await auth.protect()
+    // Use signInUrl with the current path as redirect target
+    await auth.protect({
+      unauthenticatedUrl: `https://www.subscribersync.com/sign-in?redirect_url=${encodeURIComponent(url.pathname)}`,
+    })
   }
 })
 
