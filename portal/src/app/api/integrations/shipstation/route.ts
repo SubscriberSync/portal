@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
 
     // Only register webhooks if not already registered
     const webhooksToRegister: Array<{ event: 'ORDER_NOTIFY' | 'SHIP_NOTIFY'; name: string }> = [
-      { event: 'SHIP_NOTIFY', name: 'Backstage Ship Notification' },
-      { event: 'ORDER_NOTIFY', name: 'Backstage Order Notification' },
+      { event: 'SHIP_NOTIFY', name: 'SubscriberSync Ship Notification' },
+      { event: 'ORDER_NOTIFY', name: 'SubscriberSync Order Notification' },
     ]
 
     let webhooksRegistered = 0

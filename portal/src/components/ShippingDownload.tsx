@@ -16,7 +16,7 @@ export default function ShippingDownload({ clientSlug }: ShippingDownloadProps) 
     setError(null)
 
     try {
-      // Include client slug to fetch from their specific Backstage base
+      // Include client slug to fetch from their specific base
       const url = clientSlug ? `/api/shipping/csv?client=${clientSlug}` : '/api/shipping/csv'
       const response = await fetch(url)
 

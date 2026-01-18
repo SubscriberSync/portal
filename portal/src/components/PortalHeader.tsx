@@ -93,7 +93,7 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
                 <h1 className="text-lg font-semibold text-white tracking-tight">{company}</h1>
               </div>
               <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-[#71717a]">
-                Backstage
+                SubscriberSync
               </p>
             </div>
           </div>

@@ -435,7 +435,7 @@ export default function KlaviyoPage() {
             If you&apos;re not seeing expected data, check that the subscriber has the corresponding field filled in their profile.
           </p>
           <p className="text-sm text-[#52525b]">
-            For custom properties or additional events, contact your Backstage support team.
+            For custom properties or additional events, contact your SubscriberSync support team.
           </p>
         </section>
       </div>

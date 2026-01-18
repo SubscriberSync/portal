@@ -27,7 +27,7 @@ export default function PackModeView({ onExit, clientSlug }: PackModeViewProps) 
     setIsLoading(true)
     setError(null)
     try {
-      // Include client slug to fetch from their specific Backstage base
+      // Include client slug to fetch from their specific base
       const url = clientSlug ? `/api/packing?client=${clientSlug}` : '/api/packing'
       const response = await fetch(url, { cache: 'no-store' })
       if (!response.ok) throw new Error('Failed to fetch')

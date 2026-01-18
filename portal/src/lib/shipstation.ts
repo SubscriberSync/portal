@@ -189,7 +189,7 @@ export async function subscribeWebhook(
       target_url: targetUrl,
       event: event,
       store_id: storeId || null,
-      friendly_name: friendlyName || `Backstage ${event}`,
+      friendly_name: friendlyName || `SubscriberSync ${event}`,
     }),
   })
 }

@@ -158,7 +158,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-        <p className="text-[#71717a]">Welcome to your Backstage portal</p>
+        <p className="text-[#71717a]">Welcome to your SubscriberSync portal</p>
       </div>
 
       {/* Main Content */}

@@ -136,7 +136,7 @@ export default function OnboardingSection({
           <div>
             <h3 className="text-xl font-semibold text-[#F5F0E8] mb-1">Setup Complete</h3>
             <p className="text-sm text-[#A8A39B]">
-              Your Backstage integration is configured and ready to go.
+              Your SubscriberSync integration is configured and ready to go.
             </p>
           </div>
         </div>

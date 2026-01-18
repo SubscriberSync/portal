@@ -18,7 +18,7 @@ const ibmMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Backstage',
+  title: 'SubscriberSync',
   description: 'Your premium subscriber command center',
 }
 

@@ -15,7 +15,7 @@ export default async function CheckoutSuccessPage({
           </div>
 
           <h1 className="text-2xl font-bold text-white mb-2">
-            Welcome to Backstage!
+            Welcome to SubscriberSync!
           </h1>
 
           <p className="text-[#a1a1aa] mb-8">
@@ -36,7 +36,7 @@ export default async function CheckoutSuccessPage({
             <div className="space-y-3 text-sm text-[#a1a1aa] text-left">
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-full bg-[#333] flex items-center justify-center flex-shrink-0 text-xs font-semibold">1</span>
-                <span>Open the invitation email from Backstage</span>
+                <span>Open the invitation email from SubscriberSync</span>
               </div>
               <div className="flex items-start gap-3">
                 <span className="w-6 h-6 rounded-full bg-[#333] flex items-center justify-center flex-shrink-0 text-xs font-semibold">2</span>

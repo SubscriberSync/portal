@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Package, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 export default function PrivacyPolicyPage() {
   return (
@@ -8,8 +8,7 @@ export default function PrivacyPolicyPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0c0c0c]/80 backdrop-blur-md border-b border-[#1a1a1a]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Package className="w-8 h-8 text-[#e07a42]" />
-            <span className="text-xl font-bold">Backstage</span>
+            <img src="/logo.svg" alt="SubscriberSync" className="h-8" />
           </Link>
           <Link
             href="/"
@@ -31,7 +30,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-2xl font-semibold text-white mb-4">1. Introduction</h2>
               <p className="text-[#a1a1aa] leading-relaxed">
-                Everlore Hollow, LLC d/b/a SubscriberSync ("The Company", "we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Backstage platform and related services.
+                Everlore Hollow, LLC d/b/a SubscriberSync ("The Company", "we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our SubscriberSync platform and related services.
               </p>
             </section>
 

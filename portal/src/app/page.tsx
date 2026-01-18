@@ -2,7 +2,6 @@ import { auth, currentUser } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Package,
   Users,
   BarChart3,
   Truck,
@@ -37,7 +36,7 @@ export default async function HomePage({
                 <span className="text-2xl font-bold text-[#0c0c0c]">B</span>
               </div>
               <h1 className="text-2xl font-bold text-[var(--foreground)] mb-2">
-                Welcome to Backstage
+                Welcome to SubscriberSync
               </h1>
               <p className="text-[var(--foreground-secondary)]">
                 Hi {user?.firstName || 'there'}! Select or create an organization to get started.
@@ -71,8 +70,7 @@ export default async function HomePage({
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0c0c0c]/80 backdrop-blur-md border-b border-[#1a1a1a]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Package className="w-8 h-8 text-[#e07a42]" />
-            <span className="text-xl font-bold">Backstage</span>
+            <img src="/logo.svg" alt="SubscriberSync" className="h-8" />
           </div>
           <Link
             href="/sign-in"
@@ -222,8 +220,7 @@ export default async function HomePage({
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-2">
-              <Package className="w-6 h-6 text-[#e07a42]" />
-              <span className="font-semibold">Backstage</span>
+              <img src="/logo.svg" alt="SubscriberSync" className="h-6" />
             </div>
             <div className="flex items-center gap-6 text-sm text-[#666]">
               <a href="mailto:support@subscribersync.com" className="hover:text-white transition-colors">
