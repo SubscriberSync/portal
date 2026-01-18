@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { getClientBySlug, getDemoClient } from '@/lib/airtable'
 import { getIntakeSubmissions, getClientOnboardingData } from '@/lib/airtable-intake'
 import PortalHeader from '@/components/PortalHeader'
 import StatusBar from '@/components/StatusBar'
 import StatsGrid from '@/components/StatsGrid'
-import KlaviyoReference from '@/components/KlaviyoReference'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
 import CriticalAlerts from '@/components/CriticalAlerts'
@@ -149,9 +149,32 @@ export default async function PortalPage({ params }: PortalPageProps) {
               </section>
             )}
 
-            {/* Klaviyo Reference */}
+            {/* Klaviyo Integration */}
             <section className="animate-fade-up" style={{ animationDelay: '550ms' }}>
-              <KlaviyoReference />
+              <div className="p-8 rounded-2xl bg-background-secondary border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-title text-foreground mb-1">Klaviyo Integration</h3>
+                      <p className="text-sm text-foreground-secondary">View all synced properties and events for flows & segments</p>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/portal/${params.slug}/klaviyo`}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium rounded-xl transition-all duration-200"
+                  >
+                    View Properties
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+              </div>
             </section>
           </>
         )}
