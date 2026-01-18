@@ -4,11 +4,11 @@ import { getClientBySlug, getDemoClient } from '@/lib/airtable'
 import { getIntakeSubmissions, getClientOnboardingData } from '@/lib/airtable-intake'
 import PortalHeader from '@/components/PortalHeader'
 import StatusBar from '@/components/StatusBar'
-import StatsGrid from '@/components/StatsGrid'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
 import CriticalAlerts from '@/components/CriticalAlerts'
 import PackReadyCounter from '@/components/PackReadyCounter'
+import StatsGrid from '@/components/StatsGrid'
 
 // Force dynamic rendering - don't cache this page
 export const dynamic = 'force-dynamic'
@@ -93,7 +93,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
                 <h3 className="text-headline text-foreground mb-2">Subscriber Metrics</h3>
                 <p className="text-foreground-secondary">Real-time data from your system</p>
               </div>
-              <StatsGrid client={client} />
+              <StatsGrid clientSlug={params.slug} />
             </section>
 
             {/* Critical Alerts */}
