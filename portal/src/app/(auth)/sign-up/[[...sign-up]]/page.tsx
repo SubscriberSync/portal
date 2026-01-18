@@ -1,12 +1,11 @@
-import { SignUp } from '@clerk/nextjs'
+'use client'
 
-export default async function SignUpPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ redirect_url?: string }>
-}) {
-  const params = await searchParams
-  const redirectUrl = params.redirect_url || '/'
+import { SignUp } from '@clerk/nextjs'
+import { useSearchParams } from 'next/navigation'
+
+export default function SignUpPage() {
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect_url') || '/'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0c0c0c]">
