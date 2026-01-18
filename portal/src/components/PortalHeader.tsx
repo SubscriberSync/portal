@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Package, ChevronDown, Settings } from 'lucide-react'
+import { Package, ChevronDown, Settings, Users } from 'lucide-react'
 import { ClientIntegrations } from '@/lib/types'
 
 interface Integration {
@@ -87,6 +87,17 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Subscribers Button */}
+            {showPackMode && clientSlug && (
+              <Link
+                href={`/portal/${clientSlug}/subscribers`}
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-background-elevated hover:bg-border text-foreground font-medium transition-colors"
+              >
+                <Users className="w-4 h-4" />
+                <span className="text-sm">Subscribers</span>
+              </Link>
+            )}
+
             {/* Pack Mode Button */}
             {showPackMode && clientSlug && (
               <Link
