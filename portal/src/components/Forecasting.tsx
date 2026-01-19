@@ -34,9 +34,7 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
     async function fetchForecast() {
       setIsLoading(true)
       try {
-        const res = await fetch(
-          `https://n8n.everlorehollow.com/webhook/backstage/${clientSlug}/forecast`
-        )
+        const res = await fetch('/api/forecasting')
         if (res.ok) {
           const result = await res.json()
           setData(result)

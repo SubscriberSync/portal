@@ -28,9 +28,7 @@ export default function CriticalAlerts({ clientSlug }: CriticalAlertsProps) {
   useEffect(() => {
     async function fetchAlerts() {
       try {
-        const res = await fetch(
-          `https://n8n.everlorehollow.com/webhook/portal/alerts?client=${clientSlug}`
-        )
+        const res = await fetch('/api/alerts')
         if (!res.ok) {
           throw new Error('Failed to fetch alerts')
         }

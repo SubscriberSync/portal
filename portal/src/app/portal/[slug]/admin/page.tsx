@@ -182,17 +182,14 @@ function ApiKeyInput({ clientSlug, field }: { clientSlug: string; field: ApiKeyF
     setSaved(false);
 
     try {
-      const res = await fetch(
-        `https://n8n.everlorehollow.com/webhook/portal/update-api-key?client=${clientSlug}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            keyType: field.id,
-            keyValue: value,
-          }),
-        }
-      );
+      const res = await fetch('/api/integrations/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          keyType: field.id,
+          keyValue: value,
+        }),
+      });
 
       if (!res.ok) {
         throw new Error('Failed to update API key');
