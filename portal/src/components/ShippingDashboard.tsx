@@ -547,7 +547,7 @@ export default function ShippingDashboard({
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            default_carrier_id: actualCarrierId,
+            default_carrier_id: carrierId,
             default_service_code: serviceCode,
           }),
         }).catch(console.error) // Don't fail if saving default fails
