@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
-import { Card, Metric, Text, Flex, Grid, TabGroup, TabList, Tab, TabPanels, TabPanel, TextInput, Badge } from '@tremor/react'
+import { Card, TabGroup, TabList, Tab, TabPanels, TabPanel, TextInput, Badge } from '@tremor/react'
 import {
   Building2,
   Users,
@@ -45,46 +45,46 @@ export default function AdminDashboard({
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <Flex justifyContent="between" alignItems="center">
-            <Flex justifyContent="start" alignItems="center" className="gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center">
                 <LayoutDashboard className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-foreground">Admin Dashboard</h1>
-                <Text className="text-foreground-muted">{adminEmail}</Text>
+                <p className="text-sm text-foreground-muted">{adminEmail}</p>
               </div>
-            </Flex>
+            </div>
             <UserButton afterSignOutUrl="/sign-in" />
-          </Flex>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <Grid numItemsSm={1} numItemsMd={3} className="gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card className="bg-background-surface border-border ring-0" decoration="top" decorationColor="blue">
-            <Flex justifyContent="start" alignItems="center" className="gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3">
               <Building2 className="w-5 h-5 text-blue-400" />
-              <Text className="text-foreground-secondary">Total Organizations</Text>
-            </Flex>
-            <Metric className="text-foreground">{stats.totalOrgs.toLocaleString()}</Metric>
+              <span className="text-foreground-secondary">Total Organizations</span>
+            </div>
+            <p className="text-3xl font-semibold text-foreground">{stats.totalOrgs.toLocaleString()}</p>
           </Card>
           <Card className="bg-background-surface border-border ring-0" decoration="top" decorationColor="emerald">
-            <Flex justifyContent="start" alignItems="center" className="gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-              <Text className="text-foreground-secondary">Live</Text>
-            </Flex>
-            <Metric className="text-foreground">{stats.liveOrgs.toLocaleString()}</Metric>
+              <span className="text-foreground-secondary">Live</span>
+            </div>
+            <p className="text-3xl font-semibold text-foreground">{stats.liveOrgs.toLocaleString()}</p>
           </Card>
           <Card className="bg-background-surface border-border ring-0" decoration="top" decorationColor="violet">
-            <Flex justifyContent="start" alignItems="center" className="gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3">
               <Users className="w-5 h-5 text-violet-400" />
-              <Text className="text-foreground-secondary">Total Subscribers</Text>
-            </Flex>
-            <Metric className="text-foreground">{stats.totalSubscribers.toLocaleString()}</Metric>
+              <span className="text-foreground-secondary">Total Subscribers</span>
+            </div>
+            <p className="text-3xl font-semibold text-foreground">{stats.totalSubscribers.toLocaleString()}</p>
           </Card>
-        </Grid>
+        </div>
 
         {/* Tabs */}
         <TabGroup>
@@ -133,7 +133,7 @@ function OverviewTab({
       <h3 className="text-lg font-semibold text-foreground mb-4">Recent Organizations</h3>
       <div className="space-y-3">
         {recentOrgs.length === 0 ? (
-          <Text className="text-foreground-muted">No organizations yet</Text>
+          <p className="text-foreground-muted">No organizations yet</p>
         ) : (
           recentOrgs.map(org => (
             <div
@@ -141,8 +141,8 @@ function OverviewTab({
               className="flex items-center justify-between p-3 rounded-xl bg-background-secondary border border-border"
             >
               <div>
-                <Text className="font-medium text-foreground">{org.name}</Text>
-                <Text className="text-foreground-muted">{org.slug}</Text>
+                <p className="font-medium text-foreground">{org.name}</p>
+                <p className="text-sm text-foreground-muted">{org.slug}</p>
               </div>
               <StatusBadge status={org.status} />
             </div>
@@ -197,7 +197,7 @@ function OrganizationsTab({
   return (
     <div>
       {/* Actions Bar */}
-      <Flex justifyContent="between" alignItems="center" className="mb-6 gap-4">
+      <div className="flex items-center justify-between gap-4 mb-6">
         <TextInput
           icon={Search}
           placeholder="Search organizations..."
@@ -212,7 +212,7 @@ function OrganizationsTab({
           <Plus className="w-4 h-4" />
           New Organization
         </button>
-      </Flex>
+      </div>
 
       {/* Organizations Table */}
       <Card className="bg-background-surface border-border ring-0 overflow-hidden p-0">
@@ -232,8 +232,8 @@ function OrganizationsTab({
               <tr key={org.id} className="border-b border-border hover:bg-background-secondary">
                 <td className="px-6 py-4">
                   <div>
-                    <Text className="font-medium text-foreground">{org.name}</Text>
-                    <Text className="text-foreground-muted">{org.slug}</Text>
+                    <p className="font-medium text-foreground">{org.name}</p>
+                    <p className="text-sm text-foreground-muted">{org.slug}</p>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -247,20 +247,20 @@ function OrganizationsTab({
                   />
                 </td>
                 <td className="px-6 py-4">
-                  <Flex justifyContent="start" alignItems="center" className="gap-2">
+                  <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${org.step1_complete ? 'bg-emerald-400' : 'bg-foreground-muted/30'}`} />
-                    <Text className="text-foreground-tertiary">Step 1</Text>
+                    <span className="text-sm text-foreground-tertiary">Step 1</span>
                     <div className={`w-2 h-2 rounded-full ${org.step2_complete ? 'bg-emerald-400' : 'bg-foreground-muted/30'}`} />
-                    <Text className="text-foreground-tertiary">Step 2</Text>
-                  </Flex>
+                    <span className="text-sm text-foreground-tertiary">Step 2</span>
+                  </div>
                 </td>
                 <td className="px-6 py-4">
-                  <Text className="text-foreground-muted">
+                  <span className="text-sm text-foreground-muted">
                     {new Date(org.created_at).toLocaleDateString()}
-                  </Text>
+                  </span>
                 </td>
                 <td className="px-6 py-4">
-                  <Flex justifyContent="end" alignItems="center" className="gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     <a
                       href={`/portal/${org.slug}`}
                       target="_blank"
@@ -278,7 +278,7 @@ function OrganizationsTab({
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </Flex>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -286,7 +286,7 @@ function OrganizationsTab({
         </table>
         {organizations.length === 0 && (
           <div className="text-center py-12">
-            <Text className="text-foreground-muted">No organizations found</Text>
+            <p className="text-foreground-muted">No organizations found</p>
           </div>
         )}
       </Card>
@@ -324,7 +324,7 @@ function SubscriptionBadge({
 }) {
   if (isTestPortal) {
     return (
-      <Badge color="violet" size="sm" icon={TestTube}>
+      <Badge color="violet" size="sm">
         Test Portal
       </Badge>
     )
@@ -342,14 +342,14 @@ function SubscriptionBadge({
   const config = statusConfig[status || 'none'] || statusConfig.none
 
   return (
-    <Flex justifyContent="start" alignItems="center" className="gap-2">
-      <Badge color={config.color} size="sm" icon={CreditCard}>
+    <div className="flex items-center gap-2">
+      <Badge color={config.color} size="sm">
         {config.label}
       </Badge>
       {failedPayments && failedPayments > 0 && (
-        <Text className="text-xs text-red-400">({failedPayments} failed)</Text>
+        <span className="text-xs text-red-400">({failedPayments} failed)</span>
       )}
-    </Flex>
+    </div>
   )
 }
 
@@ -402,7 +402,7 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
         <h2 className="text-xl font-semibold text-foreground mb-6">Create Organization</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Text className="text-foreground-secondary mb-2">Organization Name</Text>
+            <label className="block text-sm text-foreground-secondary mb-2">Organization Name</label>
             <TextInput
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
@@ -411,16 +411,16 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div>
-            <Text className="text-foreground-secondary mb-2">Slug (URL)</Text>
+            <label className="block text-sm text-foreground-secondary mb-2">Slug (URL)</label>
             <TextInput
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="acme-inc"
               required
             />
-            <Text className="text-foreground-muted text-xs mt-1">
+            <p className="text-xs text-foreground-muted mt-1">
               Portal URL: subscribersync.com/portal/{slug || 'slug'}
-            </Text>
+            </p>
           </div>
           <div>
             <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-background-secondary border border-border hover:border-border-strong transition-colors">
@@ -430,18 +430,18 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setIsTestPortal(e.target.checked)}
                 className="w-4 h-4 rounded bg-background-elevated border-foreground-muted text-accent focus:ring-accent focus:ring-offset-0"
               />
-              <Flex justifyContent="start" alignItems="center" className="gap-2">
+              <div className="flex items-center gap-2">
                 <TestTube className="w-4 h-4 text-violet-400" />
                 <div>
-                  <Text className="text-foreground">Create as Test Portal</Text>
-                  <Text className="text-foreground-muted text-xs">Sends invite email to test user</Text>
+                  <span className="text-sm text-foreground">Create as Test Portal</span>
+                  <p className="text-xs text-foreground-muted">Sends invite email to test user</p>
                 </div>
-              </Flex>
+              </div>
             </label>
           </div>
           {isTestPortal && (
             <div>
-              <Text className="text-foreground-secondary mb-2">Invite Email Address</Text>
+              <label className="block text-sm text-foreground-secondary mb-2">Invite Email Address</label>
               <TextInput
                 type="email"
                 value={inviteEmail}
@@ -449,17 +449,17 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
                 placeholder="testuser@example.com"
                 required={isTestPortal}
               />
-              <Text className="text-foreground-muted text-xs mt-1">
+              <p className="text-xs text-foreground-muted mt-1">
                 This email will receive an invitation to join the portal
-              </Text>
+              </p>
             </div>
           )}
           {error && (
             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-              <Text className="text-red-400">{error}</Text>
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
-          <Flex justifyContent="end" className="gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
@@ -474,7 +474,7 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
             >
               {isSubmitting ? 'Creating...' : isTestPortal ? 'Create & Send Invite' : 'Create'}
             </button>
-          </Flex>
+          </div>
         </form>
       </Card>
     </div>

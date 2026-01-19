@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, Metric, Text, Flex, Grid, Select, SelectItem } from '@tremor/react'
+import { Card, Select, SelectItem } from '@tremor/react'
 import { ChevronDown, TrendingUp, Users, Pause, XCircle, Loader2 } from 'lucide-react'
 
 interface StatsGridProps {
@@ -52,20 +52,20 @@ function StatCard({
       decoration={showDecoration ? 'top' : undefined}
       decorationColor={showDecoration ? 'orange' : undefined}
     >
-      <Flex justifyContent="start" alignItems="center" className="gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-4">
         <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center`}>
           <Icon className={`w-5 h-5 ${colors.icon}`} />
         </div>
-        <Text className="text-foreground-muted text-xs font-semibold tracking-wider uppercase">
+        <span className="text-foreground-muted text-xs font-semibold tracking-wider uppercase">
           {label}
-        </Text>
-      </Flex>
+        </span>
+      </div>
       {isLoading ? (
         <div className="h-10 w-24 rounded-lg bg-background-elevated animate-pulse" />
       ) : (
-        <Metric className={`font-mono ${colors.metric}`}>
+        <p className={`text-3xl font-semibold font-mono ${colors.metric}`}>
           {value.toLocaleString()}
-        </Metric>
+        </p>
       )}
     </Card>
   )
@@ -107,10 +107,10 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
   return (
     <div className="space-y-6">
       {/* Header with Date Range Selector */}
-      <Flex justifyContent="between" alignItems="center">
+      <div className="flex items-center justify-between">
         <div>
-          <Text className="text-xl font-semibold text-foreground mb-1">Subscriber Overview</Text>
-          <Text className="text-foreground-muted">Real-time metrics from your subscriber base</Text>
+          <h2 className="text-xl font-semibold text-foreground mb-1">Subscriber Overview</h2>
+          <p className="text-sm text-foreground-muted">Real-time metrics from your subscriber base</p>
         </div>
 
         <Select
@@ -124,10 +124,10 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
             </SelectItem>
           ))}
         </Select>
-      </Flex>
+      </div>
 
       {/* Stats Grid */}
-      <Grid numItemsSm={2} numItemsLg={4} className="gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total Subscribers"
           value={stats?.total ?? 0}
@@ -157,16 +157,16 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
           color="zinc"
           isLoading={isLoading}
         />
-      </Grid>
+      </div>
 
       {/* Summary Bar */}
       <Card className="bg-background-secondary border-border ring-0">
-        <Flex justifyContent="center" alignItems="center" className="gap-8">
+        <div className="flex items-center justify-center gap-8">
           <div className="flex items-center gap-3">
             <div className="w-2.5 h-2.5 rounded-full bg-accent" />
-            <Text className="text-foreground-tertiary">
+            <span className="text-sm text-foreground-tertiary">
               <span className="text-accent font-semibold">{activeRate}%</span> active rate
-            </Text>
+            </span>
           </div>
 
           <div className="w-px h-4 bg-border" />
@@ -176,19 +176,19 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
               <div className="absolute inset-0 bg-accent rounded-full" />
               <div className="absolute inset-0 bg-accent rounded-full animate-ping opacity-40" />
             </div>
-            <Text className="text-foreground-tertiary">Real-time sync</Text>
+            <span className="text-sm text-foreground-tertiary">Real-time sync</span>
           </div>
 
           {isLoading && (
             <>
               <div className="w-px h-4 bg-border" />
-              <Flex justifyContent="start" alignItems="center" className="gap-2">
+              <div className="flex items-center gap-2">
                 <Loader2 className="w-3 h-3 text-foreground-muted animate-spin" />
-                <Text className="text-foreground-muted text-xs">Refreshing...</Text>
-              </Flex>
+                <span className="text-xs text-foreground-muted">Refreshing...</span>
+              </div>
             </>
           )}
-        </Flex>
+        </div>
       </Card>
     </div>
   )

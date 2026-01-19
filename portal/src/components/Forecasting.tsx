@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BarChart, Card, Text, Flex } from '@tremor/react'
+import { BarChart, Card } from '@tremor/react'
 import { Package, TrendingUp, Sparkles, Loader2 } from 'lucide-react'
 
 interface ForecastingProps {
@@ -80,20 +80,20 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Sequence Histogram - Tremor Card */}
         <Card className="lg:col-span-2 bg-background-surface border-border ring-0">
-          <Flex justifyContent="between" alignItems="center" className="mb-4">
+          <div className="flex items-center justify-between mb-4">
             <h4 className="font-semibold text-foreground">Subscribers by Episode</h4>
             {data?.totalActive && (
-              <Text className="text-foreground-muted">
+              <span className="text-sm text-foreground-muted">
                 {data.totalActive} active subscribers
-              </Text>
+              </span>
             )}
-          </Flex>
+          </div>
 
           {isLoading ? (
             <div className="h-[300px] flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 text-accent animate-spin" />
-                <Text className="text-foreground-muted">Loading forecast...</Text>
+                <span className="text-sm text-foreground-muted">Loading forecast...</span>
               </div>
             </div>
           ) : chartData.length > 0 ? (
@@ -109,9 +109,9 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
             />
           ) : (
             <div className="h-[300px] flex items-center justify-center">
-              <Text className="text-foreground-muted">No episode data available</Text>
+              <span className="text-foreground-muted">No episode data available</span>
             </div>
-          )
+          )}
 
           {/* Forecast Insight */}
           {nextMonthForecast.length > 0 && (
@@ -121,15 +121,15 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
                   <TrendingUp className="w-4 h-4 text-accent" />
                 </div>
                 <div>
-                  <Text className="font-medium text-accent mb-1">Next Month Forecast</Text>
-                  <Text className="text-foreground-secondary">
+                  <p className="font-medium text-accent mb-1">Next Month Forecast</p>
+                  <p className="text-sm text-foreground-secondary">
                     {nextMonthForecast.map((f, i) => (
                       <span key={f.currentBox}>
                         {i > 0 && ' + '}
                         <span className="font-semibold text-foreground">{f.units}</span> units of Box {f.nextBox}
                       </span>
                     ))}
-                  </Text>
+                  </p>
                 </div>
               </div>
             </div>
@@ -138,10 +138,10 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
 
         {/* Sidecar Counter - Tremor Card */}
         <Card className="bg-background-surface border-border ring-0">
-          <Flex justifyContent="start" alignItems="center" className="gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-6">
             <Package className="w-5 h-5 text-accent" />
             <h4 className="font-semibold text-foreground">Add-On Products</h4>
-          </Flex>
+          </div>
 
           {isLoading ? (
             <div className="space-y-4">
@@ -160,40 +160,40 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
                   className="p-4 bg-background-secondary rounded-xl hover:bg-background-elevated transition-colors border border-border"
                 >
                   <div className="mb-2">
-                    <Text className="font-medium text-foreground line-clamp-1">
+                    <span className="text-sm font-medium text-foreground line-clamp-1">
                       {sidecar.name}
-                    </Text>
+                    </span>
                   </div>
-                  <Flex justifyContent="between" className="text-xs">
+                  <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-accent" />
-                      <Text className="text-foreground-tertiary">
+                      <span className="text-foreground-tertiary">
                         <span className="font-semibold text-foreground">{sidecar.unitsToPack}</span> to pack
-                      </Text>
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-accent-light" />
-                      <Text className="text-foreground-tertiary">
+                      <span className="text-foreground-tertiary">
                         <span className="font-semibold text-foreground">{sidecar.velocity}</span>/mo
-                      </Text>
+                      </span>
                     </div>
-                  </Flex>
+                  </div>
                 </div>
               ))}
 
               {/* Total Summary */}
               <div className="mt-4 pt-4 border-t border-border">
-                <Flex justifyContent="between" alignItems="center">
-                  <Text className="text-foreground-tertiary">Total to Pack</Text>
-                  <Text className="text-lg font-bold text-accent">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-foreground-tertiary">Total to Pack</span>
+                  <span className="text-lg font-bold text-accent">
                     {data.sidecars.reduce((sum, s) => sum + s.unitsToPack, 0)}
-                  </Text>
-                </Flex>
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
             <div className="h-full flex items-center justify-center py-12">
-              <Text className="text-foreground-muted">No add-on products</Text>
+              <span className="text-foreground-muted">No add-on products</span>
             </div>
           )}
         </Card>
