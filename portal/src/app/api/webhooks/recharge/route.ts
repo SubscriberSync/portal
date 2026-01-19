@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { syncSubscriberToKlaviyo, Subscriber } from '@/lib/klaviyo-sync'
+import { syncSingleSubscriber } from '@/app/api/discord/sync/route'
 
 // Recharge webhook topics we handle
 type RechargeWebhookTopic =
@@ -216,6 +217,19 @@ async function handleSubscriptionEvent(
     // Sync to Klaviyo
     const updatedSub = { ...existingSub, ...updateData } as Subscriber
     await syncSubscriberToKlaviyo(updatedSub)
+
+    // Sync Discord roles based on subscription status change
+    try {
+      await syncSingleSubscriber(
+        orgId,
+        existingSub.id,
+        status,
+        subscription.sku || subscription.product_title
+      )
+    } catch (discordError) {
+      // Log but don't fail the webhook if Discord sync fails
+      console.error('[Recharge Webhook] Discord sync error:', discordError)
+    }
   }
 }
 
