@@ -23,6 +23,22 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 export default clerkMiddleware(async (auth, request) => {
+  // Handle Clerk invitation flow - redirect to sign-up with the ticket
+  const clerkTicket = request.nextUrl.searchParams.get('__clerk_ticket')
+  const clerkStatus = request.nextUrl.searchParams.get('__clerk_status')
+
+  if (clerkTicket && (clerkStatus === 'sign_up' || clerkStatus === 'sign_in')) {
+    const { userId } = await auth()
+
+    if (!userId) {
+      // User needs to sign up/in first - redirect to appropriate page with ticket
+      const authUrl = new URL(clerkStatus === 'sign_up' ? '/sign-up' : '/sign-in', request.url)
+      authUrl.searchParams.set('__clerk_ticket', clerkTicket)
+      authUrl.searchParams.set('redirect_url', request.nextUrl.pathname)
+      return NextResponse.redirect(authUrl)
+    }
+  }
+
   if (!isPublicRoute(request)) {
     const { userId } = await auth()
 
