@@ -12,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
   '/terms',
   '/privacy',
   '/api/clerk-proxy(.*)',
+  '/clerk(.*)',
   '/test-auth',
 ])
 
@@ -43,6 +44,6 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
   matcher: [
     // Skip Next.js internals, static files, and Clerk proxy
-    '/((?!_next|api/clerk-proxy|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!_next|api/clerk-proxy|clerk/|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
   ],
 }
