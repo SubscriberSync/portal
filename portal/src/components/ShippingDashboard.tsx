@@ -15,8 +15,40 @@ import {
   ArrowUpDown,
   Clock,
   CalendarClock,
+  DollarSign,
+  ExternalLink,
+  Send,
 } from 'lucide-react'
 import { Shipment, PrintBatch } from '@/lib/supabase/data'
+import RateSelectionModal from './RateSelectionModal'
+
+interface ServiceTotal {
+  serviceCode: string
+  carrierId: string
+  carrierName: string
+  serviceName: string
+  totalCost: number
+  avgCost: number
+  deliveryDays?: number
+}
+
+interface ShipmentRateData {
+  shipmentId: string
+  orderNumber: string | null
+  subscriberName: string
+  weight: number
+  rates: Array<{
+    rate_id: string
+    carrier_id: string
+    carrier_friendly_name: string
+    service_type: string
+    service_code: string
+    shipping_amount: { currency: string; amount: number }
+    delivery_days?: number
+    estimated_delivery_date?: string
+  }>
+  error?: string
+}
 
 interface UpcomingSubscription {
   scheduledAt: string
@@ -94,7 +126,18 @@ export default function ShippingDashboard({
     errors: { orderId: string; orderNumber: string; error: string }[]
     pdfUrl?: string
     batchId?: string
+    labelUrls?: string[]
+    totalShippingCost?: number
   } | null>(null)
+
+  // Label purchase state
+  const [showRateModal, setShowRateModal] = useState(false)
+  const [isLoadingRates, setIsLoadingRates] = useState(false)
+  const [isPurchasingLabels, setIsPurchasingLabels] = useState(false)
+  const [ratesError, setRatesError] = useState<string | null>(null)
+  const [commonServices, setCommonServices] = useState<ServiceTotal[]>([])
+  const [shipmentRates, setShipmentRates] = useState<ShipmentRateData[]>([])
+  const [showActionDropdown, setShowActionDropdown] = useState(false)
 
   // Upcoming subscriptions state
   const [upcomingSubscriptions, setUpcomingSubscriptions] = useState<Record<string, UpcomingSubscription[]>>({})
@@ -425,6 +468,106 @@ export default function ShippingDashboard({
     }
   }
 
+  // Fetch rates for selected shipments (opens rate modal)
+  const handleFetchRates = async () => {
+    if (selectedIds.size === 0) return
+    if (!shipstationConnected) {
+      alert('Please connect ShipStation in Settings first')
+      return
+    }
+
+    setShowRateModal(true)
+    setIsLoadingRates(true)
+    setRatesError(null)
+    setCommonServices([])
+    setShipmentRates([])
+
+    try {
+      const selectedShipments = sortedShipments.filter(s => selectedIds.has(s.id))
+      const orderedIds = selectedShipments.map(s => s.id)
+
+      const response = await fetch('/api/shipping/rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentIds: orderedIds }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch rates')
+      }
+
+      setCommonServices(data.commonServices || [])
+      setShipmentRates(data.shipmentRates || [])
+    } catch (error) {
+      setRatesError(error instanceof Error ? error.message : 'Failed to fetch rates')
+    } finally {
+      setIsLoadingRates(false)
+    }
+  }
+
+  // Purchase labels with selected service
+  const handlePurchaseLabels = async (carrierId: string, serviceCode: string, saveAsDefault: boolean) => {
+    if (selectedIds.size === 0) return
+
+    setIsPurchasingLabels(true)
+
+    try {
+      const selectedShipments = sortedShipments.filter(s => selectedIds.has(s.id))
+      const orderedIds = selectedShipments.map(s => s.id)
+
+      const response = await fetch('/api/shipping/buy-labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipmentIds: orderedIds,
+          sortOrder: orderedIds,
+          carrierId,
+          serviceCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to purchase labels')
+      }
+
+      // Save as default if requested
+      if (saveAsDefault && data.success > 0) {
+        await fetch('/api/shipping/preferences', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            default_carrier_id: actualCarrierId,
+            default_service_code: serviceCode,
+          }),
+        }).catch(console.error) // Don't fail if saving default fails
+      }
+
+      setShowRateModal(false)
+      setBatchResult({
+        success: data.success,
+        failed: data.failed,
+        errors: data.errors || [],
+        batchId: data.batchId,
+        labelUrls: data.labelUrls,
+        totalShippingCost: data.totalShippingCost,
+      })
+
+      // Remove successful shipments from the list
+      if (data.successIds) {
+        setShipments(prev => prev.filter(s => !data.successIds.includes(s.id)))
+        setSelectedIds(new Set())
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to purchase labels')
+    } finally {
+      setIsPurchasingLabels(false)
+    }
+  }
+
   // Toggle sort
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -561,15 +704,80 @@ export default function ShippingDashboard({
               Merge Selected
             </button>
 
-            {/* Generate Labels Button */}
-            <button
-              onClick={handleGenerateLabels}
-              disabled={selectedCount === 0 || isGenerating || !shipstationConnected}
-              className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-              Generate Labels ({selectedCount})
-            </button>
+            {/* Action Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowActionDropdown(!showActionDropdown)}
+                disabled={selectedCount === 0 || !shipstationConnected}
+                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                Ship Labels ({selectedCount})
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showActionDropdown && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowActionDropdown(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] shadow-xl z-20 overflow-hidden">
+                    {/* Buy Labels - Main action */}
+                    <button
+                      onClick={() => {
+                        setShowActionDropdown(false)
+                        handleFetchRates()
+                      }}
+                      className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)]"
+                    >
+                      <DollarSign className="w-4 h-4 text-[#5CB87A]" />
+                      <div>
+                        <p className="font-medium">Buy Labels</p>
+                        <p className="text-xs text-[#71717a]">Compare rates & purchase in-app</p>
+                      </div>
+                    </button>
+
+                    {/* Push to ShipStation */}
+                    <button
+                      onClick={() => {
+                        setShowActionDropdown(false)
+                        handleGenerateLabels()
+                      }}
+                      disabled={isGenerating}
+                      className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)] disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4 text-[#e07a42]" />
+                      )}
+                      <div>
+                        <p className="font-medium">Push to ShipStation</p>
+                        <p className="text-xs text-[#71717a]">Create orders, print there</p>
+                      </div>
+                    </button>
+
+                    {/* Open ShipStation */}
+                    <a
+                      href="https://ship.shipstation.com/orders/awaiting-shipment"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowActionDropdown(false)}
+                      className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3"
+                    >
+                      <ExternalLink className="w-4 h-4 text-[#71717a]" />
+                      <div>
+                        <p className="font-medium">Open ShipStation</p>
+                        <p className="text-xs text-[#71717a]">Print in ShipStation dashboard</p>
+                      </div>
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Batch Result Modal */}
@@ -577,7 +785,7 @@ export default function ShippingDashboard({
             <div className="p-6 rounded-xl bg-surface border border-border">
               <h3 className="text-lg font-semibold text-foreground mb-4">Batch Complete</h3>
 
-              <div className="flex gap-6 mb-4">
+              <div className="flex flex-wrap gap-6 mb-4">
                 <div className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-500" />
                   <span className="text-green-500 font-medium">{batchResult.success} Labels Ready</span>
@@ -588,19 +796,51 @@ export default function ShippingDashboard({
                     <span className="text-red-400 font-medium">{batchResult.failed} Errors</span>
                   </div>
                 )}
+                {batchResult.totalShippingCost !== undefined && batchResult.totalShippingCost > 0 && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-[#e07a42]" />
+                    <span className="text-[#e07a42] font-medium">
+                      ${batchResult.totalShippingCost.toFixed(2)} Total
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {batchResult.pdfUrl && (
-                <a
-                  href={batchResult.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Labels PDF
-                </a>
-              )}
+              {/* Download buttons */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                {batchResult.pdfUrl && (
+                  <a
+                    href={batchResult.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Labels PDF
+                  </a>
+                )}
+                {batchResult.labelUrls && batchResult.labelUrls.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {batchResult.labelUrls.slice(0, 5).map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-secondary text-foreground text-sm hover:bg-surface"
+                      >
+                        <Download className="w-3 h-3" />
+                        Label {i + 1}
+                      </a>
+                    ))}
+                    {batchResult.labelUrls.length > 5 && (
+                      <span className="text-sm text-foreground-secondary self-center">
+                        +{batchResult.labelUrls.length - 5} more
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {batchResult.errors.length > 0 && (
                 <div className="mt-4">
@@ -924,6 +1164,24 @@ export default function ShippingDashboard({
           )}
         </div>
       )}
+
+      {/* Rate Selection Modal */}
+      <RateSelectionModal
+        isOpen={showRateModal}
+        onClose={() => {
+          setShowRateModal(false)
+          setCommonServices([])
+          setShipmentRates([])
+          setRatesError(null)
+        }}
+        onConfirm={handlePurchaseLabels}
+        shipmentCount={selectedIds.size}
+        commonServices={commonServices}
+        shipmentRates={shipmentRates}
+        isLoading={isLoadingRates}
+        isPurchasing={isPurchasingLabels}
+        error={ratesError || undefined}
+      />
     </div>
   )
 }

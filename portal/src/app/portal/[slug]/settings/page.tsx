@@ -1,8 +1,9 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 import { getOrganizationBySlug, getIntegrations } from '@/lib/supabase/data'
-import { Settings, Plug, User, Bell, Shield } from 'lucide-react'
+import { Plug, User, Bell, Shield, Truck } from 'lucide-react'
 import ShipStationSettings from '@/components/ShipStationSettings'
+import ShippingPreferencesForm from '@/components/ShippingPreferencesForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -187,6 +188,19 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
               connected={shipstationIntegration?.connected || false}
               lastSyncAt={shipstationIntegration?.last_sync_at}
               organizationId={organization.id}
+            />
+          </div>
+        </section>
+
+        {/* Shipping Preferences Section */}
+        <section>
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-[#e07a42]" />
+            Shipping Preferences
+          </h2>
+          <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-6">
+            <ShippingPreferencesForm
+              shipstationConnected={shipstationIntegration?.connected || false}
             />
           </div>
         </section>
