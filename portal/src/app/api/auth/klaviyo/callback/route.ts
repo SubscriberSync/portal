@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { exchangeKlaviyoCode } from '@/lib/oauth'
 import { upsertIntegration } from '@/lib/supabase/data'
+import { getErrorMessage } from '@/lib/api-utils'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
     // Redirect back to portal with success
     return NextResponse.redirect(new URL(`/portal/${orgSlug}?success=klaviyo_connected`, request.url))
   } catch (error) {
-    console.error('[Klaviyo Callback] Error:', error)
+    console.error('[Klaviyo Callback] Error:', getErrorMessage(error))
     return NextResponse.redirect(new URL('/error?message=Internal+error', request.url))
   }
 }

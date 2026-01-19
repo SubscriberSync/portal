@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 // POST /api/shipping/merge
 // Merge multiple shipments for the same customer into one
@@ -102,7 +103,6 @@ export async function POST(request: NextRequest) {
       mergedCount: childShipments.length,
     })
   } catch (error) {
-    console.error('[Merge Shipments] Error:', error)
-    return NextResponse.json({ error: 'Failed to merge shipments' }, { status: 500 })
+    return handleApiError(error, 'Merge Shipments', 'Failed to merge shipments')
   }
 }

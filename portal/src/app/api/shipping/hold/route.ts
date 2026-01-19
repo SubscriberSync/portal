@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * POST /api/shipping/hold
@@ -87,8 +88,7 @@ export async function POST(request: NextRequest) {
       heldUntil: holdDate,
     })
   } catch (error) {
-    console.error('[Hold Shipment] Error:', error)
-    return NextResponse.json({ error: 'Failed to hold shipment' }, { status: 500 })
+    return handleApiError(error, 'Hold Shipment', 'Failed to hold shipment')
   }
 }
 
@@ -132,7 +132,6 @@ export async function GET() {
       count: heldShipments?.length || 0,
     })
   } catch (error) {
-    console.error('[Get Held Shipments] Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch held shipments' }, { status: 500 })
+    return handleApiError(error, 'Get Held Shipments', 'Failed to fetch held shipments')
   }
 }

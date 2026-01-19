@@ -8,6 +8,7 @@ import {
   getStores,
   getCarriers,
 } from '@/lib/shipstation'
+import { handleApiError } from '@/lib/api-utils'
 
 // POST /api/integrations/shipstation
 // Connect ShipStation using API Key + API Secret
@@ -102,11 +103,7 @@ export async function POST(request: NextRequest) {
       webhooksRegistered,
     })
   } catch (error) {
-    console.error('[ShipStation Integration] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to connect ShipStation' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'ShipStation Integration', 'Failed to connect ShipStation')
   }
 }
 
@@ -127,7 +124,6 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ShipStation Integration] Disconnect error:', error)
-    return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 })
+    return handleApiError(error, 'ShipStation Integration Disconnect', 'Failed to disconnect')
   }
 }

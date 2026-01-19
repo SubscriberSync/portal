@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { getCarriersV2, getWarehousesV2, V2Carrier, V2Warehouse } from '@/lib/shipstation'
+import { handleApiError } from '@/lib/api-utils'
 
 // GET /api/shipping/carriers
 // List connected carriers with their services from ShipStation
@@ -91,10 +92,6 @@ export async function GET() {
       warehouses: formattedWarehouses,
     })
   } catch (error) {
-    console.error('[Carriers] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch carriers' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Carriers', 'Failed to fetch carriers')
   }
 }

@@ -12,6 +12,7 @@ import {
   logSubscriptionEvent,
   isEventProcessed,
 } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -73,8 +74,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('[Stripe Webhook] Error processing event:', error)
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+    return handleApiError(error, 'Stripe Webhook', 'Webhook processing failed')
   }
 }
 

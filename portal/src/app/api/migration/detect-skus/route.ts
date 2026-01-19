@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { fetchUniqueSKUs } from '@/lib/forensic-audit'
+import { handleApiError } from '@/lib/api-utils'
 
 // GET /api/migration/detect-skus
 // Scans Shopify for all unique SKUs to help with mapping
@@ -79,10 +80,6 @@ export async function GET(request: NextRequest) {
       mappedCount: skus.filter(s => s.isMapped).length,
     })
   } catch (error) {
-    console.error('[Detect SKUs] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to detect SKUs' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Detect SKUs', 'Failed to detect SKUs')
   }
 }

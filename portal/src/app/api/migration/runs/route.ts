@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 // GET /api/migration/runs
 // Get all migration runs for the organization
@@ -32,11 +33,7 @@ export async function GET() {
 
     return NextResponse.json({ runs: runs || [] })
   } catch (error) {
-    console.error('[Migration Runs] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch runs' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Migration Runs', 'Failed to fetch runs')
   }
 }
 
@@ -122,11 +119,7 @@ export async function POST(request: NextRequest) {
       totalSubscribers: subscriberCount,
     })
   } catch (error) {
-    console.error('[Migration Runs] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to start migration' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Migration Runs', 'Failed to start migration')
   }
 }
 
@@ -174,10 +167,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ run })
   } catch (error) {
-    console.error('[Migration Runs] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to update run' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Migration Runs', 'Failed to update run')
   }
 }

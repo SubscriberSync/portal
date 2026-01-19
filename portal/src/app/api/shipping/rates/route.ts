@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { getRatesV2, toV2Address, V2Rate } from '@/lib/shipstation'
+import { handleApiError, getErrorMessage } from '@/lib/api-utils'
 
 interface ShipmentRates {
   shipmentId: string
@@ -168,14 +169,14 @@ export async function POST(request: NextRequest) {
           rates: validRates,
         })
       } catch (error) {
-        console.error(`[Rates] Error getting rates for shipment ${shipment.id}:`, error)
+        console.error(`[Rates] Error getting rates for shipment ${shipment.id}:`, getErrorMessage(error))
         shipmentRates.push({
           shipmentId: shipment.id,
           orderNumber: shipment.order_number,
           subscriberName: `${shipment.subscriber?.first_name || ''} ${shipment.subscriber?.last_name || ''}`.trim(),
           weight: shipment.weight_oz || 16,
           rates: [],
-          error: error instanceof Error ? error.message : 'Failed to get rates',
+          error: getErrorMessage(error, 'Failed to get rates'),
         })
       }
     }
@@ -237,10 +238,6 @@ export async function POST(request: NextRequest) {
       shipmentsWithErrors: shipmentRates.filter(sr => sr.error).length,
     })
   } catch (error) {
-    console.error('[Rates] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to get rates' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Rates', 'Failed to get rates')
   }
 }

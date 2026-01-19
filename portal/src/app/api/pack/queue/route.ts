@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 import type { PackShipment, ShipmentSubscriber } from '@/lib/pack-types'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +20,11 @@ export async function GET(request: NextRequest) {
   const organization = await getOrganizationBySlug(orgSlug)
   if (!organization) {
     return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+  }
+
+  // Verify the user has access to this organization via Clerk's orgId
+  if (organization.id !== orgId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
@@ -168,7 +174,6 @@ export async function GET(request: NextRequest) {
       })) || [],
     })
   } catch (error) {
-    console.error('[Pack Queue] Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch queue' }, { status: 500 })
+    return handleApiError(error, 'Pack Queue', 'Failed to fetch queue')
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { cookies } from 'next/headers'
 import { generateState, buildShopifyAuthUrl } from '@/lib/oauth'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   // Verify user is authenticated
@@ -53,7 +54,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: authUrl })
   } catch (error) {
-    console.error('[Shopify Auth] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Shopify Auth')
   }
 }

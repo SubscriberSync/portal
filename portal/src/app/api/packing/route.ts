@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getShipments, Shipment } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +61,6 @@ export async function GET() {
 
     return NextResponse.json({ batches: sortedBatches })
   } catch (error) {
-    console.error('[Packing API] Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch packing data' }, { status: 500 })
+    return handleApiError(error, 'Packing API', 'Failed to fetch packing data')
   }
 }

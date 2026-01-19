@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * POST /api/pack/merge
@@ -102,7 +103,6 @@ export async function POST(request: NextRequest) {
       merged: mergedShipment,
     })
   } catch (error) {
-    console.error('[Pack Merge] Error:', error)
-    return NextResponse.json({ error: 'Failed to merge shipments' }, { status: 500 })
+    return handleApiError(error, 'Pack Merge', 'Failed to merge shipments')
   }
 }

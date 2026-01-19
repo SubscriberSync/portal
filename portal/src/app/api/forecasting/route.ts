@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 
 interface BoxDistribution {
   boxNumber: number
@@ -102,7 +103,6 @@ export async function GET() {
 
     return NextResponse.json(forecastData)
   } catch (error) {
-    console.error('[Forecasting] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Forecasting')
   }
 }

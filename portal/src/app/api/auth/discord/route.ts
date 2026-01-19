@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { cookies } from 'next/headers'
 import { generateState } from '@/lib/oauth'
 import { buildBotAuthUrl } from '@/lib/discord'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * POST /api/auth/discord
@@ -54,7 +55,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: authUrl })
   } catch (error) {
-    console.error('[Discord Auth] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Auth')
   }
 }

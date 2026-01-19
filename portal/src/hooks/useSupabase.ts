@@ -1,21 +1,16 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useSession, useOrganization as useClerkOrganization } from '@clerk/nextjs'
+import { useOrganization as useClerkOrganization } from '@clerk/nextjs'
 import { createClient } from '@/lib/supabase/client'
 
 export function useSupabase() {
-  const { session } = useSession()
-
+  // Using useMemo with empty deps since createClient() now returns a singleton
+  // This ensures we don't trigger unnecessary re-renders while still following
+  // React hook best practices
   const supabase = useMemo(() => {
-    const client = createClient()
-
-    // If we have a Clerk session, we'll use the JWT for RLS
-    // The server-side client handles this via the server.ts file
-    // For client-side, we use the anon key and RLS policies
-
-    return client
-  }, [session])
+    return createClient()
+  }, [])
 
   return supabase
 }

@@ -5,6 +5,7 @@ import {
   upsertDiscordConfig,
   updateOrganization,
 } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function POST(
   request: NextRequest,
@@ -56,7 +57,6 @@ export async function POST(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error updating discord decision:', error)
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Decision')
   }
 }

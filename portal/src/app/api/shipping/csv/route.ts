@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -144,8 +145,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[Shipping CSV] Error:', error)
-    return NextResponse.json({ error: 'Failed to generate CSV' }, { status: 500 })
+    return handleApiError(error, 'Shipping CSV', 'Failed to generate CSV')
   }
 }
 
@@ -224,7 +224,6 @@ export async function GET() {
       },
     })
   } catch (error) {
-    console.error('[Shipping CSV] Error:', error)
-    return NextResponse.json({ error: 'Failed to generate CSV' }, { status: 500 })
+    return handleApiError(error, 'Shipping CSV', 'Failed to generate CSV')
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getSubscriberStats } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * GET /api/subscribers/stats
@@ -18,7 +19,6 @@ export async function GET() {
 
     return NextResponse.json(stats)
   } catch (error) {
-    console.error('[Subscribers Stats] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Subscribers Stats')
   }
 }

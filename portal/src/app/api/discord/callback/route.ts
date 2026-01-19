@@ -8,6 +8,7 @@ import {
   encryptToken,
   DISCORD_CONFIG 
 } from '@/lib/discord'
+import { getErrorMessage } from '@/lib/api-utils'
 
 interface ConnectData {
   orgId: string
@@ -191,7 +192,7 @@ export async function GET(request: NextRequest) {
       new URL(`/connect/${orgSlug}/discord?success=true&redirect=${encodeURIComponent(discordServerUrl)}`, request.url)
     )
   } catch (error) {
-    console.error('[Discord Customer Callback] Error:', error)
+    console.error('[Discord Customer Callback] Error:', getErrorMessage(error))
     return errorRedirect('Failed to connect Discord', orgSlug)
   }
 }

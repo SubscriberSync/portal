@@ -5,6 +5,7 @@ import {
   getIntakeSubmissions,
   getDiscordConfig,
 } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 // Disable caching for this route
 export const dynamic = 'force-dynamic'
@@ -70,7 +71,6 @@ export async function GET(
       onboardingData,
     })
   } catch (error) {
-    console.error('Error fetching intake data:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Intake Fetch')
   }
 }

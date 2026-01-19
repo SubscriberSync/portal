@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * POST /api/shipping/release
@@ -74,8 +75,7 @@ export async function POST(request: NextRequest) {
       shipmentId,
     })
   } catch (error) {
-    console.error('[Release Shipment] Error:', error)
-    return NextResponse.json({ error: 'Failed to release shipment' }, { status: 500 })
+    return handleApiError(error, 'Release Shipment', 'Failed to release shipment')
   }
 }
 
@@ -137,7 +137,6 @@ export async function PUT(request: NextRequest) {
       releasedIds: updated?.map(s => s.id) || [],
     })
   } catch (error) {
-    console.error('[Batch Release] Error:', error)
-    return NextResponse.json({ error: 'Failed to release shipments' }, { status: 500 })
+    return handleApiError(error, 'Batch Release', 'Failed to release shipments')
   }
 }

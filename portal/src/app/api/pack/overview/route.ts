@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -150,7 +151,6 @@ export async function GET() {
       shopifyStore,
     })
   } catch (error) {
-    console.error('[Pack Overview] Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch overview' }, { status: 500 })
+    return handleApiError(error, 'Pack Overview', 'Failed to fetch overview')
   }
 }

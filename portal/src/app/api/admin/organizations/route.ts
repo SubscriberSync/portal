@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { currentUser, clerkClient } from '@clerk/nextjs/server'
 import { isAdmin } from '@/lib/admin'
 import { createOrganization, deleteOrganization, getAllOrganizations, updateOrganization } from '@/lib/supabase/data'
+import { handleApiError, getErrorMessage } from '@/lib/api-utils'
 
 export async function GET() {
   const user = await currentUser()
@@ -19,8 +20,7 @@ export async function GET() {
     const organizations = await getAllOrganizations()
     return NextResponse.json({ organizations })
   } catch (error) {
-    console.error('Error fetching organizations:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Admin Organizations')
   }
 }
 
@@ -120,8 +120,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ organization })
   } catch (error) {
-    console.error('Error creating organization:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Admin Create Organization')
   }
 }
 
@@ -171,7 +170,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error deleting organization:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Admin Delete Organization')
   }
 }

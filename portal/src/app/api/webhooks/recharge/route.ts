@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { syncSubscriberToKlaviyo, Subscriber } from '@/lib/klaviyo-sync'
 import { syncSingleSubscriber } from '@/app/api/discord/sync/route'
+import { handleApiError } from '@/lib/api-utils'
 
 // Recharge webhook topics we handle
 type RechargeWebhookTopic =
@@ -157,8 +158,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Recharge Webhook] Error:', error)
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+    return handleApiError(error, 'Recharge Webhook', 'Processing failed')
   }
 }
 

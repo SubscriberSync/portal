@@ -10,6 +10,7 @@ import {
   handleCancellation,
   getGuildMember
 } from '@/lib/discord'
+import { handleApiError, getErrorMessage } from '@/lib/api-utils'
 
 /**
  * POST /api/discord/sync
@@ -153,8 +154,7 @@ export async function POST(request: NextRequest) {
       results 
     })
   } catch (error) {
-    console.error('[Discord Sync] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Sync')
   }
 }
 

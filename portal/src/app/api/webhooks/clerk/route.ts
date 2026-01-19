@@ -2,6 +2,7 @@ import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getErrorMessage } from '@/lib/api-utils'
 
 export async function POST(req: Request) {
   // Get the headers
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
 
     return new Response('Webhook processed', { status: 200 })
   } catch (error) {
-    console.error('Error processing webhook:', error)
+    console.error('[Clerk Webhook] Error:', getErrorMessage(error))
     return new Response('Error processing webhook', { status: 500 })
   }
 }

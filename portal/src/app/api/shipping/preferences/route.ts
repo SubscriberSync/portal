@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export interface ShippingPreferences {
   // Default carrier/service for quick buys
@@ -90,8 +91,7 @@ export async function GET() {
 
     return NextResponse.json(preferences)
   } catch (error) {
-    console.error('[Shipping Preferences] Get error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Shipping Preferences Get')
   }
 }
 
@@ -172,7 +172,6 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Shipping Preferences] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Shipping Preferences')
   }
 }

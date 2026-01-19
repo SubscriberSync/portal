@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 
 const RECHARGE_API_BASE = 'https://api.rechargeapps.com'
 
@@ -116,8 +117,7 @@ export async function POST(request: NextRequest) {
       initialSync: syncResult,
     })
   } catch (error) {
-    console.error('[Recharge] Connection error:', error)
-    return NextResponse.json({ error: 'Connection failed' }, { status: 500 })
+    return handleApiError(error, 'Recharge', 'Connection failed')
   }
 }
 
@@ -224,7 +224,7 @@ async function initialSync(
 
     console.log(`[Recharge] Initial sync: ${customerCount} customers, ${subscriptionCount} subscriptions`)
   } catch (error) {
-    console.error('[Recharge] Initial sync error:', error)
+    console.error('[Recharge] Initial sync error:', error instanceof Error ? error.message : error)
   }
 
   return { customers: customerCount, subscriptions: subscriptionCount }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 // POST /api/pack/flag
 // Flag a shipment with a reason (moves out of pack queue)
@@ -93,7 +94,6 @@ export async function POST(request: NextRequest) {
       hasMore: (remainingCount || 0) > 0,
     })
   } catch (error) {
-    console.error('[Pack Flag] Error:', error)
-    return NextResponse.json({ error: 'Failed to flag shipment' }, { status: 500 })
+    return handleApiError(error, 'Pack Flag', 'Failed to flag shipment')
   }
 }

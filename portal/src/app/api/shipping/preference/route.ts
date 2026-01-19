@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 
 type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
 
@@ -42,8 +43,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, provider })
   } catch (error) {
-    console.error('[Shipping Preference] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Shipping Preference')
   }
 }
 
@@ -75,7 +75,6 @@ export async function GET() {
       provider: org.shipping_provider,
     })
   } catch (error) {
-    console.error('[Shipping Preference] Get error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Shipping Preference Get')
   }
 }

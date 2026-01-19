@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase/data'
 import { IntakeItemType } from '@/lib/intake-types'
 import { shouldAutoApprove, validateIntakeItem } from '@/lib/admin'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function POST(
   request: NextRequest,
@@ -93,7 +94,6 @@ export async function POST(
       validationError: validation.valid ? undefined : validation.error,
     })
   } catch (error) {
-    console.error('Error submitting intake item:', error)
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Intake Submit')
   }
 }

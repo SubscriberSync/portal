@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { generateState } from '@/lib/oauth'
 import { buildCustomerAuthUrl } from '@/lib/discord'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * POST /api/discord/connect
@@ -119,8 +120,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: authUrl })
   } catch (error) {
-    console.error('[Discord Connect] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Connect')
   }
 }
 
@@ -184,7 +184,6 @@ export async function GET(request: NextRequest) {
       } : null,
     })
   } catch (error) {
-    console.error('[Discord Connect] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Connect')
   }
 }

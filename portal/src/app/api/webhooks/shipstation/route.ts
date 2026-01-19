@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrders, getShipments, ShipStationCredentials } from '@/lib/shipstation'
+import { handleApiError } from '@/lib/api-utils'
 
 // ShipStation webhook payload contains a resource_url that we need to fetch
 interface ShipStationWebhookPayload {
@@ -66,8 +67,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[ShipStation Webhook] Error:', error)
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+    return handleApiError(error, 'ShipStation Webhook', 'Processing failed')
   }
 }
 

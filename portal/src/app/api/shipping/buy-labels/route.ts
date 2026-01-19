@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { createLabelV2, toV2Address, V2Label } from '@/lib/shipstation'
+import { handleApiError, getErrorMessage } from '@/lib/api-utils'
 import crypto from 'crypto'
 
 interface LabelResult {
@@ -291,10 +292,6 @@ export async function POST(request: NextRequest) {
       results,
     })
   } catch (error) {
-    console.error('[Buy Labels] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to purchase labels' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Buy Labels', 'Failed to purchase labels')
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getSubscriberWithShipments, Shipment } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -76,8 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(transformed)
   } catch (error) {
-    console.error('[Subscriber Detail] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Subscriber Detail')
   }
 }
 

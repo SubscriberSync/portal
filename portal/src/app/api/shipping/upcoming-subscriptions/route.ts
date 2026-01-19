@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 import { getUpcomingCharges, RechargeCredentials } from '@/lib/recharge'
 
 export const dynamic = 'force-dynamic'
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[Upcoming Subscriptions] Error:', error)
+    console.error('[Upcoming Subscriptions] Error:', error instanceof Error ? error.message : error)
     return NextResponse.json(
       { error: 'Failed to fetch upcoming subscriptions', upcomingBySubscriberId: {} },
       { status: 200 } // Return 200 with empty data so UI doesn't break

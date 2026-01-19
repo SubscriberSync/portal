@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession } from '@/lib/stripe'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,10 +45,6 @@ export async function POST(request: NextRequest) {
       slug,
     })
   } catch (error) {
-    console.error('[Create Checkout Session] Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create checkout session' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Create Checkout Session', 'Failed to create checkout session')
   }
 }

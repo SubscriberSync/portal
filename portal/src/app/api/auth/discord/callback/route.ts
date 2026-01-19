@@ -7,6 +7,7 @@ import {
   getGuild,
   DISCORD_CONFIG 
 } from '@/lib/discord'
+import { getErrorMessage } from '@/lib/api-utils'
 
 interface OAuthOrgData {
   orgId: string
@@ -174,7 +175,7 @@ export async function GET(request: NextRequest) {
       new URL(`/portal/${orgSlug}/discord?connected=true`, request.url)
     )
   } catch (error) {
-    console.error('[Discord Callback] Error:', error)
+    console.error('[Discord Callback] Error:', getErrorMessage(error))
     return NextResponse.redirect(
       new URL(`/portal/${orgSlug}/settings?discord_error=connection_failed`, request.url)
     )

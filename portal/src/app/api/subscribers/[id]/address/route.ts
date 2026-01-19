@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getSubscriberById, updateSubscriber, logSubscriberActivity } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -79,7 +80,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message: 'Address updated successfully',
     })
   } catch (error) {
-    console.error('[Subscriber Address Update] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Subscriber Address Update')
   }
 }

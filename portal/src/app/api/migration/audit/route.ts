@@ -9,6 +9,7 @@ import {
   saveAuditResult,
   ShopifyCredentials,
 } from '@/lib/forensic-audit'
+import { handleApiError, getErrorMessage } from '@/lib/api-utils'
 
 // POST /api/migration/audit
 // Audit a single subscriber or batch of subscribers
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
           proposedNextBox: auditResult.proposedNextBox,
         })
       } catch (error) {
-        console.error(`[Audit] Error for ${subscriber.email}:`, error)
+        console.error(`[Audit] Error for ${subscriber.email}:`, getErrorMessage(error))
         results.push({
           subscriberId: subscriber.id,
           email: subscriber.email,
@@ -150,10 +151,6 @@ export async function POST(request: NextRequest) {
       results,
     })
   } catch (error) {
-    console.error('[Audit] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Audit failed' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Audit', 'Audit failed')
   }
 }

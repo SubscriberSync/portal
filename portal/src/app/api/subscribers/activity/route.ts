@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getSubscriberActivity } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * GET /api/subscribers/activity
@@ -32,7 +33,6 @@ export async function GET(request: NextRequest) {
       activities: transformed,
     })
   } catch (error) {
-    console.error('[Subscribers Activity] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Subscribers Activity')
   }
 }

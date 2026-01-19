@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * GET /api/discord/stats
@@ -68,7 +69,6 @@ export async function GET() {
       recent_activity: recentActivity || [],
     })
   } catch (error) {
-    console.error('[Discord Stats] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Stats')
   }
 }

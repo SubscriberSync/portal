@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGuildRoles, createGuildRole, DiscordRole } from '@/lib/discord'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * GET /api/discord/roles
@@ -72,8 +73,7 @@ export async function GET() {
       })),
     })
   } catch (error) {
-    console.error('[Discord Roles] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Roles')
   }
 }
 
@@ -151,8 +151,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, mapping })
   } catch (error) {
-    console.error('[Discord Roles] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Roles')
   }
 }
 
@@ -197,8 +196,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Discord Roles] Delete error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Roles Delete')
   }
 }
 
@@ -243,7 +241,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Discord Roles] Patch error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Discord Roles Patch')
   }
 }

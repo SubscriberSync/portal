@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { exchangeShopifyCode } from '@/lib/oauth'
 import { upsertIntegration } from '@/lib/supabase/data'
+import { getErrorMessage } from '@/lib/api-utils'
 import crypto from 'crypto'
 
 // Webhook topics to register
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
     // Redirect back to portal with success
     return NextResponse.redirect(new URL(`/portal/${orgSlug}?success=shopify_connected`, request.url))
   } catch (error) {
-    console.error('[Shopify Callback] Error:', error)
+    console.error('[Shopify Callback] Error:', getErrorMessage(error))
     return NextResponse.redirect(new URL('/error?message=Internal+error', request.url))
   }
 }

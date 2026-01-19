@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 // GET /api/migration/sku-aliases
 // Get all SKU mappings for the organization
@@ -32,11 +33,7 @@ export async function GET() {
 
     return NextResponse.json({ aliases: aliases || [] })
   } catch (error) {
-    console.error('[SKU Aliases] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch aliases' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'SKU Aliases', 'Failed to fetch aliases')
   }
 }
 
@@ -98,11 +95,7 @@ export async function POST(request: NextRequest) {
       count: data?.length || 0,
     })
   } catch (error) {
-    console.error('[SKU Aliases] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to save aliases' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'SKU Aliases', 'Failed to save aliases')
   }
 }
 
@@ -141,10 +134,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[SKU Aliases] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to delete alias' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'SKU Aliases', 'Failed to delete alias')
   }
 }

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { resolveAuditRecord } from '@/lib/forensic-audit'
+import { handleApiError } from '@/lib/api-utils'
 
 // GET /api/migration/resolve
 // Get flagged audit records that need resolution
@@ -40,11 +41,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ logs: logs || [] })
   } catch (error) {
-    console.error('[Resolve] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch logs' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Resolve', 'Failed to fetch logs')
   }
 }
 
@@ -96,11 +93,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Resolve] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to resolve' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Resolve', 'Failed to resolve')
   }
 }
 
@@ -162,10 +155,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Resolve Skip] Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to skip' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Resolve Skip', 'Failed to skip')
   }
 }

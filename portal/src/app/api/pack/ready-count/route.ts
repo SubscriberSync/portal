@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * GET /api/pack/ready-count
@@ -38,7 +39,6 @@ export async function GET() {
       directOrders,
     })
   } catch (error) {
-    console.error('[Pack Ready Count] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Pack Ready Count')
   }
 }

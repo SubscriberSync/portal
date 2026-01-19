@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { handleApiError } from '@/lib/api-utils'
 import crypto from 'crypto'
 
 // Shopify webhook topics we handle
@@ -182,8 +183,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[Shopify Webhook] Error:', error)
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
+    return handleApiError(error, 'Shopify Webhook', 'Processing failed')
   }
 }
 

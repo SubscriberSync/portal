@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createBillingPortalSession } from '@/lib/stripe'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,10 +40,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url })
   } catch (error) {
-    console.error('[Billing Portal] Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create billing portal session' },
-      { status: 500 }
-    )
+    return handleApiError(error, 'Billing Portal', 'Failed to create billing portal session')
   }
 }

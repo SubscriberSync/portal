@@ -4,6 +4,7 @@ import {
   syncAllSubscribersToKlaviyo,
   syncSubscriberByEmail,
 } from '@/lib/klaviyo-sync'
+import { handleApiError } from '@/lib/api-utils'
 
 // POST /api/sync/klaviyo
 // Sync subscribers to Klaviyo profiles
@@ -30,7 +31,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result)
     }
   } catch (error) {
-    console.error('[Klaviyo Sync API] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Klaviyo Sync API')
   }
 }

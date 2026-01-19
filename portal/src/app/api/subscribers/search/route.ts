@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { getSubscribers } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * GET /api/subscribers/search?q=query
@@ -45,7 +46,6 @@ export async function GET(request: NextRequest) {
       count: transformed.length,
     })
   } catch (error) {
-    console.error('[Subscribers Search] Error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleApiError(error, 'Subscribers Search')
   }
 }

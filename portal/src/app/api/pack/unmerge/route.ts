@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import { handleApiError } from '@/lib/api-utils'
 
 /**
  * POST /api/pack/unmerge
@@ -110,7 +111,6 @@ export async function POST(request: NextRequest) {
       unmerged: unmergedShipment,
     })
   } catch (error) {
-    console.error('[Pack Unmerge] Error:', error)
-    return NextResponse.json({ error: 'Failed to unmerge shipment' }, { status: 500 })
+    return handleApiError(error, 'Pack Unmerge', 'Failed to unmerge shipment')
   }
 }
