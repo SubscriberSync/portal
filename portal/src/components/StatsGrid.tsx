@@ -111,8 +111,7 @@ export default function StatsGrid({ clientSlug }: StatsGridProps) {
     async function fetchStats() {
       setIsLoading(true)
       try {
-        const url = `https://n8n.everlorehollow.com/webhook/backstage/${clientSlug}/subscribers/stats${dateRange !== 'all' ? `?days=${dateRange}` : ''}`
-        const res = await fetch(url)
+        const res = await fetch('/api/subscribers/stats')
         if (res.ok) {
           const data = await res.json()
           setStats({

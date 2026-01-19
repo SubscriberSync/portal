@@ -83,10 +83,10 @@ function BillingSection({ clientSlug }: { clientSlug: string }) {
   const handleOpenBillingPortal = async () => {
     setIsLoading(true);
     try {
-      // Call API to get Stripe Customer Portal URL
-      const res = await fetch(
-        `https://n8n.everlorehollow.com/webhook/portal/billing-portal?client=${clientSlug}`
-      );
+      // Call internal API to get Stripe Customer Portal URL
+      const res = await fetch('/api/billing/portal', {
+        method: 'POST',
+      });
 
       if (!res.ok) {
         throw new Error('Failed to get billing portal URL');

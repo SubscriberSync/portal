@@ -22,9 +22,7 @@ export default function PackReadyCounter({ clientSlug }: PackReadyCounterProps) 
   useEffect(() => {
     async function fetchPackReady() {
       try {
-        const res = await fetch(
-          `https://n8n.everlorehollow.com/webhook/portal/pack-ready?client=${clientSlug}`
-        )
+        const res = await fetch('/api/pack/ready-count')
         if (!res.ok) {
           throw new Error('Failed to fetch pack ready data')
         }
