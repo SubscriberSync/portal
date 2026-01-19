@@ -1,7 +1,8 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isAdmin } from '@/lib/admin'
 import { Package, Truck, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -12,8 +13,11 @@ interface ShipmentsPageProps {
 
 export default async function ShipmentsPage({ params }: ShipmentsPageProps) {
   const { orgSlug } = await auth()
+  const user = await currentUser()
+  const userEmail = user?.emailAddresses[0]?.emailAddress
+  const userIsAdmin = isAdmin(userEmail)
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== params.slug && !userIsAdmin) {
     notFound()
   }
 
