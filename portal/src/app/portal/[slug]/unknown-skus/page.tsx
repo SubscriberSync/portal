@@ -7,17 +7,18 @@ import { AlertCircle, Plus } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 interface UnknownSkusPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function UnknownSkusPage({ params }: UnknownSkusPageProps) {
+  const { slug } = await params
   const { orgSlug } = await auth()
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
-  const organization = await getOrganizationBySlug(params.slug)
+  const organization = await getOrganizationBySlug(slug)
   if (!organization) {
     notFound()
   }

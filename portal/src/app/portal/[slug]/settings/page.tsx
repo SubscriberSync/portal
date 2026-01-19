@@ -7,18 +7,19 @@ import ShipStationSettings from '@/components/ShipStationSettings'
 export const dynamic = 'force-dynamic'
 
 interface SettingsPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function SettingsPage({ params }: SettingsPageProps) {
+  const { slug } = await params
   const { orgSlug } = await auth()
   const user = await currentUser()
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
-  const organization = await getOrganizationBySlug(params.slug)
+  const organization = await getOrganizationBySlug(slug)
   if (!organization) {
     notFound()
   }

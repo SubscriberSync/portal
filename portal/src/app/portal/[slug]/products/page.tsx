@@ -7,17 +7,18 @@ import { Boxes, Plus, Package } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 interface ProductsPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function ProductsPage({ params }: ProductsPageProps) {
+  const { slug } = await params
   const { orgSlug } = await auth()
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
-  const organization = await getOrganizationBySlug(params.slug)
+  const organization = await getOrganizationBySlug(slug)
   if (!organization) {
     notFound()
   }

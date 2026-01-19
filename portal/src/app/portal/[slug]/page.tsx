@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 interface PortalPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 // Transform Supabase intake submissions to the format expected by components
@@ -95,22 +95,23 @@ function transformDiscordConfig(config: DiscordConfig | null) {
 }
 
 export default async function PortalPage({ params }: PortalPageProps) {
+  const { slug } = await params
   // Get Clerk auth to verify user has access
   const { orgId, orgSlug } = await auth()
 
   // Verify the user has access to this organization
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
   // Get or create organization in Supabase
-  let organization = await getOrganizationBySlug(params.slug)
+  let organization = await getOrganizationBySlug(slug)
 
   if (!organization && orgId) {
     organization = await upsertOrganization({
       id: orgId,
-      name: params.slug,
-      slug: params.slug,
+      name: slug,
+      slug: slug,
       status: 'Building',
     })
   }
@@ -165,7 +166,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         {/* Onboarding Section - Show when building and not complete */}
         {client.status !== 'Live' && !isOnboardingComplete && (
           <OnboardingSection
-            clientSlug={params.slug}
+            clientSlug={slug}
             initialSubmissions={transformedSubmissions}
             initialOnboardingData={onboardingData}
             initialIntegrations={integrations.map(i => ({
@@ -179,16 +180,16 @@ export default async function PortalPage({ params }: PortalPageProps) {
         {/* Stats - Only show when live */}
         {client.status === 'Live' && (
           <>
-            <StatsGrid clientSlug={params.slug} />
+            <StatsGrid clientSlug={slug} />
 
             {/* Critical Alerts */}
-            <CriticalAlerts clientSlug={params.slug} />
+            <CriticalAlerts clientSlug={slug} />
 
             {/* Pack Ready Counter */}
-            <PackReadyCounter clientSlug={params.slug} />
+            <PackReadyCounter clientSlug={slug} />
 
             {/* Inventory Forecast */}
-            <Forecasting clientSlug={params.slug} />
+            <Forecasting clientSlug={slug} />
           </>
         )}
 
@@ -219,7 +220,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
           {/* Klaviyo Integration */}
           <Link
-            href={`/portal/${params.slug}/klaviyo`}
+            href={`/portal/${slug}/klaviyo`}
             className="p-6 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] transition-all group"
           >
             <div className="flex items-center gap-4">

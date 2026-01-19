@@ -11,9 +11,9 @@ import { shouldAutoApprove, validateIntakeItem } from '@/lib/admin'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = params
+  const { slug } = await params
 
   if (!slug) {
     return NextResponse.json({ success: false, error: 'Missing client slug' }, { status: 400 })

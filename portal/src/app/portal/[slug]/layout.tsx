@@ -8,25 +8,26 @@ import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner'
 
 interface PortalLayoutProps {
   children: React.ReactNode
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function PortalLayout({ children, params }: PortalLayoutProps) {
+  const { slug } = await params
   const { orgId, orgSlug } = await auth()
 
   // Verify the user has access to this organization
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
   // Get or create organization in Supabase
-  let organization = await getOrganizationBySlug(params.slug)
+  let organization = await getOrganizationBySlug(slug)
 
   if (!organization && orgId) {
     organization = await upsertOrganization({
       id: orgId,
-      name: params.slug,
-      slug: params.slug,
+      name: slug,
+      slug: slug,
       status: 'Building',
     })
   }
@@ -53,7 +54,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     <div className="min-h-screen bg-[#0c0c0c]">
       {/* Sidebar */}
       <PortalSidebar
-        clientSlug={params.slug}
+        clientSlug={slug}
         company={organization.name}
         logoUrl={organization.logo_url || undefined}
         status={organization.status}

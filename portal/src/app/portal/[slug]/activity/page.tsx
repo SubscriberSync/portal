@@ -16,17 +16,18 @@ import {
 export const dynamic = 'force-dynamic'
 
 interface ActivityPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function ActivityPage({ params }: ActivityPageProps) {
+  const { slug } = await params
   const { orgSlug } = await auth()
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
-  const organization = await getOrganizationBySlug(params.slug)
+  const organization = await getOrganizationBySlug(slug)
   if (!organization) {
     notFound()
   }

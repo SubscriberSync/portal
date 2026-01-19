@@ -7,17 +7,18 @@ import ShippingDashboard from '@/components/ShippingDashboard'
 export const dynamic = 'force-dynamic'
 
 interface ShippingPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function ShippingPage({ params }: ShippingPageProps) {
+  const { slug } = await params
   const { orgSlug } = await auth()
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
-  const organization = await getOrganizationBySlug(params.slug)
+  const organization = await getOrganizationBySlug(slug)
   if (!organization) {
     notFound()
   }
@@ -75,7 +76,7 @@ export default async function ShippingPage({ params }: ShippingPageProps) {
       </div>
 
       <ShippingDashboard
-        clientSlug={params.slug}
+        clientSlug={slug}
         organizationId={organization.id}
         initialShipments={shipments || []}
         recentBatches={recentBatches || []}

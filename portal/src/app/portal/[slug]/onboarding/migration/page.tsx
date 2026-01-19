@@ -7,17 +7,18 @@ import MigrationCenter from '@/components/MigrationCenter'
 export const dynamic = 'force-dynamic'
 
 interface MigrationPageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 export default async function MigrationPage({ params }: MigrationPageProps) {
+  const { slug } = await params
   const { orgSlug, orgRole } = await auth()
 
-  if (orgSlug !== params.slug) {
+  if (orgSlug !== slug) {
     notFound()
   }
 
-  const organization = await getOrganizationBySlug(params.slug)
+  const organization = await getOrganizationBySlug(slug)
   if (!organization) {
     notFound()
   }
@@ -35,7 +36,7 @@ export default async function MigrationPage({ params }: MigrationPageProps) {
 
   // If migration is complete and user is not admin, redirect to dashboard
   if (completedRun && orgRole !== 'org:admin') {
-    redirect(`/portal/${params.slug}`)
+    redirect(`/portal/${slug}`)
   }
 
   // Check Shopify connection
@@ -43,7 +44,7 @@ export default async function MigrationPage({ params }: MigrationPageProps) {
   const shopifyConnected = integrations.some(i => i.type === 'shopify' && i.connected)
 
   if (!shopifyConnected) {
-    redirect(`/portal/${params.slug}/settings?error=shopify_required`)
+    redirect(`/portal/${slug}/settings?error=shopify_required`)
   }
 
   // Get existing SKU mappings
@@ -120,7 +121,7 @@ export default async function MigrationPage({ params }: MigrationPageProps) {
 
       <MigrationCenter
         organizationId={organization.id}
-        clientSlug={params.slug}
+        clientSlug={slug}
         skuAliases={skuAliases || []}
         latestRun={latestRun}
         auditStats={auditStats}
