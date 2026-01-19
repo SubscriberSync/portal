@@ -38,6 +38,7 @@ export default function ShippingProviderSection({
   const [showShopifyWarning, setShowShopifyWarning] = useState(false)
   const [showShipStationForm, setShowShipStationForm] = useState(false)
   const [isSkipped, setIsSkipped] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   // ShipStation form state
   const [apiKey, setApiKey] = useState('')
@@ -45,6 +46,8 @@ export default function ShippingProviderSection({
   const [shipStationError, setShipStationError] = useState('')
 
   const handleSelectProvider = async (provider: ShippingProvider) => {
+    setError(null) // Clear any previous error
+    
     if (provider === 'shopify_shipping') {
       setShowShopifyWarning(true)
       return
@@ -68,6 +71,7 @@ export default function ShippingProviderSection({
 
   const savePreference = async (provider: ShippingProvider) => {
     setIsLoading(true)
+    setError(null)
     try {
       const response = await fetch('/api/shipping/preference', {
         method: 'POST',
@@ -75,13 +79,18 @@ export default function ShippingProviderSection({
         body: JSON.stringify({ provider }),
       })
 
-      if (response.ok) {
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         setSelectedProvider(provider)
         setIsExpanded(false)
         onRefresh()
+      } else {
+        setError(data.error || 'Failed to save preference')
       }
-    } catch (error) {
-      console.error('Error saving shipping preference:', error)
+    } catch (err) {
+      console.error('Error saving shipping preference:', err)
+      setError('Failed to save preference. Please try again.')
     }
     setIsLoading(false)
   }
@@ -398,6 +407,14 @@ export default function ShippingProviderSection({
               </p>
             </div>
           </button>
+
+          {/* Error message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <span className="text-sm text-red-400">{error}</span>
+            </div>
+          )}
 
           {/* Skip option */}
           {!effectiveProvider && (
