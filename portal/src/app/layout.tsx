@@ -47,7 +47,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
         <ClerkProvider
-        
+        publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
           appearance={{
             variables: {
               colorPrimary: '#e07a42',
