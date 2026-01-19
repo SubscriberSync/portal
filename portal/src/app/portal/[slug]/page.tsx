@@ -8,8 +8,8 @@ import {
   getIntegrations,
   upsertOrganization
 } from '@/lib/supabase/data'
-import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
+import DiscordPromptBanner from '@/components/DiscordPromptBanner'
 import CriticalAlerts from '@/components/CriticalAlerts'
 import PackReadyCounter from '@/components/PackReadyCounter'
 import StatsGrid from '@/components/StatsGrid'
@@ -140,7 +140,20 @@ export default async function PortalPage({ params }: PortalPageProps) {
     step2Complete: organization.step2_complete,
   }
 
-  const isOnboardingComplete = organization.step1_complete && organization.step2_complete
+  // Onboarding is complete when Step 1 is done (Discord is now optional)
+  const isOnboardingComplete = organization.step1_complete
+
+  // Determine if Discord prompt should be shown
+  const discordIntegration = integrations.find(i => i.type === 'discord')
+  const isDiscordConnected = discordIntegration?.connected || false
+  const now = new Date()
+  const remindAt = organization.discord_prompt_remind_at ? new Date(organization.discord_prompt_remind_at) : null
+  
+  const shouldShowDiscordPrompt = 
+    organization.step1_complete && 
+    !isDiscordConnected &&
+    !organization.discord_prompt_dismissed &&
+    (!remindAt || remindAt <= now)
 
   // Build client object for components
   const client = {
@@ -163,7 +176,12 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
       {/* Main Content */}
       <div className="space-y-8">
-        {/* Onboarding Section - Show when building and not complete */}
+        {/* Discord Prompt Banner - Show after Step 1 complete, before full onboarding completion */}
+        {shouldShowDiscordPrompt && (
+          <DiscordPromptBanner clientSlug={slug} />
+        )}
+
+        {/* Onboarding Section - Show when building and Step 1 not complete */}
         {client.status !== 'Live' && !isOnboardingComplete && (
           <OnboardingSection
             clientSlug={slug}

@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { Sparkles, RefreshCw, CheckCircle2, ArrowRight } from 'lucide-react'
-import { IntakeSubmission, ClientOnboardingData, IntakeItemType, DiscordChannel } from '@/lib/intake-types'
+import { useState, useCallback } from 'react'
+import { Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { IntakeSubmission, ClientOnboardingData, IntakeItemType } from '@/lib/intake-types'
 import IntakeStep1Connect from './IntakeStep1Connect'
-import IntakeStep2 from './IntakeStep2'
 
 interface Integration {
   type: 'shopify' | 'klaviyo' | 'recharge'
@@ -74,52 +73,8 @@ export default function OnboardingSection({
     }
   }
 
-  // Handle Discord decision
-  const handleDiscordDecision = async (decision: 'Yes Setup' | 'Maybe Later' | 'No Thanks'): Promise<boolean> => {
-    try {
-      const response = await fetch(`/api/intake/${clientSlug}/discord-decision`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decision }),
-      })
-
-      const result = await response.json()
-      return result.success
-    } catch (error) {
-      console.error('Error updating discord decision:', error)
-      return false
-    }
-  }
-
-  // Handle Discord setup update
-  const handleDiscordSetup = async (data: {
-    newOrExisting?: 'Create New' | 'Connect Existing'
-    serverName?: string
-    serverId?: string
-    channels?: DiscordChannel[]
-    episodeGated?: boolean
-    moderatorName?: string
-    moderatorEmail?: string
-    vibe?: 'Casual & Friendly' | 'Professional' | 'Playful & Fun'
-    markComplete?: boolean
-  }): Promise<boolean> => {
-    try {
-      const response = await fetch(`/api/intake/${clientSlug}/discord-setup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-
-      const result = await response.json()
-      return result.success
-    } catch (error) {
-      console.error('Error updating discord setup:', error)
-      return false
-    }
-  }
-
-  // Check if all onboarding is complete
-  const isAllComplete = onboardingData.step1Complete && onboardingData.step2Complete
+  // Onboarding is complete when Step 1 is done (Discord is now optional via separate prompt)
+  const isAllComplete = onboardingData.step1Complete
 
   // If all complete and not showing, don't render
   if (isAllComplete) {
@@ -175,63 +130,12 @@ export default function OnboardingSection({
         </button>
       </div>
 
-      {/* Progress Indicator */}
-      <div className="flex items-center gap-4 p-4 rounded-xl bg-[#151515]/50 border border-[rgba(245,240,232,0.04)]">
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-            onboardingData.step1Complete
-              ? 'bg-[#5CB87A]/20 text-[#5CB87A]'
-              : 'bg-[#C9A962]/20 text-[#C9A962]'
-          }`}>
-            {onboardingData.step1Complete ? '✓' : '1'}
-          </div>
-          <span className={`text-sm font-medium ${
-            onboardingData.step1Complete ? 'text-[#5CB87A]' : 'text-[#F5F0E8]'
-          }`}>
-            Technical Setup
-          </span>
-        </div>
-
-        <ArrowRight className="w-4 h-4 text-[#4A4743]" />
-
-        <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-            onboardingData.step2Complete
-              ? 'bg-[#5CB87A]/20 text-[#5CB87A]'
-              : onboardingData.step1Complete
-                ? 'bg-[#C9A962]/20 text-[#C9A962]'
-                : 'bg-[#1A1A1A] text-[#4A4743]'
-          }`}>
-            {onboardingData.step2Complete ? '✓' : '2'}
-          </div>
-          <span className={`text-sm font-medium ${
-            onboardingData.step2Complete
-              ? 'text-[#5CB87A]'
-              : onboardingData.step1Complete
-                ? 'text-[#F5F0E8]'
-                : 'text-[#4A4743]'
-          }`}>
-            Community
-          </span>
-        </div>
-      </div>
-
       {/* Step 1: Connect Your Apps */}
       <IntakeStep1Connect
         clientSlug={clientSlug}
         integrations={integrations}
         onboardingData={onboardingData}
         installmentName={submissions.find(s => s.item === 'Installment Name')?.value}
-        onRefresh={refreshData}
-      />
-
-      {/* Step 2: Discord Community */}
-      <IntakeStep2
-        clientSlug={clientSlug}
-        onboardingData={onboardingData}
-        isUnlocked={onboardingData.step1Complete}
-        onDecision={handleDiscordDecision}
-        onUpdateSetup={handleDiscordSetup}
         onRefresh={refreshData}
       />
     </div>

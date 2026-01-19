@@ -21,6 +21,9 @@ export interface Organization {
   failed_payment_count: number | null
   last_payment_failed_at: string | null
   is_test_portal: boolean | null
+  // Discord prompt state
+  discord_prompt_dismissed: boolean | null
+  discord_prompt_remind_at: string | null
   // Timestamps
   created_at: string
   updated_at: string
