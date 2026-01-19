@@ -16,6 +16,7 @@ import {
   LayoutDashboard,
   CreditCard,
   TestTube,
+  Trash2,
 } from 'lucide-react'
 import { Organization, IntakeSubmission } from '@/lib/supabase/data'
 
@@ -282,6 +283,35 @@ function OrganizationsTab({
   onSearchChange: (query: string) => void
   onCreateNew: () => void
 }) {
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleDelete = async (org: Organization) => {
+    if (!confirm(`Are you sure you want to delete "${org.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeletingId(org.id)
+
+    try {
+      const res = await fetch('/api/admin/organizations', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: org.id }),
+      })
+
+      if (res.ok) {
+        window.location.reload()
+      } else {
+        const data = await res.json()
+        alert(data.error || 'Failed to delete organization')
+      }
+    } catch (error) {
+      alert('Failed to delete organization')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <div>
       {/* Actions Bar */}
@@ -359,6 +389,14 @@ function OrganizationsTab({
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
+                    <button
+                      onClick={() => handleDelete(org)}
+                      disabled={deletingId === org.id}
+                      className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-[#6B6660] hover:text-red-400 disabled:opacity-50"
+                      title="Delete Organization"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
