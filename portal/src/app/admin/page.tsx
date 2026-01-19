@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { isAdmin } from '@/lib/admin'
 import {
   getAllOrganizations,
-  getAllIntakeSubmissions,
   getOrganizationStats,
 } from '@/lib/supabase/data'
 import AdminDashboard from '@/components/admin/AdminDashboard'
@@ -29,16 +28,14 @@ export default async function AdminPage() {
 
   // Fetch admin data with error handling
   try {
-    const [organizations, intakeSubmissions, stats] = await Promise.all([
+    const [organizations, stats] = await Promise.all([
       getAllOrganizations(),
-      getAllIntakeSubmissions(),
       getOrganizationStats(),
     ])
 
     return (
       <AdminDashboard
         organizations={organizations}
-        intakeSubmissions={intakeSubmissions}
         stats={stats}
         adminEmail={email}
       />

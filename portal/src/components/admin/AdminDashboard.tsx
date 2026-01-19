@@ -5,28 +5,22 @@ import { UserButton } from '@clerk/nextjs'
 import {
   Building2,
   Users,
-  FileCheck,
-  AlertCircle,
   Plus,
   ExternalLink,
   CheckCircle2,
-  XCircle,
-  Clock,
   Search,
   LayoutDashboard,
   CreditCard,
   TestTube,
   Trash2,
 } from 'lucide-react'
-import { Organization, IntakeSubmission } from '@/lib/supabase/data'
+import { Organization } from '@/lib/supabase/data'
 
 interface AdminDashboardProps {
   organizations: Organization[]
-  intakeSubmissions: (IntakeSubmission & { organization_name?: string })[]
   stats: {
     totalOrgs: number
     liveOrgs: number
-    pendingIntake: number
     totalSubscribers: number
   }
   adminEmail: string
@@ -34,11 +28,10 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({
   organizations,
-  intakeSubmissions,
   stats,
   adminEmail,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'intake'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'organizations'>('overview')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
@@ -46,8 +39,6 @@ export default function AdminDashboard({
     org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     org.slug.toLowerCase().includes(searchQuery.toLowerCase())
   )
-
-  const pendingSubmissions = intakeSubmissions.filter(s => s.status === 'Submitted')
 
   return (
     <div className="min-h-screen bg-[#0D0D0D]">
@@ -71,7 +62,7 @@ export default function AdminDashboard({
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <StatCard
             icon={Building2}
             label="Total Organizations"
@@ -83,12 +74,6 @@ export default function AdminDashboard({
             label="Live"
             value={stats.liveOrgs}
             color="green"
-          />
-          <StatCard
-            icon={AlertCircle}
-            label="Pending Review"
-            value={stats.pendingIntake}
-            color="orange"
           />
           <StatCard
             icon={Users}
@@ -112,24 +97,11 @@ export default function AdminDashboard({
           >
             Organizations ({organizations.length})
           </TabButton>
-          <TabButton
-            active={activeTab === 'intake'}
-            onClick={() => setActiveTab('intake')}
-          >
-            Intake Queue {pendingSubmissions.length > 0 && (
-              <span className="ml-2 px-2 py-0.5 text-xs bg-[#e07a42] text-white rounded-full">
-                {pendingSubmissions.length}
-              </span>
-            )}
-          </TabButton>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'overview' && (
-          <OverviewTab
-            organizations={organizations}
-            intakeSubmissions={intakeSubmissions}
-          />
+          <OverviewTab organizations={organizations} />
         )}
 
         {activeTab === 'organizations' && (
@@ -139,10 +111,6 @@ export default function AdminDashboard({
             onSearchChange={setSearchQuery}
             onCreateNew={() => setShowCreateModal(true)}
           />
-        )}
-
-        {activeTab === 'intake' && (
-          <IntakeTab intakeSubmissions={intakeSubmissions} />
         )}
       </main>
 
@@ -212,16 +180,13 @@ function TabButton({
 // Overview Tab
 function OverviewTab({
   organizations,
-  intakeSubmissions,
 }: {
   organizations: Organization[]
-  intakeSubmissions: (IntakeSubmission & { organization_name?: string })[]
 }) {
-  const recentOrgs = organizations.slice(0, 5)
-  const recentSubmissions = intakeSubmissions.slice(0, 5)
+  const recentOrgs = organizations.slice(0, 10)
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
+    <div>
       {/* Recent Organizations */}
       <div className="p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)]">
         <h3 className="text-lg font-semibold text-[#F5F0E8] mb-4">Recent Organizations</h3>
@@ -239,29 +204,6 @@ function OverviewTab({
                   <p className="text-sm text-[#6B6660]">{org.slug}</p>
                 </div>
                 <StatusBadge status={org.status} />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Recent Submissions */}
-      <div className="p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)]">
-        <h3 className="text-lg font-semibold text-[#F5F0E8] mb-4">Recent Submissions</h3>
-        <div className="space-y-3">
-          {recentSubmissions.length === 0 ? (
-            <p className="text-sm text-[#6B6660]">No submissions yet</p>
-          ) : (
-            recentSubmissions.map(sub => (
-              <div
-                key={sub.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]"
-              >
-                <div>
-                  <p className="font-medium text-[#F5F0E8]">{sub.item_type}</p>
-                  <p className="text-sm text-[#6B6660]">{sub.organization_name}</p>
-                </div>
-                <IntakeStatusBadge status={sub.status} />
               </div>
             ))
           )}
@@ -413,146 +355,6 @@ function OrganizationsTab({
   )
 }
 
-// Intake Tab
-function IntakeTab({
-  intakeSubmissions,
-}: {
-  intakeSubmissions: (IntakeSubmission & { organization_name?: string })[]
-}) {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
-
-  const filteredSubmissions = intakeSubmissions.filter(sub => {
-    if (filter === 'pending') return sub.status === 'Submitted'
-    if (filter === 'approved') return sub.status === 'Approved'
-    if (filter === 'rejected') return sub.status === 'Rejected'
-    return true
-  })
-
-  return (
-    <div>
-      {/* Filter Buttons */}
-      <div className="flex items-center gap-2 mb-6">
-        {(['all', 'pending', 'approved', 'rejected'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === f
-                ? 'bg-[#e07a42] text-white'
-                : 'bg-[#151515] text-[#6B6660] hover:text-[#A8A39B]'
-            }`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Submissions List */}
-      <div className="space-y-3">
-        {filteredSubmissions.length === 0 ? (
-          <div className="text-center py-12 text-[#6B6660]">
-            No submissions found
-          </div>
-        ) : (
-          filteredSubmissions.map(sub => (
-            <IntakeSubmissionCard key={sub.id} submission={sub} />
-          ))
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Intake Submission Card
-function IntakeSubmissionCard({
-  submission,
-}: {
-  submission: IntakeSubmission & { organization_name?: string }
-}) {
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  const handleApprove = async () => {
-    const res = await fetch('/api/admin/intake/review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: submission.id, status: 'Approved' }),
-    })
-    if (res.ok) {
-      window.location.reload()
-    }
-  }
-
-  const handleReject = async () => {
-    const note = prompt('Rejection reason (optional):')
-    const res = await fetch('/api/admin/intake/review', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: submission.id, status: 'Rejected', rejectionNote: note }),
-    })
-    if (res.ok) {
-      window.location.reload()
-    }
-  }
-
-  return (
-    <div className="p-4 rounded-xl bg-[#151515] border border-[rgba(245,240,232,0.06)]">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <p className="font-medium text-[#F5F0E8]">{submission.item_type}</p>
-            <p className="text-sm text-[#6B6660]">{submission.organization_name}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <IntakeStatusBadge status={submission.status} />
-          {submission.status === 'Submitted' && (
-            <>
-              <button
-                onClick={handleApprove}
-                className="p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
-                title="Approve"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleReject}
-                className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
-                title="Reject"
-              >
-                <XCircle className="w-4 h-4" />
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-sm text-[#6B6660] hover:text-[#A8A39B]"
-          >
-            {isExpanded ? 'Hide' : 'Show'} Value
-          </button>
-        </div>
-      </div>
-      {isExpanded && (
-        <div className="mt-4 p-3 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.04)]">
-          <code className="text-sm text-[#A8A39B] break-all">
-            {submission.value_encrypted}
-          </code>
-        </div>
-      )}
-      {submission.rejection_note && (
-        <div className="mt-3 p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-          <p className="text-sm text-red-400">
-            <strong>Rejection reason:</strong> {submission.rejection_note}
-          </p>
-        </div>
-      )}
-      <div className="mt-3 text-xs text-[#4A4743]">
-        Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : 'Unknown'}
-        {submission.reviewed_at && ` • Reviewed ${new Date(submission.reviewed_at).toLocaleString()}`}
-      </div>
-    </div>
-  )
-}
-
 // Status Badge Component
 function StatusBadge({ status }: { status: Organization['status'] }) {
   const colors: Record<Organization['status'], string> = {
@@ -566,25 +368,6 @@ function StatusBadge({ status }: { status: Organization['status'] }) {
 
   return (
     <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${colors[status]}`}>
-      {status}
-    </span>
-  )
-}
-
-// Intake Status Badge Component
-function IntakeStatusBadge({ status }: { status: IntakeSubmission['status'] }) {
-  const config = {
-    Pending: { icon: Clock, color: 'text-[#6B6660]', bg: 'bg-[#252525]' },
-    Submitted: { icon: AlertCircle, color: 'text-[#e07a42]', bg: 'bg-[#e07a42]/10' },
-    Approved: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    Rejected: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
-  }
-
-  const { icon: Icon, color, bg } = config[status]
-
-  return (
-    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${color} ${bg}`}>
-      <Icon className="w-3 h-3" />
       {status}
     </span>
   )

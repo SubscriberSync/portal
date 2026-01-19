@@ -716,32 +716,9 @@ export async function getAllOrganizations(): Promise<Organization[]> {
   return (data || []) as Organization[]
 }
 
-export async function getAllIntakeSubmissions(): Promise<(IntakeSubmission & { organization_name?: string })[]> {
-  const supabase = createServiceClient()
-
-  const { data, error } = await supabase
-    .from('intake_submissions')
-    .select(`
-      *,
-      organizations (name)
-    `)
-    .order('submitted_at', { ascending: false })
-
-  if (error) {
-    console.error('[getAllIntakeSubmissions] Error:', error)
-    return []
-  }
-
-  return (data || []).map((item: any) => ({
-    ...item,
-    organization_name: item.organizations?.name,
-  }))
-}
-
 export async function getOrganizationStats(): Promise<{
   totalOrgs: number
   liveOrgs: number
-  pendingIntake: number
   totalSubscribers: number
 }> {
   const supabase = createServiceClient()
@@ -756,12 +733,6 @@ export async function getOrganizationStats(): Promise<{
     .select('*', { count: 'exact', head: true })
     .eq('status', 'Live')
 
-  // Get pending intake count
-  const { count: pendingIntake } = await supabase
-    .from('intake_submissions')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'Submitted')
-
   // Get total subscribers
   const { count: totalSubscribers } = await supabase
     .from('subscribers')
@@ -770,33 +741,8 @@ export async function getOrganizationStats(): Promise<{
   return {
     totalOrgs: totalOrgs || 0,
     liveOrgs: liveOrgs || 0,
-    pendingIntake: pendingIntake || 0,
     totalSubscribers: totalSubscribers || 0,
   }
-}
-
-export async function updateIntakeSubmissionStatus(
-  id: string,
-  status: IntakeSubmission['status'],
-  rejectionNote?: string
-): Promise<boolean> {
-  const supabase = createServiceClient()
-
-  const { error } = await supabase
-    .from('intake_submissions')
-    .update({
-      status,
-      rejection_note: rejectionNote || null,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-
-  if (error) {
-    console.error('[updateIntakeSubmissionStatus] Error:', error)
-    return false
-  }
-
-  return true
 }
 
 export async function createOrganization(data: {
