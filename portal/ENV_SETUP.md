@@ -8,6 +8,7 @@ This portal uses Supabase for data storage and Clerk for authentication. Configu
 ```
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 CLERK_SECRET_KEY=sk_...
+CLERK_WEBHOOK_SECRET=whsec_... (from Clerk Dashboard -> Webhooks)
 ```
 
 ### Supabase Database

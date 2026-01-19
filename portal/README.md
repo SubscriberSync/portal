@@ -39,13 +39,17 @@ Add your credentials (see ENV_SETUP.md for full list):
 
 ### 3. Database Setup
 
-Run the migrations in your Supabase SQL Editor:
+Run the migrations in your Supabase SQL Editor (in order):
+- `supabase/migrations/001_base_schema.sql`
 - `supabase/migrations/003_forensic_audit.sql`
 - `supabase/migrations/004_stripe_subscriptions.sql`
 - `supabase/migrations/005_discord_memberlink.sql`
 - `supabase/migrations/006_discord_prompt.sql`
 - `supabase/migrations/007_shipping_provider.sql`
 - `supabase/migrations/008_subscriber_activity.sql`
+- `supabase/migrations/009_pack_mode_schema.sql`
+- `supabase/migrations/010_advanced_logistics.sql`
+- `supabase/migrations/011_subscriber_stats_function.sql`
 
 ### 4. Run Development Server
 
