@@ -20,9 +20,9 @@ export default clerkMiddleware(async (auth, request) => {
   const host = request.headers.get('host') || ''
   const url = new URL(request.url)
 
-  // Redirect www to non-www to match Clerk's domain (subscribersync.com)
-  if (host === 'www.subscribersync.com') {
-    url.host = 'subscribersync.com'
+  // Redirect non-www to www (Clerk scripts load from www)
+  if (host === 'subscribersync.com') {
+    url.host = 'www.subscribersync.com'
     return NextResponse.redirect(url, 308)
   }
 
