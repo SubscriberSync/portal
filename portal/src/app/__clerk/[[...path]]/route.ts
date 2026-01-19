@@ -1,9 +1,7 @@
-import { createClerkClient } from '@clerk/backend'
-
 // Clerk proxy route for first-party cookies
 // This allows Clerk's Frontend API to run on our domain
 
-const CLERK_FRONTEND_API = 'https://clerk.subscribersync.com'
+const CLERK_FRONTEND_API = 'https://frontend-api.clerk.dev'
 
 export async function GET(request: Request) {
   return proxyToClerk(request)
@@ -32,9 +30,22 @@ async function proxyToClerk(request: Request) {
   const clerkPath = url.pathname.replace(/^\/__clerk/, '')
   const clerkUrl = `${CLERK_FRONTEND_API}${clerkPath}${url.search}`
 
-  // Clone headers and remove host
+  // Clone headers
   const headers = new Headers(request.headers)
+
+  // Remove host header and add required Clerk proxy headers
   headers.delete('host')
+  headers.set('Clerk-Proxy-Url', 'https://subscribersync.com/__clerk')
+  headers.set('Clerk-Secret-Key', process.env.CLERK_SECRET_KEY || '')
+
+  // Get the client IP from x-forwarded-for or x-real-ip
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const realIp = request.headers.get('x-real-ip')
+  if (forwardedFor) {
+    headers.set('X-Forwarded-For', forwardedFor)
+  } else if (realIp) {
+    headers.set('X-Forwarded-For', realIp)
+  }
 
   // Forward the request to Clerk
   const response = await fetch(clerkUrl, {
