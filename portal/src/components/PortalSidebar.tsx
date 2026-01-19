@@ -8,7 +8,7 @@ import {
   Package,
   AlertCircle,
   Boxes,
-  Calendar,
+  Activity,
   PlayCircle,
   Home,
   Settings,
@@ -32,7 +32,7 @@ const navItems = [
   { name: 'Shipments', href: '/shipments', icon: Package },
   { name: 'Unknown SKUs', href: '/unknown-skus', icon: AlertCircle },
   { name: 'Products', href: '/products', icon: Boxes },
-  { name: 'Events', href: '/events', icon: Calendar },
+  { name: 'Activity Log', href: '/activity', icon: Activity },
 ]
 
 export default function PortalSidebar({
