@@ -8,7 +8,6 @@ import {
   getIntegrations,
   upsertOrganization
 } from '@/lib/supabase/data'
-import StatusBar from '@/components/StatusBar'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
 import CriticalAlerts from '@/components/CriticalAlerts'
@@ -163,9 +162,6 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
       {/* Main Content */}
       <div className="space-y-8">
-        {/* Status Bar */}
-        <StatusBar status={client.status} />
-
         {/* Onboarding Section - Show when building and not complete */}
         {client.status !== 'Live' && !isOnboardingComplete && (
           <OnboardingSection
