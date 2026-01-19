@@ -54,11 +54,10 @@ export default function IntakeStep1Connect({
   const isKlaviyoConnected = klaviyoIntegration?.connected || false
   const isRechargeConnected = rechargeIntegration?.connected || false
 
-  // Calculate progress - All 4 integrations required
+  // Calculate progress - Core integrations required (Klaviyo is optional)
   const steps = [
     { name: 'Shopify', done: isShopifyConnected },
     { name: 'Recharge', done: isRechargeConnected },
-    { name: 'Klaviyo', done: isKlaviyoConnected },
     { name: 'Installment Name', done: installmentSaved },
   ]
   const completedCount = steps.filter(s => s.done).length
@@ -394,8 +393,8 @@ export default function IntakeStep1Connect({
             </div>
           </div>
 
-          {/* Klaviyo Connection */}
-          <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]">
+          {/* Klaviyo Connection - Optional */}
+          <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)] border-dashed">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#2D2D2D] flex items-center justify-center">
@@ -404,9 +403,12 @@ export default function IntakeStep1Connect({
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-[#F5F0E8]">Klaviyo</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-[#F5F0E8]">Klaviyo</h4>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-[#6B6660]/20 text-[#A8A39B] font-medium">Optional</span>
+                  </div>
                   <p className="text-sm text-[#6B6660]">
-                    {isKlaviyoConnected ? 'Connected' : 'Connect your Klaviyo account'}
+                    {isKlaviyoConnected ? 'Connected - Syncing subscriber profiles' : 'Sync subscriber data to Klaviyo for email automation'}
                   </p>
                 </div>
               </div>
@@ -431,6 +433,11 @@ export default function IntakeStep1Connect({
                 </button>
               )}
             </div>
+            {!isKlaviyoConnected && (
+              <p className="mt-3 text-xs text-[#6B6660] pl-13">
+                You can skip this and connect Klaviyo later from Settings. The app works fully without it.
+              </p>
+            )}
           </div>
 
           {/* Installment Name */}
@@ -483,8 +490,8 @@ export default function IntakeStep1Connect({
           <div className="flex items-start gap-2 p-3 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.04)]">
             <AlertCircle className="w-4 h-4 text-[#6B6660] mt-0.5 flex-shrink-0" />
             <p className="text-xs text-[#6B6660]">
-              Connecting your apps allows us to sync your subscriber data automatically.
-              Your credentials are encrypted and stored securely.
+              Connect Shopify and Recharge to sync your subscriber data automatically.
+              Klaviyo is optional and can be connected later. Your credentials are encrypted and stored securely.
             </p>
           </div>
 
