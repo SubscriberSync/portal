@@ -11,7 +11,7 @@ const isPublicRoute = createRouteMatcher([
   '/checkout(.*)',
   '/terms',
   '/privacy',
-  '/api/__clerk(.*)',
+  '/api/clerk-proxy(.*)',
   '/test-auth',
 ])
 
@@ -20,7 +20,7 @@ export default clerkMiddleware(async (auth, request) => {
   const url = new URL(request.url)
 
   // Force www redirect in production (except for Clerk proxy route)
-  if (host === 'subscribersync.com' && !url.pathname.startsWith('/api/__clerk')) {
+  if (host === 'subscribersync.com' && !url.pathname.startsWith('/api/clerk-proxy')) {
     url.host = 'www.subscribersync.com'
     return NextResponse.redirect(url, 308)
   }
@@ -43,6 +43,6 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
   matcher: [
     // Skip Next.js internals, static files, and Clerk proxy
-    '/((?!_next|api/__clerk|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!_next|api/clerk-proxy|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
   ],
 }
