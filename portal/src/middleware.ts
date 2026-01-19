@@ -25,10 +25,16 @@ export default clerkMiddleware(async (auth, request) => {
 
   // Protect all routes except public ones
   if (!isPublicRoute(request)) {
-    // Use signInUrl with the current path as redirect target
-    await auth.protect({
-      unauthenticatedUrl: `https://www.subscribersync.com/sign-in?redirect_url=${encodeURIComponent(url.pathname)}`,
-    })
+    const { userId } = await auth()
+
+    // Log auth state for debugging
+    console.log('[Middleware] Path:', url.pathname, 'UserId:', userId)
+
+    if (!userId) {
+      const signInUrl = new URL('/sign-in', request.url)
+      signInUrl.searchParams.set('redirect_url', url.pathname)
+      return NextResponse.redirect(signInUrl)
+    }
   }
 })
 
