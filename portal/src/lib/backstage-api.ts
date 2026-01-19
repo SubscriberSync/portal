@@ -1,6 +1,4 @@
-// Backstage API Functions
-
-const API_BASE = 'https://n8n.everlorehollow.com/webhook';
+// Backstage API Functions - Now using internal Supabase APIs
 
 export interface Subscriber {
   id: string;
@@ -59,12 +57,30 @@ export interface SubscriberDetail {
   shopifyCustomerId?: string;
 }
 
+export interface SubscriberStats {
+  total: number;
+  active: number;
+  paused: number;
+  cancelled: number;
+  atRisk: number;
+  newThisMonth: number;
+  churnedThisMonth: number;
+}
+
+export interface RecentActivity {
+  id: string;
+  subscriberId: string;
+  subscriberName: string;
+  action: 'subscribed' | 'paused' | 'cancelled' | 'reactivated' | 'skipped';
+  timestamp: string;
+}
+
 export async function searchSubscribers(
   clientSlug: string,
   query: string
 ): Promise<SearchResponse> {
   const res = await fetch(
-    `${API_BASE}/backstage/${clientSlug}/subscribers/search?q=${encodeURIComponent(query)}`
+    `/api/subscribers/search?q=${encodeURIComponent(query)}`
   );
 
   if (!res.ok) {
@@ -79,7 +95,7 @@ export async function getSubscriberDetail(
   subscriberId: string
 ): Promise<SubscriberDetail> {
   const res = await fetch(
-    `${API_BASE}/backstage/${clientSlug}/subscribers/${subscriberId}`
+    `/api/subscribers/${subscriberId}`
   );
 
   if (!res.ok) {
@@ -95,7 +111,7 @@ export async function updateSubscriberAddress(
   address: SubscriberAddress
 ): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(
-    `${API_BASE}/backstage/${clientSlug}/subscribers/${subscriberId}/address`,
+    `/api/subscribers/${subscriberId}/address`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -106,6 +122,30 @@ export async function updateSubscriberAddress(
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     return { success: false, error: data.error || 'Failed to update address' };
+  }
+
+  return res.json();
+}
+
+export async function getSubscriberStats(
+  clientSlug: string
+): Promise<SubscriberStats> {
+  const res = await fetch('/api/subscribers/stats');
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch stats');
+  }
+
+  return res.json();
+}
+
+export async function getRecentActivity(
+  clientSlug: string
+): Promise<{ activities: RecentActivity[] }> {
+  const res = await fetch('/api/subscribers/activity');
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch activity');
   }
 
   return res.json();

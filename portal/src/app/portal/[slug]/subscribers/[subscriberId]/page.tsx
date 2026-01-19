@@ -476,7 +476,7 @@ function AddressFixerForm({
         </button>
 
         <p className="text-xs text-foreground-tertiary text-center">
-          Updates Airtable and pushes changes to Recharge & Shopify
+          Saves address changes to subscriber record
         </p>
       </div>
     </div>

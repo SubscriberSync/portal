@@ -37,8 +37,8 @@ export default function SubscribersPage() {
     async function fetchData() {
       try {
         const [statsRes, activityRes] = await Promise.all([
-          fetch(`https://n8n.everlorehollow.com/webhook/backstage/${clientSlug}/subscribers/stats`),
-          fetch(`https://n8n.everlorehollow.com/webhook/backstage/${clientSlug}/subscribers/recent-activity`),
+          fetch('/api/subscribers/stats'),
+          fetch('/api/subscribers/activity'),
         ]);
 
         if (statsRes.ok) {

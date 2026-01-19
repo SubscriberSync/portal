@@ -86,8 +86,32 @@ export interface Subscriber {
   shirt_size: string | null
   recharge_customer_id: string | null
   shopify_customer_id: string | null
+  at_risk: boolean
+  tags: string[]
+  discord_username: string | null
   created_at: string
   updated_at: string
+}
+
+export interface SubscriberActivity {
+  id: string
+  organization_id: string
+  subscriber_id: string
+  action: 'subscribed' | 'paused' | 'cancelled' | 'reactivated' | 'skipped' | 'address_updated' | 'status_changed'
+  previous_value: string | null
+  new_value: string | null
+  details: Record<string, unknown>
+  created_at: string
+}
+
+export interface SubscriberStats {
+  total: number
+  active: number
+  paused: number
+  cancelled: number
+  atRisk: number
+  newThisMonth: number
+  churnedThisMonth: number
 }
 
 export interface Shipment {
@@ -414,6 +438,200 @@ export async function getSubscriberById(id: string): Promise<Subscriber | null> 
   }
 
   return data as Subscriber
+}
+
+// Type for the database function response
+interface SubscriberStatsRow {
+  total: number
+  active: number
+  paused: number
+  cancelled: number
+  at_risk_count: number
+  new_this_month: number
+  churned_this_month: number
+}
+
+export async function getSubscriberStats(organizationId: string): Promise<SubscriberStats> {
+  const supabase = createServiceClient()
+
+  // Use the database function for efficient stats
+  const { data, error } = await supabase
+    .rpc('get_subscriber_stats', { org_id: organizationId })
+    .single()
+
+  if (error || !data) {
+    console.error('[getSubscriberStats] Error:', error)
+    // Return zeros if function fails - fallback to manual count
+    const { count: total } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+
+    const { count: active } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('status', 'Active')
+
+    const { count: paused } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('status', 'Paused')
+
+    const { count: cancelled } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('status', 'Cancelled')
+
+    return {
+      total: total || 0,
+      active: active || 0,
+      paused: paused || 0,
+      cancelled: cancelled || 0,
+      atRisk: 0,
+      newThisMonth: 0,
+      churnedThisMonth: 0,
+    }
+  }
+
+  const statsRow = data as SubscriberStatsRow
+
+  return {
+    total: statsRow.total || 0,
+    active: statsRow.active || 0,
+    paused: statsRow.paused || 0,
+    cancelled: statsRow.cancelled || 0,
+    atRisk: statsRow.at_risk_count || 0,
+    newThisMonth: statsRow.new_this_month || 0,
+    churnedThisMonth: statsRow.churned_this_month || 0,
+  }
+}
+
+export async function getSubscriberWithShipments(subscriberId: string): Promise<{
+  subscriber: Subscriber
+  shipments: Shipment[]
+} | null> {
+  const supabase = createServiceClient()
+
+  // Get subscriber
+  const { data: subscriber, error: subError } = await supabase
+    .from('subscribers')
+    .select('*')
+    .eq('id', subscriberId)
+    .single()
+
+  if (subError || !subscriber) {
+    console.error('[getSubscriberWithShipments] Subscriber not found:', subError)
+    return null
+  }
+
+  // Get shipments for this subscriber
+  const { data: shipments, error: shipError } = await supabase
+    .from('shipments')
+    .select('*')
+    .eq('subscriber_id', subscriberId)
+    .order('created_at', { ascending: false })
+
+  if (shipError) {
+    console.error('[getSubscriberWithShipments] Shipments error:', shipError)
+  }
+
+  return {
+    subscriber: subscriber as Subscriber,
+    shipments: (shipments || []) as Shipment[],
+  }
+}
+
+export async function updateSubscriber(
+  subscriberId: string,
+  updates: Partial<Subscriber>
+): Promise<Subscriber | null> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('subscribers')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', subscriberId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[updateSubscriber] Error:', error)
+    return null
+  }
+
+  return data as Subscriber
+}
+
+export async function getSubscriberActivity(
+  organizationId: string,
+  options?: { limit?: number; subscriberId?: string }
+): Promise<(SubscriberActivity & { subscriber_name?: string; subscriber_email?: string })[]> {
+  const supabase = createServiceClient()
+
+  let query = supabase
+    .from('subscriber_activity')
+    .select(`
+      *,
+      subscribers (first_name, last_name, email)
+    `)
+    .eq('organization_id', organizationId)
+    .order('created_at', { ascending: false })
+
+  if (options?.subscriberId) {
+    query = query.eq('subscriber_id', options.subscriberId)
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[getSubscriberActivity] Error:', error)
+    return []
+  }
+
+  return (data || []).map((item: any) => ({
+    ...item,
+    subscriber_name: item.subscribers 
+      ? `${item.subscribers.first_name || ''} ${item.subscribers.last_name || ''}`.trim()
+      : undefined,
+    subscriber_email: item.subscribers?.email,
+  }))
+}
+
+export async function logSubscriberActivity(
+  organizationId: string,
+  subscriberId: string,
+  action: SubscriberActivity['action'],
+  options?: { previousValue?: string; newValue?: string; details?: Record<string, unknown> }
+): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from('subscriber_activity')
+    .insert({
+      organization_id: organizationId,
+      subscriber_id: subscriberId,
+      action,
+      previous_value: options?.previousValue || null,
+      new_value: options?.newValue || null,
+      details: options?.details || {},
+    })
+
+  if (error) {
+    console.error('[logSubscriberActivity] Error:', error)
+    return false
+  }
+
+  return true
 }
 
 // ===================
