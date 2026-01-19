@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { Card, Metric, Text, Flex, Grid, Title, BadgeDelta } from '@tremor/react';
 import { Users, UserCheck, UserX, Pause, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { SubscriberSearch } from '@/components/backstage/SubscriberSearch';
 
@@ -63,14 +64,16 @@ export default function SubscribersPage() {
     router.push(`/portal/${clientSlug}/subscribers/${subscriberId}`);
   };
 
+  const netChange = stats ? stats.newThisMonth - stats.churnedThisMonth : 0;
+
   return (
     <main className="min-h-screen p-8">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Subscribers</h1>
-          <p className="text-foreground-secondary">
+          <Title className="text-3xl font-bold text-foreground mb-2">Subscribers</Title>
+          <Text className="text-foreground-secondary">
             Search and view subscriber details
-          </p>
+          </Text>
         </div>
 
         {/* Search bar - prominent placement */}
@@ -80,87 +83,102 @@ export default function SubscribersPage() {
 
         {/* Stats Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Grid numItemsSm={2} numItemsLg={4} className="gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-xl bg-background-surface border border-border p-5">
+              <Card key={i} className="bg-background-surface border-border ring-0">
                 <div className="h-4 bg-background-elevated rounded w-1/2 mb-3 animate-pulse" />
                 <div className="h-8 bg-background-elevated rounded w-1/3 animate-pulse" />
-              </div>
+              </Card>
             ))}
-          </div>
+          </Grid>
         ) : stats ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              icon={<Users className="w-5 h-5" />}
-              label="Total"
-              value={stats.total}
-              iconColor="text-blue-400"
-              iconBg="bg-blue-500/10"
-            />
-            <StatCard
-              icon={<UserCheck className="w-5 h-5" />}
-              label="Active"
-              value={stats.active}
-              iconColor="text-green-400"
-              iconBg="bg-green-500/10"
-            />
-            <StatCard
-              icon={<Pause className="w-5 h-5" />}
-              label="Paused"
-              value={stats.paused}
-              iconColor="text-yellow-400"
-              iconBg="bg-yellow-500/10"
-            />
-            <StatCard
-              icon={<AlertTriangle className="w-5 h-5" />}
-              label="At Risk"
-              value={stats.atRisk}
-              iconColor="text-red-400"
-              iconBg="bg-red-500/10"
-            />
-          </div>
+          <Grid numItemsSm={2} numItemsLg={4} className="gap-4">
+            <Card className="bg-background-surface border-border ring-0">
+              <Flex justifyContent="start" alignItems="center" className="gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-blue-400" />
+                </div>
+                <Text className="text-foreground-secondary">Total</Text>
+              </Flex>
+              <Metric className="text-foreground">{stats.total.toLocaleString()}</Metric>
+            </Card>
+            <Card className="bg-background-surface border-border ring-0">
+              <Flex justifyContent="start" alignItems="center" className="gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <UserCheck className="w-5 h-5 text-green-400" />
+                </div>
+                <Text className="text-foreground-secondary">Active</Text>
+              </Flex>
+              <Metric className="text-foreground">{stats.active.toLocaleString()}</Metric>
+            </Card>
+            <Card className="bg-background-surface border-border ring-0">
+              <Flex justifyContent="start" alignItems="center" className="gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                  <Pause className="w-5 h-5 text-yellow-400" />
+                </div>
+                <Text className="text-foreground-secondary">Paused</Text>
+              </Flex>
+              <Metric className="text-foreground">{stats.paused.toLocaleString()}</Metric>
+            </Card>
+            <Card className="bg-background-surface border-border ring-0">
+              <Flex justifyContent="start" alignItems="center" className="gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <Text className="text-foreground-secondary">At Risk</Text>
+              </Flex>
+              <Metric className="text-foreground">{stats.atRisk.toLocaleString()}</Metric>
+            </Card>
+          </Grid>
         ) : null}
 
         {/* Two column layout */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <Grid numItemsSm={1} numItemsMd={2} className="gap-6">
           {/* Monthly Summary */}
           {stats && (
-            <div className="rounded-xl bg-background-surface border border-border p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">This Month</h2>
+            <Card className="bg-background-surface border-border ring-0">
+              <Title className="text-foreground mb-4">This Month</Title>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <Flex justifyContent="between" alignItems="center">
+                  <Flex justifyContent="start" alignItems="center" className="gap-3">
                     <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
                       <TrendingUp className="w-4 h-4 text-green-400" />
                     </div>
-                    <span className="text-foreground-secondary">New Subscribers</span>
-                  </div>
-                  <span className="text-xl font-bold text-green-400">+{stats.newThisMonth}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                    <Text className="text-foreground-secondary">New Subscribers</Text>
+                  </Flex>
+                  <BadgeDelta deltaType="increase" size="lg">
+                    +{stats.newThisMonth}
+                  </BadgeDelta>
+                </Flex>
+                <Flex justifyContent="between" alignItems="center">
+                  <Flex justifyContent="start" alignItems="center" className="gap-3">
                     <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
                       <TrendingDown className="w-4 h-4 text-red-400" />
                     </div>
-                    <span className="text-foreground-secondary">Churned</span>
-                  </div>
-                  <span className="text-xl font-bold text-red-400">-{stats.churnedThisMonth}</span>
-                </div>
+                    <Text className="text-foreground-secondary">Churned</Text>
+                  </Flex>
+                  <BadgeDelta deltaType="decrease" size="lg">
+                    -{stats.churnedThisMonth}
+                  </BadgeDelta>
+                </Flex>
                 <div className="pt-4 border-t border-border">
-                  <div className="flex items-center justify-between">
-                    <span className="text-foreground-secondary">Net Change</span>
-                    <span className={`text-xl font-bold ${stats.newThisMonth - stats.churnedThisMonth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {stats.newThisMonth - stats.churnedThisMonth >= 0 ? '+' : ''}{stats.newThisMonth - stats.churnedThisMonth}
-                    </span>
-                  </div>
+                  <Flex justifyContent="between" alignItems="center">
+                    <Text className="text-foreground-secondary">Net Change</Text>
+                    <BadgeDelta 
+                      deltaType={netChange >= 0 ? 'increase' : 'decrease'} 
+                      size="lg"
+                    >
+                      {netChange >= 0 ? '+' : ''}{netChange}
+                    </BadgeDelta>
+                  </Flex>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Recent Activity */}
-          <div className="rounded-xl bg-background-surface border border-border p-6">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
+          <Card className="bg-background-surface border-border ring-0">
+            <Title className="text-foreground mb-4">Recent Activity</Title>
             {isLoading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
@@ -183,56 +201,30 @@ export default function SubscribersPage() {
                   >
                     <ActivityIcon action={activity.action} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
+                      <Text className="font-medium text-foreground truncate">
                         {activity.subscriberName}
-                      </p>
-                      <p className="text-xs text-foreground-tertiary">
+                      </Text>
+                      <Text className="text-xs text-foreground-tertiary">
                         {getActionLabel(activity.action)} • {formatRelativeTime(activity.timestamp)}
-                      </p>
+                      </Text>
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-foreground-secondary text-sm">No recent activity</p>
+              <Text className="text-foreground-secondary">No recent activity</Text>
             )}
-          </div>
-        </div>
+          </Card>
+        </Grid>
 
         {/* Help text */}
         <div className="text-center">
-          <p className="text-foreground-tertiary text-sm">
+          <Text className="text-foreground-tertiary">
             Use the search bar to find any subscriber by name or email address
-          </p>
+          </Text>
         </div>
       </div>
     </main>
-  );
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  iconColor,
-  iconBg,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  iconColor: string;
-  iconBg: string;
-}) {
-  return (
-    <div className="rounded-xl bg-background-surface border border-border p-5">
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center ${iconColor}`}>
-          {icon}
-        </div>
-        <span className="text-sm text-foreground-secondary">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-foreground">{value.toLocaleString()}</p>
-    </div>
   );
 }
 
@@ -242,7 +234,7 @@ function ActivityIcon({ action }: { action: RecentActivity['action'] }) {
     reactivated: { icon: <UserCheck className="w-4 h-4" />, bg: 'bg-blue-500/10', color: 'text-blue-400' },
     paused: { icon: <Pause className="w-4 h-4" />, bg: 'bg-yellow-500/10', color: 'text-yellow-400' },
     cancelled: { icon: <UserX className="w-4 h-4" />, bg: 'bg-red-500/10', color: 'text-red-400' },
-    skipped: { icon: <Pause className="w-4 h-4" />, bg: 'bg-foreground-muted/10', color: 'text-foreground-muted' },
+    skipped: { icon: <Pause className="w-4 h-4" />, bg: 'bg-zinc-500/10', color: 'text-zinc-400' },
   };
 
   const { icon, bg, color } = config[action] || config.subscribed;

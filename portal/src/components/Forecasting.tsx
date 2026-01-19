@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { Package, TrendingUp, Sparkles } from 'lucide-react'
+import { BarChart, Card, Title, Text, Flex } from '@tremor/react'
+import { Package, TrendingUp, Sparkles, Loader2 } from 'lucide-react'
 
 interface ForecastingProps {
   clientSlug: string
@@ -49,11 +49,10 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
     fetchForecast()
   }, [clientSlug])
 
-  // Transform data for the chart
+  // Transform data for Tremor chart
   const chartData = data?.boxDistribution?.map(box => ({
     name: `Box ${box.boxNumber}`,
-    subscribers: box.count,
-    boxNumber: box.boxNumber,
+    Subscribers: box.count,
   })) || []
 
   // Calculate next month's needs
@@ -69,126 +68,87 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
     <div className="space-y-8">
       {/* Section Header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[rgba(224,122,66,0.15)] border border-[rgba(224,122,66,0.2)] flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-[#e07a42]" />
+        <div className="w-10 h-10 rounded-xl bg-accent/15 border border-accent/20 flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-accent" />
         </div>
         <div>
-          <h3 className="text-headline text-white">Inventory Forecast</h3>
-          <p className="text-[#71717a] text-sm">Plan your next 3 months of inventory</p>
+          <h3 className="text-headline text-foreground">Inventory Forecast</h3>
+          <p className="text-foreground-muted text-sm">Plan your next 3 months of inventory</p>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Sequence Histogram - Glass Panel */}
-        <div className="lg:col-span-2 p-6 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="font-semibold text-white">Subscribers by Episode</h4>
+        {/* Sequence Histogram - Tremor Card */}
+        <Card className="lg:col-span-2 bg-background-surface border-border ring-0">
+          <Flex justifyContent="between" alignItems="center" className="mb-4">
+            <Title className="text-foreground">Subscribers by Episode</Title>
             {data?.totalActive && (
-              <span className="text-sm text-[#71717a]">
+              <Text className="text-foreground-muted">
                 {data.totalActive} active subscribers
-              </span>
+              </Text>
             )}
-          </div>
+          </Flex>
 
           {isLoading ? (
             <div className="h-[300px] flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-[#e07a42] border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-[#71717a]">Loading forecast...</span>
+                <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                <Text className="text-foreground-muted">Loading forecast...</Text>
               </div>
             </div>
           ) : chartData.length > 0 ? (
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#71717a', fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#71717a', fontSize: 12 }}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload
-                        return (
-                          <div className="bg-[rgba(255,255,255,0.1)] backdrop-blur-xl text-white px-3 py-2 rounded-lg shadow-lg border border-[rgba(255,255,255,0.1)]">
-                            <p className="font-medium">{data.name}</p>
-                            <p className="text-sm text-[#e4e4e7]">{data.subscribers} subscribers</p>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <Bar
-                    dataKey="subscribers"
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={60}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={`url(#barGradient)`}
-                      />
-                    ))}
-                  </Bar>
-                  <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#e07a42" />
-                      <stop offset="100%" stopColor="#c96a35" />
-                    </linearGradient>
-                  </defs>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <BarChart
+              className="h-[300px]"
+              data={chartData}
+              index="name"
+              categories={['Subscribers']}
+              colors={['orange']}
+              showLegend={false}
+              showGridLines={false}
+              yAxisWidth={40}
+            />
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-[#71717a]">
-              No episode data available
+            <div className="h-[300px] flex items-center justify-center">
+              <Text className="text-foreground-muted">No episode data available</Text>
             </div>
-          )}
+          )
 
-          {/* Forecast Insight - Glass with Orange accent */}
+          {/* Forecast Insight */}
           {nextMonthForecast.length > 0 && (
-            <div className="mt-6 p-4 bg-[rgba(224,122,66,0.1)] border border-[rgba(224,122,66,0.2)] rounded-xl backdrop-blur-sm">
+            <div className="mt-6 p-4 bg-accent/10 border border-accent/20 rounded-xl">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[rgba(224,122,66,0.2)] flex items-center justify-center flex-shrink-0">
-                  <TrendingUp className="w-4 h-4 text-[#e07a42]" />
+                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+                  <TrendingUp className="w-4 h-4 text-accent" />
                 </div>
                 <div>
-                  <p className="font-medium text-[#e07a42] mb-1">Next Month Forecast</p>
-                  <p className="text-sm text-[#e4e4e7]">
+                  <Text className="font-medium text-accent mb-1">Next Month Forecast</Text>
+                  <Text className="text-foreground-secondary">
                     {nextMonthForecast.map((f, i) => (
                       <span key={f.currentBox}>
                         {i > 0 && ' + '}
-                        <span className="font-semibold text-white">{f.units}</span> units of Box {f.nextBox}
+                        <span className="font-semibold text-foreground">{f.units}</span> units of Box {f.nextBox}
                       </span>
                     ))}
-                  </p>
+                  </Text>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
-        {/* Sidecar Counter - Glass Panel */}
-        <div className="p-6 rounded-2xl bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-[rgba(255,255,255,0.06)] shadow-[0_0_0_1px_rgba(255,255,255,0.05)_inset,0_20px_40px_rgba(0,0,0,0.3)]">
-          <div className="flex items-center gap-2 mb-6">
-            <Package className="w-5 h-5 text-[#e07a42]" />
-            <h4 className="font-semibold text-white">Add-On Products</h4>
-          </div>
+        {/* Sidecar Counter - Tremor Card */}
+        <Card className="bg-background-surface border-border ring-0">
+          <Flex justifyContent="start" alignItems="center" className="gap-2 mb-6">
+            <Package className="w-5 h-5 text-accent" />
+            <Title className="text-foreground">Add-On Products</Title>
+          </Flex>
 
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-[rgba(255,255,255,0.03)] rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-[rgba(255,255,255,0.03)] rounded w-1/2" />
+                  <div className="h-4 bg-background-elevated rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-background-elevated rounded w-1/2" />
                 </div>
               ))}
             </div>
@@ -197,46 +157,46 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
               {data.sidecars.map((sidecar) => (
                 <div
                   key={sidecar.name}
-                  className="p-4 bg-[rgba(255,255,255,0.02)] rounded-xl hover:bg-[rgba(255,255,255,0.04)] transition-colors border border-[rgba(255,255,255,0.04)]"
+                  className="p-4 bg-background-secondary rounded-xl hover:bg-background-elevated transition-colors border border-border"
                 >
                   <div className="mb-2">
-                    <span className="text-sm font-medium text-white line-clamp-1">
+                    <Text className="font-medium text-foreground line-clamp-1">
                       {sidecar.name}
-                    </span>
+                    </Text>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
+                  <Flex justifyContent="between" className="text-xs">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#e07a42]" />
-                      <span className="text-[#a1a1aa]">
-                        <span className="font-semibold text-white">{sidecar.unitsToPack}</span> to pack
-                      </span>
+                      <div className="w-2 h-2 rounded-full bg-accent" />
+                      <Text className="text-foreground-tertiary">
+                        <span className="font-semibold text-foreground">{sidecar.unitsToPack}</span> to pack
+                      </Text>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-[#e8935f]" />
-                      <span className="text-[#a1a1aa]">
-                        <span className="font-semibold text-white">{sidecar.velocity}</span>/mo
-                      </span>
+                      <div className="w-2 h-2 rounded-full bg-accent-light" />
+                      <Text className="text-foreground-tertiary">
+                        <span className="font-semibold text-foreground">{sidecar.velocity}</span>/mo
+                      </Text>
                     </div>
-                  </div>
+                  </Flex>
                 </div>
               ))}
 
               {/* Total Summary */}
-              <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#a1a1aa]">Total to Pack</span>
-                  <span className="text-lg font-bold text-[#e07a42]">
+              <div className="mt-4 pt-4 border-t border-border">
+                <Flex justifyContent="between" alignItems="center">
+                  <Text className="text-foreground-tertiary">Total to Pack</Text>
+                  <Text className="text-lg font-bold text-accent">
                     {data.sidecars.reduce((sum, s) => sum + s.unitsToPack, 0)}
-                  </span>
-                </div>
+                  </Text>
+                </Flex>
               </div>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-[#71717a] text-sm py-12">
-              No add-on products
+            <div className="h-full flex items-center justify-center py-12">
+              <Text className="text-foreground-muted">No add-on products</Text>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   )

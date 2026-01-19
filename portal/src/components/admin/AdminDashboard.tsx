@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
+import { Card, Metric, Text, Flex, Grid, Title, TabGroup, TabList, Tab, TabPanels, TabPanel, TextInput, Badge } from '@tremor/react'
 import {
   Building2,
   Users,
@@ -31,7 +32,6 @@ export default function AdminDashboard({
   stats,
   adminEmail,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'organizations'>('overview')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
 
@@ -41,77 +41,75 @@ export default function AdminDashboard({
   )
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D]">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-[rgba(245,240,232,0.08)] bg-[#0D0D0D]/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#e07a42] to-[#c56a35] flex items-center justify-center">
+          <Flex justifyContent="between" alignItems="center">
+            <Flex justifyContent="start" alignItems="center" className="gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center">
                 <LayoutDashboard className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-[#F5F0E8]">Admin Dashboard</h1>
-                <p className="text-sm text-[#6B6660]">{adminEmail}</p>
+                <Title className="text-foreground">Admin Dashboard</Title>
+                <Text className="text-foreground-muted">{adminEmail}</Text>
               </div>
-            </div>
+            </Flex>
             <UserButton afterSignOutUrl="/sign-in" />
-          </div>
+          </Flex>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <StatCard
-            icon={Building2}
-            label="Total Organizations"
-            value={stats.totalOrgs}
-            color="blue"
-          />
-          <StatCard
-            icon={CheckCircle2}
-            label="Live"
-            value={stats.liveOrgs}
-            color="green"
-          />
-          <StatCard
-            icon={Users}
-            label="Total Subscribers"
-            value={stats.totalSubscribers}
-            color="purple"
-          />
-        </div>
+        <Grid numItemsSm={1} numItemsMd={3} className="gap-4 mb-8">
+          <Card className="bg-background-surface border-border ring-0" decoration="top" decorationColor="blue">
+            <Flex justifyContent="start" alignItems="center" className="gap-3 mb-3">
+              <Building2 className="w-5 h-5 text-blue-400" />
+              <Text className="text-foreground-secondary">Total Organizations</Text>
+            </Flex>
+            <Metric className="text-foreground">{stats.totalOrgs.toLocaleString()}</Metric>
+          </Card>
+          <Card className="bg-background-surface border-border ring-0" decoration="top" decorationColor="emerald">
+            <Flex justifyContent="start" alignItems="center" className="gap-3 mb-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <Text className="text-foreground-secondary">Live</Text>
+            </Flex>
+            <Metric className="text-foreground">{stats.liveOrgs.toLocaleString()}</Metric>
+          </Card>
+          <Card className="bg-background-surface border-border ring-0" decoration="top" decorationColor="violet">
+            <Flex justifyContent="start" alignItems="center" className="gap-3 mb-3">
+              <Users className="w-5 h-5 text-violet-400" />
+              <Text className="text-foreground-secondary">Total Subscribers</Text>
+            </Flex>
+            <Metric className="text-foreground">{stats.totalSubscribers.toLocaleString()}</Metric>
+          </Card>
+        </Grid>
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-6 border-b border-[rgba(245,240,232,0.08)]">
-          <TabButton
-            active={activeTab === 'overview'}
-            onClick={() => setActiveTab('overview')}
-          >
-            Overview
-          </TabButton>
-          <TabButton
-            active={activeTab === 'organizations'}
-            onClick={() => setActiveTab('organizations')}
-          >
-            Organizations ({organizations.length})
-          </TabButton>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'overview' && (
-          <OverviewTab organizations={organizations} />
-        )}
-
-        {activeTab === 'organizations' && (
-          <OrganizationsTab
-            organizations={filteredOrgs}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onCreateNew={() => setShowCreateModal(true)}
-          />
-        )}
+        <TabGroup>
+          <TabList className="border-b border-border mb-6">
+            <Tab className="text-foreground-secondary data-[selected]:text-foreground data-[selected]:border-accent">
+              Overview
+            </Tab>
+            <Tab className="text-foreground-secondary data-[selected]:text-foreground data-[selected]:border-accent">
+              Organizations ({organizations.length})
+            </Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              <OverviewTab organizations={organizations} />
+            </TabPanel>
+            <TabPanel>
+              <OrganizationsTab
+                organizations={filteredOrgs}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onCreateNew={() => setShowCreateModal(true)}
+              />
+            </TabPanel>
+          </TabPanels>
+        </TabGroup>
       </main>
 
       {/* Create Organization Modal */}
@@ -119,61 +117,6 @@ export default function AdminDashboard({
         <CreateOrganizationModal onClose={() => setShowCreateModal(false)} />
       )}
     </div>
-  )
-}
-
-// Stat Card Component
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: any
-  label: string
-  value: number
-  color: 'blue' | 'green' | 'orange' | 'purple'
-}) {
-  const colors = {
-    blue: 'from-blue-500/20 to-blue-600/10 border-blue-500/20 text-blue-400',
-    green: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/20 text-emerald-400',
-    orange: 'from-[#e07a42]/20 to-[#e07a42]/10 border-[#e07a42]/20 text-[#e07a42]',
-    purple: 'from-purple-500/20 to-purple-600/10 border-purple-500/20 text-purple-400',
-  }
-
-  return (
-    <div className={`p-5 rounded-2xl bg-gradient-to-br ${colors[color]} border backdrop-blur-xl`}>
-      <div className="flex items-center gap-3 mb-3">
-        <Icon className="w-5 h-5" />
-        <span className="text-sm text-[#A8A39B]">{label}</span>
-      </div>
-      <p className="text-3xl font-semibold text-[#F5F0E8]">{value.toLocaleString()}</p>
-    </div>
-  )
-}
-
-// Tab Button Component
-function TabButton({
-  children,
-  active,
-  onClick,
-}: {
-  children: React.ReactNode
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-        active ? 'text-[#F5F0E8]' : 'text-[#6B6660] hover:text-[#A8A39B]'
-      }`}
-    >
-      {children}
-      {active && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#e07a42]" />
-      )}
-    </button>
   )
 }
 
@@ -186,30 +129,27 @@ function OverviewTab({
   const recentOrgs = organizations.slice(0, 10)
 
   return (
-    <div>
-      {/* Recent Organizations */}
-      <div className="p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)]">
-        <h3 className="text-lg font-semibold text-[#F5F0E8] mb-4">Recent Organizations</h3>
-        <div className="space-y-3">
-          {recentOrgs.length === 0 ? (
-            <p className="text-sm text-[#6B6660]">No organizations yet</p>
-          ) : (
-            recentOrgs.map(org => (
-              <div
-                key={org.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]"
-              >
-                <div>
-                  <p className="font-medium text-[#F5F0E8]">{org.name}</p>
-                  <p className="text-sm text-[#6B6660]">{org.slug}</p>
-                </div>
-                <StatusBadge status={org.status} />
+    <Card className="bg-background-surface border-border ring-0">
+      <Title className="text-foreground mb-4">Recent Organizations</Title>
+      <div className="space-y-3">
+        {recentOrgs.length === 0 ? (
+          <Text className="text-foreground-muted">No organizations yet</Text>
+        ) : (
+          recentOrgs.map(org => (
+            <div
+              key={org.id}
+              className="flex items-center justify-between p-3 rounded-xl bg-background-secondary border border-border"
+            >
+              <div>
+                <Text className="font-medium text-foreground">{org.name}</Text>
+                <Text className="text-foreground-muted">{org.slug}</Text>
               </div>
-            ))
-          )}
-        </div>
+              <StatusBadge status={org.status} />
+            </div>
+          ))
+        )}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -257,46 +197,43 @@ function OrganizationsTab({
   return (
     <div>
       {/* Actions Bar */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B6660]" />
-          <input
-            type="text"
-            placeholder="Search organizations..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#151515] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] placeholder-[#6B6660] focus:outline-none focus:border-[#e07a42]/50"
-          />
-        </div>
+      <Flex justifyContent="between" alignItems="center" className="mb-6 gap-4">
+        <TextInput
+          icon={Search}
+          placeholder="Search organizations..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="max-w-md"
+        />
         <button
           onClick={onCreateNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#e07a42] hover:bg-[#c56a35] text-white font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-dark text-white font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
           New Organization
         </button>
-      </div>
+      </Flex>
 
       {/* Organizations Table */}
-      <div className="rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.06)] overflow-hidden">
+      <Card className="bg-background-surface border-border ring-0 overflow-hidden p-0">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[rgba(245,240,232,0.06)]">
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Organization</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Status</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Subscription</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Onboarding</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-[#6B6660]">Created</th>
-              <th className="text-right px-6 py-4 text-sm font-medium text-[#6B6660]">Actions</th>
+            <tr className="border-b border-border">
+              <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Organization</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Status</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Subscription</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Onboarding</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Created</th>
+              <th className="text-right px-6 py-4 text-sm font-medium text-foreground-muted">Actions</th>
             </tr>
           </thead>
           <tbody>
             {organizations.map(org => (
-              <tr key={org.id} className="border-b border-[rgba(245,240,232,0.04)] hover:bg-[#1A1A1A]">
+              <tr key={org.id} className="border-b border-border hover:bg-background-secondary">
                 <td className="px-6 py-4">
                   <div>
-                    <p className="font-medium text-[#F5F0E8]">{org.name}</p>
-                    <p className="text-sm text-[#6B6660]">{org.slug}</p>
+                    <Text className="font-medium text-foreground">{org.name}</Text>
+                    <Text className="text-foreground-muted">{org.slug}</Text>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -310,23 +247,25 @@ function OrganizationsTab({
                   />
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${org.step1_complete ? 'bg-emerald-400' : 'bg-[#4A4743]'}`} />
-                    <span className="text-sm text-[#A8A39B]">Step 1</span>
-                    <div className={`w-2 h-2 rounded-full ${org.step2_complete ? 'bg-emerald-400' : 'bg-[#4A4743]'}`} />
-                    <span className="text-sm text-[#A8A39B]">Step 2</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm text-[#6B6660]">
-                  {new Date(org.created_at).toLocaleDateString()}
+                  <Flex justifyContent="start" alignItems="center" className="gap-2">
+                    <div className={`w-2 h-2 rounded-full ${org.step1_complete ? 'bg-emerald-400' : 'bg-foreground-muted/30'}`} />
+                    <Text className="text-foreground-tertiary">Step 1</Text>
+                    <div className={`w-2 h-2 rounded-full ${org.step2_complete ? 'bg-emerald-400' : 'bg-foreground-muted/30'}`} />
+                    <Text className="text-foreground-tertiary">Step 2</Text>
+                  </Flex>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center justify-end gap-2">
+                  <Text className="text-foreground-muted">
+                    {new Date(org.created_at).toLocaleDateString()}
+                  </Text>
+                </td>
+                <td className="px-6 py-4">
+                  <Flex justifyContent="end" alignItems="center" className="gap-2">
                     <a
                       href={`/portal/${org.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:bg-[#252525] transition-colors text-[#6B6660] hover:text-[#F5F0E8]"
+                      className="p-2 rounded-lg hover:bg-background-elevated transition-colors text-foreground-muted hover:text-foreground"
                       title="View Portal"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -334,42 +273,42 @@ function OrganizationsTab({
                     <button
                       onClick={() => handleDelete(org)}
                       disabled={deletingId === org.id}
-                      className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-[#6B6660] hover:text-red-400 disabled:opacity-50"
+                      className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-foreground-muted hover:text-red-400 disabled:opacity-50"
                       title="Delete Organization"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </div>
+                  </Flex>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {organizations.length === 0 && (
-          <div className="text-center py-12 text-[#6B6660]">
-            No organizations found
+          <div className="text-center py-12">
+            <Text className="text-foreground-muted">No organizations found</Text>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   )
 }
 
 // Status Badge Component
 function StatusBadge({ status }: { status: Organization['status'] }) {
-  const colors: Record<Organization['status'], string> = {
-    Discovery: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    Scoping: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    Building: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-    Testing: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    Training: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-    Live: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  const colorMap: Record<Organization['status'], 'blue' | 'violet' | 'amber' | 'orange' | 'pink' | 'emerald'> = {
+    Discovery: 'blue',
+    Scoping: 'violet',
+    Building: 'amber',
+    Testing: 'orange',
+    Training: 'pink',
+    Live: 'emerald',
   }
 
   return (
-    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${colors[status]}`}>
+    <Badge color={colorMap[status]} size="sm">
       {status}
-    </span>
+    </Badge>
   )
 }
 
@@ -385,34 +324,32 @@ function SubscriptionBadge({
 }) {
   if (isTestPortal) {
     return (
-      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-        <TestTube className="w-3 h-3" />
+      <Badge color="violet" size="sm" icon={TestTube}>
         Test Portal
-      </span>
+      </Badge>
     )
   }
 
-  const statusConfig: Record<string, { color: string; bg: string; border: string; label: string }> = {
-    active: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Active' },
-    trialing: { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', label: 'Trial' },
-    past_due: { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', label: 'Past Due' },
-    canceled: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Canceled' },
-    unpaid: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', label: 'Unpaid' },
-    none: { color: 'text-[#6B6660]', bg: 'bg-[#252525]', border: 'border-[#333]', label: 'No Sub' },
+  const statusConfig: Record<string, { color: 'emerald' | 'blue' | 'amber' | 'red' | 'zinc'; label: string }> = {
+    active: { color: 'emerald', label: 'Active' },
+    trialing: { color: 'blue', label: 'Trial' },
+    past_due: { color: 'amber', label: 'Past Due' },
+    canceled: { color: 'red', label: 'Canceled' },
+    unpaid: { color: 'red', label: 'Unpaid' },
+    none: { color: 'zinc', label: 'No Sub' },
   }
 
   const config = statusConfig[status || 'none'] || statusConfig.none
 
   return (
-    <div className="flex items-center gap-2">
-      <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${config.bg} ${config.color} ${config.border}`}>
-        <CreditCard className="w-3 h-3" />
+    <Flex justifyContent="start" alignItems="center" className="gap-2">
+      <Badge color={config.color} size="sm" icon={CreditCard}>
         {config.label}
-      </span>
+      </Badge>
       {failedPayments && failedPayments > 0 && (
-        <span className="text-xs text-red-400">({failedPayments} failed)</span>
+        <Text className="text-xs text-red-400">({failedPayments} failed)</Text>
       )}
-    </div>
+    </Flex>
   )
 }
 
@@ -461,90 +398,85 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md p-6 rounded-2xl bg-[#151515] border border-[rgba(245,240,232,0.08)]">
-        <h2 className="text-xl font-semibold text-[#F5F0E8] mb-6">Create Organization</h2>
+      <Card className="w-full max-w-md bg-background-surface border-border ring-0">
+        <Title className="text-foreground mb-6">Create Organization</Title>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-[#A8A39B] mb-2">Organization Name</label>
-            <input
-              type="text"
+            <Text className="text-foreground-secondary mb-2">Organization Name</Text>
+            <TextInput
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="Acme Inc"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] placeholder-[#6B6660] focus:outline-none focus:border-[#e07a42]/50"
             />
           </div>
           <div>
-            <label className="block text-sm text-[#A8A39B] mb-2">Slug (URL)</label>
-            <input
-              type="text"
+            <Text className="text-foreground-secondary mb-2">Slug (URL)</Text>
+            <TextInput
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="acme-inc"
               required
-              className="w-full px-4 py-2.5 rounded-xl bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] placeholder-[#6B6660] focus:outline-none focus:border-[#e07a42]/50"
             />
-            <p className="text-xs text-[#6B6660] mt-1">
+            <Text className="text-foreground-muted text-xs mt-1">
               Portal URL: subscribersync.com/portal/{slug || 'slug'}
-            </p>
+            </Text>
           </div>
           <div>
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] hover:border-[rgba(245,240,232,0.15)] transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-background-secondary border border-border hover:border-border-strong transition-colors">
               <input
                 type="checkbox"
                 checked={isTestPortal}
                 onChange={(e) => setIsTestPortal(e.target.checked)}
-                className="w-4 h-4 rounded bg-[#252525] border-[#4A4743] text-[#e07a42] focus:ring-[#e07a42] focus:ring-offset-0"
+                className="w-4 h-4 rounded bg-background-elevated border-foreground-muted text-accent focus:ring-accent focus:ring-offset-0"
               />
-              <div className="flex items-center gap-2">
-                <TestTube className="w-4 h-4 text-purple-400" />
+              <Flex justifyContent="start" alignItems="center" className="gap-2">
+                <TestTube className="w-4 h-4 text-violet-400" />
                 <div>
-                  <span className="text-sm text-[#F5F0E8]">Create as Test Portal</span>
-                  <p className="text-xs text-[#6B6660]">Sends invite email to test user</p>
+                  <Text className="text-foreground">Create as Test Portal</Text>
+                  <Text className="text-foreground-muted text-xs">Sends invite email to test user</Text>
                 </div>
-              </div>
+              </Flex>
             </label>
           </div>
           {isTestPortal && (
             <div>
-              <label className="block text-sm text-[#A8A39B] mb-2">Invite Email Address</label>
-              <input
+              <Text className="text-foreground-secondary mb-2">Invite Email Address</Text>
+              <TextInput
                 type="email"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="testuser@example.com"
                 required={isTestPortal}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] placeholder-[#6B6660] focus:outline-none focus:border-[#e07a42]/50"
               />
-              <p className="text-xs text-[#6B6660] mt-1">
+              <Text className="text-foreground-muted text-xs mt-1">
                 This email will receive an invitation to join the portal
-              </p>
+              </Text>
             </div>
           )}
           {error && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-              {error}
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <Text className="text-red-400">{error}</Text>
             </div>
           )}
-          <div className="flex gap-3 pt-4">
+          <Flex justifyContent="end" className="gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-[#252525] text-[#A8A39B] hover:text-[#F5F0E8] transition-colors"
+              className="px-4 py-2.5 rounded-xl bg-background-secondary text-foreground-tertiary hover:text-foreground transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || (isTestPortal && !inviteEmail)}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-[#e07a42] hover:bg-[#c56a35] text-white font-medium transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-accent hover:bg-accent-dark text-white font-medium transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : isTestPortal ? 'Create & Send Invite' : 'Create'}
             </button>
-          </div>
+          </Flex>
         </form>
-      </div>
+      </Card>
     </div>
   )
 }
