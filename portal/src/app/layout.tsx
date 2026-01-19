@@ -28,8 +28,26 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-     <ClerkProvider
-         publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    <html lang="en" className={`${inter.variable} ${ibmMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('theme');
+                  if (theme === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
+        <ClerkProvider
+        
           appearance={{
             variables: {
               colorPrimary: '#e07a42',
@@ -100,30 +118,11 @@ export default function RootLayout({
             },
           }}
         >
-    <html lang="en" className={`${inter.variable} ${ibmMono.variable}`} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'light') {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
-       
           <Providers>
             {children}
           </Providers>
+        </ClerkProvider>
       </body>
-      </html>
-      </ClerkProvider>
+    </html>
   )
 }
