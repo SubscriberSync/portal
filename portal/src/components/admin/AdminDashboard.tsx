@@ -296,7 +296,7 @@ function OrganizationsTab({
       const res = await fetch('/api/admin/organizations', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: org.id }),
+        body: JSON.stringify({ id: org.id, slug: org.slug }),
       })
 
       if (res.ok) {

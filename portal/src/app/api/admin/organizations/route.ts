@@ -67,8 +67,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. For test portals, also create Clerk organization and send invite
+    console.log('[Admin] isTestPortal:', isTestPortal, 'inviteEmail:', inviteEmail)
     if (isTestPortal && inviteEmail) {
       try {
+        console.log('[Admin] Creating Clerk organization with name:', name, 'slug:', slug)
         const clerk = await clerkClient()
 
         // Create the organization in Clerk
@@ -136,16 +138,35 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    const { id } = await request.json()
+    const { id, slug } = await request.json()
 
     if (!id) {
       return NextResponse.json({ error: 'Missing id' }, { status: 400 })
     }
 
+    // 1. Try to delete from Clerk first (if slug provided)
+    if (slug) {
+      try {
+        const clerk = await clerkClient()
+        // Find the Clerk organization by slug
+        const clerkOrgs = await clerk.organizations.getOrganizationList({ query: slug })
+        const clerkOrg = clerkOrgs.data.find(org => org.slug === slug)
+
+        if (clerkOrg) {
+          await clerk.organizations.deleteOrganization(clerkOrg.id)
+          console.log('[Admin] Deleted Clerk organization:', clerkOrg.id)
+        }
+      } catch (clerkError) {
+        console.error('[Admin] Error deleting Clerk organization:', clerkError)
+        // Continue with Supabase deletion even if Clerk fails
+      }
+    }
+
+    // 2. Delete from Supabase
     const success = await deleteOrganization(id)
 
     if (!success) {
-      return NextResponse.json({ error: 'Failed to delete organization' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to delete organization from database' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
