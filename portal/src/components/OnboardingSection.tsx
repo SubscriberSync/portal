@@ -6,16 +6,19 @@ import { IntakeSubmission, ClientOnboardingData, IntakeItemType } from '@/lib/in
 import IntakeStep1Connect from './IntakeStep1Connect'
 
 interface Integration {
-  type: 'shopify' | 'klaviyo' | 'recharge'
+  type: 'shopify' | 'klaviyo' | 'recharge' | 'shipstation'
   connected: boolean
   lastSync?: string
 }
+
+type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | null
 
 interface OnboardingSectionProps {
   clientSlug: string
   initialSubmissions: IntakeSubmission[]
   initialOnboardingData: ClientOnboardingData
   initialIntegrations?: Integration[]
+  shippingProvider?: ShippingProvider
 }
 
 export default function OnboardingSection({
@@ -23,6 +26,7 @@ export default function OnboardingSection({
   initialSubmissions,
   initialOnboardingData,
   initialIntegrations = [],
+  shippingProvider,
 }: OnboardingSectionProps) {
   const [submissions, setSubmissions] = useState(initialSubmissions)
   const [onboardingData, setOnboardingData] = useState(initialOnboardingData)
@@ -136,6 +140,7 @@ export default function OnboardingSection({
         integrations={integrations}
         onboardingData={onboardingData}
         installmentName={submissions.find(s => s.item === 'Installment Name')?.value}
+        shippingProvider={shippingProvider}
         onRefresh={refreshData}
       />
     </div>

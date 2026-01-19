@@ -3,18 +3,22 @@
 import { useState } from 'react'
 import { Check, ChevronDown, ChevronUp, Zap, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
 import { ClientOnboardingData } from '@/lib/intake-types'
+import ShippingProviderSection from './ShippingProviderSection'
 
 interface Integration {
-  type: 'shopify' | 'klaviyo' | 'recharge'
+  type: 'shopify' | 'klaviyo' | 'recharge' | 'shipstation'
   connected: boolean
   lastSync?: string
 }
+
+type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | null
 
 interface IntakeStep1ConnectProps {
   clientSlug: string
   integrations: Integration[]
   onboardingData: ClientOnboardingData
   installmentName?: string
+  shippingProvider?: ShippingProvider
   onRefresh: () => void
 }
 
@@ -23,6 +27,7 @@ export default function IntakeStep1Connect({
   integrations,
   onboardingData,
   installmentName: initialInstallmentName,
+  shippingProvider,
   onRefresh
 }: IntakeStep1ConnectProps) {
   const [isExpanded, setIsExpanded] = useState(!onboardingData.step1Complete)
@@ -41,6 +46,9 @@ export default function IntakeStep1Connect({
   const shopifyIntegration = integrations.find(i => i.type === 'shopify')
   const klaviyoIntegration = integrations.find(i => i.type === 'klaviyo')
   const rechargeIntegration = integrations.find(i => i.type === 'recharge')
+  const shipstationIntegration = integrations.find(i => i.type === 'shipstation')
+  
+  const isShipStationConnected = shipstationIntegration?.connected || false
 
   const isShopifyConnected = shopifyIntegration?.connected || false
   const isKlaviyoConnected = klaviyoIntegration?.connected || false
@@ -479,6 +487,14 @@ export default function IntakeStep1Connect({
               Your credentials are encrypted and stored securely.
             </p>
           </div>
+
+          {/* Shipping Provider Section - Optional */}
+          <ShippingProviderSection
+            clientSlug={clientSlug}
+            currentProvider={shippingProvider || null}
+            isShipStationConnected={isShipStationConnected}
+            onRefresh={onRefresh}
+          />
         </div>
       )}
     </div>
