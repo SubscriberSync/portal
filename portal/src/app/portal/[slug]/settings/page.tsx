@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getOrganizationBySlug, getIntegrations } from '@/lib/supabase/data'
 import { Plug, User, Bell, Shield, Truck } from 'lucide-react'
 import ShipStationSettings from '@/components/ShipStationSettings'
+import KlaviyoSettings from '@/components/KlaviyoSettings'
 import ShippingPreferencesForm from '@/components/ShippingPreferencesForm'
 
 export const dynamic = 'force-dynamic'
@@ -156,32 +157,10 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
             </div>
 
             {/* Klaviyo */}
-            <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#2D2D2D] flex items-center justify-center">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#ffffff">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-white">Klaviyo</h3>
-                    <p className="text-sm text-[#71717a]">
-                      {klaviyoIntegration?.connected
-                        ? `Connected - Last sync: ${new Date(klaviyoIntegration.last_sync_at || '').toLocaleDateString()}`
-                        : 'Not connected'}
-                    </p>
-                  </div>
-                </div>
-                <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                  klaviyoIntegration?.connected
-                    ? 'bg-[#5CB87A]/10 text-[#5CB87A]'
-                    : 'bg-[#71717a]/10 text-[#71717a]'
-                }`}>
-                  {klaviyoIntegration?.connected ? 'Connected' : 'Disconnected'}
-                </span>
-              </div>
-            </div>
+            <KlaviyoSettings
+              connected={klaviyoIntegration?.connected || false}
+              lastSyncAt={klaviyoIntegration?.last_sync_at}
+            />
 
             {/* ShipStation */}
             <ShipStationSettings
