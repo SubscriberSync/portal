@@ -47,7 +47,6 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-[var(--background)] text-[var(--foreground)] antialiased transition-colors duration-300`}>
         <ClerkProvider
-          domain="subscribersync.com"
           proxyUrl="https://subscribersync.com/__clerk"
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
