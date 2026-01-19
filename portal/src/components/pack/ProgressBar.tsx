@@ -24,7 +24,7 @@ export function ProgressBar({
   return (
     <div className="w-full">
       <div
-        className={`w-full bg-gray-200 rounded-full overflow-hidden ${heightClass}`}
+        className={`w-full bg-border rounded-full overflow-hidden ${heightClass}`}
       >
         <div
           className="h-full bg-green-500 transition-all duration-500 ease-out"

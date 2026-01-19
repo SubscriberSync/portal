@@ -1,23 +1,42 @@
-# Pack Mode Sound Files
+# Pack Mode Sound Effects
 
-This directory should contain the following sound files for Pack Mode:
+Pack Mode sounds are now generated programmatically using the Web Audio API.
+No external sound files are required.
 
-- `click.mp3` - Short click sound for button taps
-- `levelup.mp3` - Celebratory chime for every 10 boxes packed
-- `fanfare.mp3` - Triumphant fanfare for completing all boxes
-- `alert.mp3` - Alert buzzer for flagged items
+## Sound Types
 
-## Recommended Sources
+The following sounds are available via the `useSounds` hook:
 
-You can find free sound effects at:
-- https://freesound.org
-- https://mixkit.co/free-sound-effects/
-- https://www.zapsplat.com
+- **click** - Short click sound for button taps (sine wave, quick decay)
+- **levelUp** - Celebratory ascending arpeggio for every 10 boxes packed (C-E-G-C progression)
+- **fanfare** - Triumphant chord progression for completing all boxes (C-G-C major chords)
+- **alert** - Warning beep pattern for flagged items (3 square wave pulses)
 
 ## Usage
 
-These sounds are used by the Scoreboard TV display and Station iPad interface:
-- `click` - Played when PACKED button is tapped
-- `levelUp` - Played every 10 boxes on the Scoreboard
-- `fanfare` - Played when batch is complete (0 remaining)
-- `alert` - Played when a shipment is flagged
+```typescript
+import { useSounds } from '@/hooks/useSounds';
+
+function MyComponent() {
+  const { play, enableAudio } = useSounds();
+  
+  // Must enable audio first (required for iOS/browsers that block autoplay)
+  // Usually done on first user interaction
+  const handleFirstClick = () => {
+    enableAudio();
+  };
+  
+  // Then play sounds
+  const handlePacked = () => {
+    play('click');
+  };
+}
+```
+
+## Why Web Audio API?
+
+1. No external dependencies or file downloads
+2. Works offline
+3. Instant playback (no network latency)
+4. Consistent across all browsers
+5. Easy to customize frequencies and durations

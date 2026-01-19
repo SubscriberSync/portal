@@ -115,6 +115,22 @@ function mapFulfillmentStatus(status: string | null): 'Unfulfilled' | 'Packed' |
   }
 }
 
+// Detect external fulfillment source from Shopify fulfillment data
+function detectExternalFulfillmentSource(order: ShopifyOrder): string | null {
+  // If we have tracking info but didn't generate it ourselves, it's external
+  // Common patterns:
+  // - Shopify Shipping: location_id present, tracking via Shopify
+  // - ShipStation Direct: originated_from ShipStation
+  // - Pirateship: tracking numbers with specific patterns
+
+  // For now, if the order is fulfilled and we're receiving this from Shopify,
+  // it's likely external unless we can prove otherwise
+  if (order.fulfillment_status === 'fulfilled') {
+    return 'external' // Will be refined when we have more context
+  }
+  return null
+}
+
 // POST /api/webhooks/shopify
 export async function POST(request: NextRequest) {
   // Get organization from query param
@@ -187,7 +203,7 @@ async function handleOrderEvent(
   // Get or create subscriber
   let { data: subscriber } = await supabase
     .from('subscribers')
-    .select('id')
+    .select('id, next_charge_date')
     .eq('organization_id', orgId)
     .eq('email', email)
     .single()
@@ -213,7 +229,7 @@ async function handleOrderEvent(
         status: 'Active',
         box_number: 1,
       })
-      .select('id')
+      .select('id, next_charge_date')
       .single()
 
     subscriber = newSub
@@ -227,31 +243,109 @@ async function handleOrderEvent(
   const shipmentType = getShipmentType(order)
   const status = topic === 'orders/cancelled' ? 'Flagged' : mapFulfillmentStatus(order.fulfillment_status)
 
+    // Get organization settings for predictive merging
+    interface OrgSettings {
+      smart_hold_days: number
+      auto_merge_enabled: boolean
+      ghost_order_handling: boolean
+    }
+    
+    const { data: settings } = await supabase
+      .rpc('get_organization_settings', { org_id: orgId })
+      .single()
+
+    const smartHoldDays = (settings as OrgSettings | null)?.smart_hold_days ?? 7
+
+  // Predictive Merging: Check if one-off should be held for upcoming renewal
+  let shouldHold = false
+  let heldUntil: string | null = null
+
+  if (
+    shipmentType === 'One-Off' &&
+    subscriber.next_charge_date &&
+    topic === 'orders/create'
+  ) {
+    const nextChargeDate = new Date(subscriber.next_charge_date)
+    const now = new Date()
+    const daysUntilRenewal = Math.ceil(
+      (nextChargeDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    )
+
+    if (daysUntilRenewal > 0 && daysUntilRenewal <= smartHoldDays) {
+      shouldHold = true
+      heldUntil = subscriber.next_charge_date
+      console.log(
+        `[Shopify Webhook] Holding one-off order for ${email} - renewal in ${daysUntilRenewal} days`
+      )
+    }
+  }
+
   // Create/update shipment for each line item
   for (const item of order.line_items) {
-    const shipmentData = {
+    const shipmentData: Record<string, unknown> = {
       organization_id: orgId,
       subscriber_id: subscriber.id,
       type: shipmentType,
       status: status,
       product_name: item.name,
+      variant_name: item.name !== item.title ? item.title : null,
       gift_note: order.note || null,
+      order_number: order.name,
+      shopify_order_id: order.id.toString(),
+      shopify_line_item_id: item.id.toString(),
       flag_reason: topic === 'orders/cancelled' ? 'Order cancelled' : null,
       shipped_at: order.fulfillment_status === 'fulfilled' ? new Date().toISOString() : null,
+      financial_status: order.financial_status || null,
+    }
+
+    // Apply predictive hold if applicable
+    if (shouldHold && heldUntil) {
+      shipmentData.held_until = heldUntil
+      shipmentData.hold_reason = 'predictive_merge'
     }
 
     // Check if shipment already exists for this order line item
-    const shopifyOrderItemId = `${order.id}-${item.id}`
     const { data: existing } = await supabase
       .from('shipments')
-      .select('id')
+      .select('id, status')
       .eq('organization_id', orgId)
-      .eq('subscriber_id', subscriber.id)
-      .eq('product_name', item.name)
-      .gte('created_at', new Date(order.created_at).toISOString())
+      .eq('shopify_order_id', order.id.toString())
+      .eq('shopify_line_item_id', item.id.toString())
       .single()
 
     if (existing) {
+      // GHOST ORDER HANDLING:
+      // If Shopify says fulfilled but our status is NOT Packed/Shipped,
+      // this is a "ghost order" - label was bought externally
+      if (
+        order.fulfillment_status === 'fulfilled' &&
+        existing.status !== 'Packed' &&
+        existing.status !== 'Shipped' &&
+        existing.status !== 'Delivered'
+      ) {
+        // Mark as external fulfillment but keep in pack queue (Ready to Pack)
+        // so the packer sees it and can verify the physical label exists
+        shipmentData.status = 'Ready to Pack'
+        shipmentData.external_fulfillment_source = 'external'
+        
+        console.log(
+          `[Shopify Webhook] Ghost order detected for ${order.name} - external fulfillment`
+        )
+
+        // Log this as an activity
+        await supabase.from('activity_log').insert({
+          organization_id: orgId,
+          subscriber_id: subscriber.id,
+          event_type: 'shipment.ghost_order',
+          description: `Order ${order.name} was fulfilled externally (outside SubscriberSync)`,
+          metadata: { 
+            order_number: order.name, 
+            shopify_order_id: order.id.toString(),
+            original_status: existing.status,
+          },
+        })
+      }
+
       // Update existing shipment
       await supabase
         .from('shipments')
@@ -259,10 +353,27 @@ async function handleOrderEvent(
         .eq('id', existing.id)
     } else {
       // Create new shipment
+      // If already fulfilled on create, mark as external
+      if (order.fulfillment_status === 'fulfilled') {
+        shipmentData.external_fulfillment_source = 'external'
+        shipmentData.status = 'Ready to Pack' // Show in pack queue
+      }
+
       await supabase
         .from('shipments')
         .insert(shipmentData)
     }
+  }
+
+  // Log activity if order was held
+  if (shouldHold) {
+    await supabase.from('activity_log').insert({
+      organization_id: orgId,
+      subscriber_id: subscriber.id,
+      event_type: 'shipment.auto_held',
+      description: `One-off order automatically held for upcoming renewal on ${new Date(heldUntil!).toLocaleDateString()}`,
+      metadata: { order_number: order.name, held_until: heldUntil },
+    })
   }
 
   // Update integration last sync

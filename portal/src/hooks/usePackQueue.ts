@@ -4,10 +4,10 @@ import useSWR from 'swr';
 import type { QueueResponse } from '@/lib/pack-types';
 import { fetchPackQueue } from '@/lib/pack-api';
 
-export function usePackQueue(clientSlug: string, refreshInterval = 3000) {
+export function usePackQueue(clientSlug: string, refreshInterval = 3000, batchId?: string) {
   const { data, error, isLoading, mutate } = useSWR<QueueResponse>(
-    clientSlug ? `/pack/queue/${clientSlug}` : null,
-    () => fetchPackQueue(clientSlug),
+    clientSlug ? `/pack/queue/${clientSlug}${batchId ? `?batch=${batchId}` : ''}` : null,
+    () => fetchPackQueue(clientSlug, batchId),
     {
       refreshInterval,
       revalidateOnFocus: true,

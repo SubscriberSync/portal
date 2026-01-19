@@ -196,6 +196,11 @@ async function handleSubscriptionEvent(
     updated_at: new Date().toISOString(),
   }
 
+  // IMPORTANT: Update next_charge_date for predictive merging
+  if (subscription.next_charge_scheduled_at) {
+    updateData.next_charge_date = subscription.next_charge_scheduled_at
+  }
+
   if (frequency) updateData.frequency = frequency
   if (shirtSize) updateData.shirt_size = shirtSize
   if (subscription.cancellation_reason) {

@@ -18,8 +18,9 @@ export async function fetchPackOverview(clientSlug: string): Promise<OverviewRes
   return res.json();
 }
 
-export async function fetchPackQueue(clientSlug: string): Promise<QueueResponse> {
-  const res = await fetch('/api/pack/queue');
+export async function fetchPackQueue(clientSlug: string, batchId?: string): Promise<QueueResponse> {
+  const url = batchId ? `/api/pack/queue?batch=${batchId}` : '/api/pack/queue';
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch pack queue: ${res.statusText}`);
   }

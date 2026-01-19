@@ -13,3 +13,4 @@ export { FlagModal } from './FlagModal';
 export { AddressWarning } from './AddressWarning';
 export { OnDeckQueue } from './OnDeckQueue';
 export { ShipmentCard } from './ShipmentCard';
+export { BatchSelector } from './BatchSelector';

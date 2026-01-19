@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
+import type { PackShipment, ShipmentSubscriber } from '@/lib/pack-types'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,12 +31,15 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('shipments')
       .select(`
-        *,
+        id, type, status, sequence_id, product_name, variant_name,
+        gift_note, order_number, shopify_order_id, tracking_number,
+        carrier, weight_oz, print_batch_id, print_sequence,
+        merged_into_id, merged_shipment_ids, flag_reason,
+        external_fulfillment_source,
         subscriber:subscribers(
-          id, email, first_name, last_name,
+          id, email, first_name, last_name, shirt_size,
           address1, address2, city, state, zip, country, phone
-        ),
-        print_batch:print_batches(batch_number)
+        )
       `)
       .eq('organization_id', organization.id)
       .eq('status', 'Ready to Pack')
@@ -46,13 +50,76 @@ export async function GET(request: NextRequest) {
     }
 
     // Order by batch (newest first) then by print_sequence (matches physical label stack)
-    const { data: shipments, error } = await query
+    const { data: rawShipments, error } = await query
       .order('label_purchased_at', { ascending: false })
       .order('print_sequence', { ascending: true })
 
     if (error) {
       console.error('[Pack Queue] Error:', error)
       return NextResponse.json({ error: 'Failed to fetch queue' }, { status: 500 })
+    }
+
+    // Transform and fetch merged items for each shipment
+    const shipments: PackShipment[] = []
+    
+    for (const raw of rawShipments || []) {
+      // Handle subscriber being array or object from Supabase join
+      const subData = raw.subscriber
+      const subscriber = Array.isArray(subData) ? subData[0] : subData
+
+      const shipment: PackShipment = {
+        id: raw.id,
+        type: raw.type,
+        status: raw.status,
+        sequence_id: raw.sequence_id,
+        product_name: raw.product_name,
+        variant_name: raw.variant_name,
+        gift_note: raw.gift_note,
+        order_number: raw.order_number,
+        shopify_order_id: raw.shopify_order_id,
+        tracking_number: raw.tracking_number,
+        carrier: raw.carrier,
+        weight_oz: raw.weight_oz,
+        print_batch_id: raw.print_batch_id,
+        print_sequence: raw.print_sequence,
+        merged_into_id: raw.merged_into_id,
+        merged_shipment_ids: raw.merged_shipment_ids,
+        flag_reason: raw.flag_reason,
+        subscriber: subscriber as ShipmentSubscriber | null,
+        external_fulfillment_source: raw.external_fulfillment_source,
+      }
+
+      // Fetch merged items if this shipment has any
+      if (raw.merged_shipment_ids && raw.merged_shipment_ids.length > 0) {
+        const { data: mergedItems } = await supabase
+          .from('shipments')
+          .select('id, type, product_name, variant_name, gift_note, order_number')
+          .in('id', raw.merged_shipment_ids)
+
+        shipment.merged_items = (mergedItems || []).map(item => ({
+          id: item.id,
+          type: item.type,
+          status: 'Merged' as const,
+          sequence_id: null,
+          product_name: item.product_name,
+          variant_name: item.variant_name,
+          gift_note: item.gift_note,
+          order_number: item.order_number,
+          shopify_order_id: null,
+          tracking_number: null,
+          carrier: null,
+          weight_oz: null,
+          print_batch_id: null,
+          print_sequence: null,
+          merged_into_id: raw.id,
+          merged_shipment_ids: null,
+          flag_reason: null,
+          subscriber: null,
+          external_fulfillment_source: null,
+        }))
+      }
+
+      shipments.push(shipment)
     }
 
     // Get stats
@@ -62,6 +129,13 @@ export async function GET(request: NextRequest) {
       .eq('organization_id', organization.id)
       .eq('status', 'Packed')
       .gte('packed_at', new Date().toISOString().split('T')[0])
+
+    // Get unfulfilled count for stats
+    const { count: unfulfilledCount } = await supabase
+      .from('shipments')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organization.id)
+      .in('status', ['Unfulfilled', 'Ready to Pack'])
 
     // Get available batches for batch selector
     const { data: batches } = await supabase
@@ -73,17 +147,20 @@ export async function GET(request: NextRequest) {
 
     // Count shipments still ready to pack per batch
     const batchCounts = new Map<string, number>()
-    shipments?.forEach(s => {
+    shipments.forEach(s => {
       if (s.print_batch_id) {
         batchCounts.set(s.print_batch_id, (batchCounts.get(s.print_batch_id) || 0) + 1)
       }
     })
 
     return NextResponse.json({
-      queue: shipments || [],
+      queue: shipments,
       stats: {
-        total: shipments?.length || 0,
+        total: shipments.length,
+        unfulfilled: unfulfilledCount || 0,
         packedToday: packedTodayCount || 0,
+        avgPackTimeSeconds: null, // TODO: Calculate from packed_at timestamps
+        estFinishTime: null, // TODO: Calculate based on avg time and remaining
       },
       batches: batches?.map(b => ({
         ...b,

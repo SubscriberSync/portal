@@ -88,6 +88,8 @@ export interface Subscriber {
   at_risk: boolean
   tags: string[]
   discord_username: string | null
+  // Subscription timing (for predictive merging)
+  next_charge_date: string | null
   created_at: string
   updated_at: string
 }
@@ -145,6 +147,11 @@ export interface Shipment {
   // Merge tracking
   merged_into_id: string | null  // If merged, points to the parent shipment
   merged_shipment_ids: string[] | null  // Parent shipment stores child IDs
+  // Hold tracking (for predictive merging)
+  held_until: string | null  // If on hold, when to release (usually next charge date)
+  hold_reason: string | null  // Why it's on hold: 'predictive_merge', 'manual', etc.
+  // External fulfillment tracking (ghost orders)
+  external_fulfillment_source: 'shipstation_direct' | 'pirateship_csv' | 'shopify_shipping' | 'subscribersync' | null
   // Timestamps
   packed_at: string | null
   shipped_at: string | null

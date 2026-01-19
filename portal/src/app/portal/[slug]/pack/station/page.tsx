@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { usePackQueue } from '@/hooks/usePackQueue';
 import { useSounds } from '@/hooks/useSounds';
 import { markShipmentComplete, flagShipment } from '@/lib/pack-api';
 import type { FlagReason } from '@/lib/pack-types';
-import { ShipmentCard } from '@/components/pack';
+import { ShipmentCard, BatchSelector } from '@/components/pack';
 
 export default function StationPage() {
   const params = useParams();
   const router = useRouter();
   const clientSlug = params.slug as string;
 
-  const { data, isLoading, isError, mutate } = usePackQueue(clientSlug, 5000);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined);
+  const { data, isLoading, isError, mutate } = usePackQueue(clientSlug, 5000, selectedBatchId);
   const { play, enableAudio } = useSounds();
   const [actionLoading, setActionLoading] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -38,7 +39,7 @@ export default function StationPage() {
 
       const result = await markShipmentComplete(clientSlug, currentShipment.id);
 
-      if (!result.next) {
+      if (!result.hasMore) {
         // All done!
         router.push(`/portal/${clientSlug}/pack/complete`);
       } else {
@@ -63,7 +64,7 @@ export default function StationPage() {
       try {
         const result = await flagShipment(clientSlug, currentShipment.id, reason);
 
-        if (!result.next) {
+        if (!result.hasMore) {
           // All done!
           router.push(`/portal/${clientSlug}/pack/complete`);
         } else {
@@ -84,6 +85,24 @@ export default function StationPage() {
   const handleScreenTap = useCallback(() => {
     handleEnableAudio();
   }, [handleEnableAudio]);
+
+  // Keyboard shortcuts - Enter/Space for Packed, F for Flag
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if ((e.key === 'Enter' || e.key === ' ') && !actionLoading) {
+        e.preventDefault();
+        handlePacked();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePacked, actionLoading]);
 
   if (isLoading) {
     return (
@@ -122,14 +141,14 @@ export default function StationPage() {
 
   const currentShipment = queue[0];
 
-  // Calculate episode remaining count
-  const currentSequenceId = currentShipment.fields['↩️ Sequence ID']?.[0];
+  // Calculate episode remaining count (Supabase format)
+  const currentSequenceId = currentShipment.sequence_id;
   const episodeRemaining =
-    currentShipment.fields['Type'] === 'Subscription' && currentSequenceId
+    currentShipment.type === 'Subscription' && currentSequenceId
       ? queue.filter(
           (s) =>
-            s.fields['Type'] === 'Subscription' &&
-            s.fields['↩️ Sequence ID']?.[0] === currentSequenceId
+            s.type === 'Subscription' &&
+            s.sequence_id === currentSequenceId
         ).length
       : undefined;
 
@@ -137,13 +156,13 @@ export default function StationPage() {
   const nextEpisodeShipment = currentSequenceId
     ? queue.find(
         (s) =>
-          s.fields['Type'] === 'Subscription' &&
-          s.fields['↩️ Sequence ID']?.[0] !== currentSequenceId
+          s.type === 'Subscription' &&
+          s.sequence_id !== currentSequenceId
       )
     : null;
   const nextEpisode = nextEpisodeShipment
-    ? `Episode ${nextEpisodeShipment.fields['↩️ Sequence ID']?.[0]}`
-    : queue.some((s) => s.fields['Type'] === 'One-Off')
+    ? `Episode ${nextEpisodeShipment.sequence_id}`
+    : queue.some((s) => s.type === 'One-Off')
       ? 'One-Offs'
       : undefined;
 
@@ -152,6 +171,15 @@ export default function StationPage() {
       className="min-h-screen bg-background flex flex-col"
       onClick={handleScreenTap}
     >
+      {/* Batch selector */}
+      {data.batches && data.batches.length > 0 && (
+        <BatchSelector
+          batches={data.batches}
+          selectedBatchId={selectedBatchId}
+          onSelectBatch={setSelectedBatchId}
+        />
+      )}
+      
       <ShipmentCard
         shipment={currentShipment}
         queuePosition={stats.packedToday + 1}

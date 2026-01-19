@@ -1,60 +1,56 @@
 'use client';
 
-import type { Shipment } from '@/lib/pack-types';
+import type { PackShipment } from '@/lib/pack-types';
 
 interface OnDeckQueueProps {
-  shipments: Shipment[];
+  shipments: PackShipment[];
 }
 
 export function OnDeckQueue({ shipments }: OnDeckQueueProps) {
-  const getShipmentLabel = (shipment: Shipment, index: number) => {
+  const getShipmentLabel = (index: number) => {
     if (index === 0) return 'NEXT';
     return `+${index}`;
   };
 
-  const getEpisodeOrType = (shipment: Shipment) => {
-    const type = shipment.fields['Type'];
-    const sequenceId = shipment.fields['↩️ Sequence ID']?.[0];
-
-    if (type === 'One-Off') {
+  const getEpisodeOrType = (shipment: PackShipment) => {
+    if (shipment.type === 'One-Off') {
       return '📦 One-Off';
     }
-    return `Episode ${sequenceId || '?'}`;
+    return `Episode ${shipment.sequence_id || '?'}`;
   };
 
-  const getCustomerName = (shipment: Shipment) => {
-    const firstName = shipment.fields['↩️ Subscriber First Name']?.[0] || '';
-    const lastName = shipment.fields['↩️ Subscriber Last Name']?.[0] || '';
+  const getCustomerName = (shipment: PackShipment) => {
+    const firstName = shipment.subscriber?.first_name || '';
+    const lastName = shipment.subscriber?.last_name || '';
     return `${firstName} ${lastName}`.trim() || 'Unknown';
   };
 
-  const getShirtSize = (shipment: Shipment) => {
-    return shipment.fields['↩️ Shirt Size']?.[0] || '';
+  const getShirtSize = (shipment: PackShipment) => {
+    return shipment.subscriber?.shirt_size || '';
   };
 
-  const hasAddOns = (shipment: Shipment) => {
-    const sidecarNames = shipment.fields['↩️ Sidecar Names'] || [];
-    const mergedItems = shipment.fields['⚙️ Merged Items'] || [];
-    return sidecarNames.length > 0 || mergedItems.length > 0;
+  const hasAddOns = (shipment: PackShipment) => {
+    return (shipment.merged_items && shipment.merged_items.length > 0) ||
+           (shipment.merged_shipment_ids && shipment.merged_shipment_ids.length > 0);
   };
 
-  const hasGiftNote = (shipment: Shipment) => {
-    return !!shipment.fields['✏️ Gift Note'];
+  const hasGiftNote = (shipment: PackShipment) => {
+    return !!shipment.gift_note;
   };
 
   return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-surface rounded-xl overflow-hidden shadow-sm">
       <table className="w-full">
         <tbody>
           {shipments.map((shipment, index) => (
             <tr
               key={shipment.id}
               className={`border-b border-border last:border-b-0 ${
-                index === 0 ? 'bg-green-50' : ''
+                index === 0 ? 'bg-green-50 dark:bg-green-950/30' : ''
               }`}
             >
               <td className="px-4 py-3 font-bold text-foreground-secondary w-16">
-                {getShipmentLabel(shipment, index)}
+                {getShipmentLabel(index)}
               </td>
               <td className="px-4 py-3 text-foreground">
                 {getEpisodeOrType(shipment)}
@@ -67,12 +63,12 @@ export function OnDeckQueue({ shipments }: OnDeckQueueProps) {
               </td>
               <td className="px-4 py-3 w-32 text-right">
                 {hasAddOns(shipment) && (
-                  <span className="text-amber-600 text-sm font-medium">
+                  <span className="text-amber-600 dark:text-amber-400 text-sm font-medium">
                     ⚠️ ADD-ONS
                   </span>
                 )}
                 {hasGiftNote(shipment) && (
-                  <span className="text-pink-600 text-sm font-medium ml-2">
+                  <span className="text-pink-600 dark:text-pink-400 text-sm font-medium ml-2">
                     🎁 GIFT NOTE
                   </span>
                 )}

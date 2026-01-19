@@ -45,6 +45,17 @@ export async function GET() {
   try {
     const supabase = createServiceClient()
 
+    // Get Shopify integration to get store name
+    const { data: shopifyIntegration } = await supabase
+      .from('integrations')
+      .select('credentials_encrypted')
+      .eq('organization_id', organization.id)
+      .eq('type', 'shopify')
+      .eq('connected', true)
+      .single()
+
+    const shopifyStore = shopifyIntegration?.credentials_encrypted?.shop as string | undefined
+
     // Get all unfulfilled shipments with subscriber info
     const { data: shipments, error } = await supabase
       .from('shipments')
@@ -136,6 +147,7 @@ export async function GET() {
       combos,
       totalShipments: shipments?.length || 0,
       comboCount: combos.length,
+      shopifyStore,
     })
   } catch (error) {
     console.error('[Pack Overview] Error:', error)

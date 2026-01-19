@@ -1,4 +1,4 @@
-// Pack Mode Types - API Response Schemas
+// Pack Mode Types - API Response Schemas (Supabase format)
 
 export interface ShipmentGroup {
   key: string;           // "episode-1", "episode-3", "one-off"
@@ -28,29 +28,56 @@ export interface OverviewResponse {
   comboCount: number;
 }
 
-export interface ShipmentFields {
-  "Type": "Subscription" | "One-Off";
-  "Status": "Unfulfilled" | "Packed" | "Flagged" | "Merged";
-  "↩️ Subscriber First Name": string[];
-  "↩️ Subscriber Last Name": string[];
-  "↩️ Shirt Size": string[];
-  "↩️ City": string[];
-  "↩️ State": string[];
-  "↩️ Zip": string[];
-  "↩️ Address 1"?: string[];
-  "↩️ Address"?: string[];
-  "↩️ Product Name": string[];
-  "↩️ Sequence ID": number[];
-  "↩️ Sidecar Names": string[];
-  "⚙️ Merged Items": string[];
-  "Manifest": string;
-  "✏️ Gift Note": string;
-  "⚙️ Shopify Order ID": string;
+// Subscriber info embedded in shipment
+export interface ShipmentSubscriber {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  shirt_size: string | null;
+  address1: string | null;
+  address2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  country: string | null;
+  phone: string | null;
 }
 
-export interface Shipment {
+// Clean Supabase-style shipment interface
+export interface PackShipment {
   id: string;
-  fields: ShipmentFields;
+  type: "Subscription" | "One-Off" | null;
+  status: "Unfulfilled" | "Ready to Pack" | "Packed" | "Flagged" | "Merged" | "Shipped" | "Delivered";
+  sequence_id: number | null;
+  product_name: string | null;
+  variant_name: string | null;
+  gift_note: string | null;
+  order_number: string | null;
+  shopify_order_id: string | null;
+  tracking_number: string | null;
+  carrier: string | null;
+  weight_oz: number | null;
+  print_batch_id: string | null;
+  print_sequence: number | null;
+  merged_into_id: string | null;
+  merged_shipment_ids: string[] | null;
+  flag_reason: string | null;
+  subscriber: ShipmentSubscriber | null;
+  // For merged items display
+  merged_items?: PackShipment[];
+  // Ghost order tracking
+  external_fulfillment_source: "external" | "shipstation_direct" | "pirateship_csv" | "shopify_shipping" | "subscribersync" | null;
+}
+
+// Batch info for batch selector
+export interface PrintBatchInfo {
+  id: string;
+  batch_number: number;
+  total_labels: number;
+  successful_labels: number;
+  created_at: string;
+  remaining: number;
 }
 
 export interface QueueStats {
@@ -62,30 +89,33 @@ export interface QueueStats {
 }
 
 export interface QueueResponse {
-  queue: Shipment[];
+  queue: PackShipment[];
   stats: QueueStats;
+  batches?: PrintBatchInfo[];
 }
 
 export interface CompleteResponse {
-  success: true;
-  packed: Shipment;
-  next: Shipment | null;
+  success: boolean;
+  remaining: number;
+  next: { id: string; product_name: string } | null;
+  hasMore: boolean;
 }
 
 export interface FlagResponse {
-  success: true;
-  flagged: Shipment;
-  next: Shipment | null;
+  success: boolean;
+  remaining: number;
+  next: { id: string; product_name: string } | null;
+  hasMore: boolean;
 }
 
 export interface MergeResponse {
-  success: true;
-  merged: Shipment;
+  success: boolean;
+  merged: PackShipment;
 }
 
 export interface UnmergeResponse {
-  success: true;
-  unmerged: Shipment;
+  success: boolean;
+  unmerged: PackShipment;
 }
 
 export type FlagReason =

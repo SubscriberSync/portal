@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePackOverview } from '@/hooks/usePackOverview';
@@ -15,6 +15,14 @@ export default function PackPrepPage() {
   const { data, isLoading, isError, mutate } = usePackOverview(clientSlug);
   const [showComboModal, setShowComboModal] = useState(false);
   const [comboIndex, setComboIndex] = useState(0);
+  const [shopifyStore, setShopifyStore] = useState<string | undefined>(undefined);
+
+  // Fetch Shopify store from overview (if available)
+  useEffect(() => {
+    if (data && 'shopifyStore' in data) {
+      setShopifyStore((data as { shopifyStore?: string }).shopifyStore);
+    }
+  }, [data]);
 
   const handleOpenComboReview = () => {
     setComboIndex(0);
@@ -60,7 +68,7 @@ export default function PackPrepPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-border px-6 py-4">
+      <div className="bg-surface border-b border-border px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
@@ -102,7 +110,7 @@ export default function PackPrepPage() {
         {/* Print selector */}
         <PrintSelector
           clientSlug={clientSlug}
-          shopifyStore={undefined} // TODO: Get from client config if available
+          shopifyStore={shopifyStore}
         />
 
         {/* Summary footer */}

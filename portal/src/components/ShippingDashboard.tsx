@@ -50,7 +50,12 @@ interface ShippingDashboardProps {
 
 type SortField = 'product_name' | 'variant_name' | 'customer' | 'created_at'
 type SortDirection = 'asc' | 'desc'
-type TabView = 'ready' | 'problems' | 'batches'
+type TabView = 'ready' | 'problems' | 'batches' | 'onhold'
+
+interface HeldShipment extends ShipmentWithSubscriber {
+  held_until: string | null
+  hold_reason: string | null
+}
 
 // Variant size sort order
 const VARIANT_ORDER: Record<string, number> = {
@@ -96,7 +101,13 @@ export default function ShippingDashboard({
   const [loadingUpcoming, setLoadingUpcoming] = useState(true)
   const [showWaitWarnings, setShowWaitWarnings] = useState(true)
 
-  // Fetch upcoming subscriptions on mount
+  // Held shipments state (for predictive merging)
+  const [heldShipments, setHeldShipments] = useState<HeldShipment[]>([])
+  const [loadingHeld, setLoadingHeld] = useState(true)
+  const [isReleasing, setIsReleasing] = useState(false)
+  const [selectedHeldIds, setSelectedHeldIds] = useState<Set<string>>(new Set())
+
+  // Fetch upcoming subscriptions and held shipments on mount
   useEffect(() => {
     async function fetchUpcoming() {
       try {
@@ -111,6 +122,98 @@ export default function ShippingDashboard({
     }
     fetchUpcoming()
   }, [])
+
+  // Fetch held shipments
+  useEffect(() => {
+    async function fetchHeldShipments() {
+      try {
+        const response = await fetch('/api/shipping/hold')
+        const data = await response.json()
+        setHeldShipments(data.shipments || [])
+      } catch (error) {
+        console.error('Failed to fetch held shipments:', error)
+      } finally {
+        setLoadingHeld(false)
+      }
+    }
+    fetchHeldShipments()
+  }, [])
+
+  // Release held shipments
+  const handleReleaseSelected = async () => {
+    if (selectedHeldIds.size === 0) return
+
+    setIsReleasing(true)
+    try {
+      const response = await fetch('/api/shipping/release', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipmentIds: Array.from(selectedHeldIds),
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to release shipments')
+      }
+
+      // Remove released shipments from held list and add to regular shipments
+      const releasedIds = new Set(data.releasedIds || Array.from(selectedHeldIds))
+      const releasedShipments = heldShipments.filter(s => releasedIds.has(s.id))
+      
+      setHeldShipments(prev => prev.filter(s => !releasedIds.has(s.id)))
+      setShipments(prev => [...prev, ...releasedShipments])
+      setSelectedHeldIds(new Set())
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to release shipments')
+    } finally {
+      setIsReleasing(false)
+    }
+  }
+
+  // Toggle held shipment selection
+  const toggleHeldSelection = useCallback((id: string) => {
+    setSelectedHeldIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
+
+  // Release a single held shipment
+  const releaseSingleShipment = async (id: string) => {
+    setIsReleasing(true)
+    try {
+      const response = await fetch('/api/shipping/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentId: id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to release shipment')
+      }
+
+      // Move released shipment from held to regular shipments
+      const released = heldShipments.find(s => s.id === id)
+      if (released) {
+        setHeldShipments(prev => prev.filter(s => s.id !== id))
+        setShipments(prev => [...prev, released])
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to release shipment')
+    } finally {
+      setIsReleasing(false)
+    }
+  }
 
   // Get unique product names for filter
   const productNames = useMemo(() => {
@@ -339,23 +442,33 @@ export default function ShippingDashboard({
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="flex gap-2 border-b border-border">
         <button
           onClick={() => setActiveTab('ready')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'ready'
-              ? 'border-[#e07a42] text-white'
-              : 'border-transparent text-[#71717a] hover:text-white'
+              ? 'border-accent text-foreground'
+              : 'border-transparent text-foreground-secondary hover:text-foreground'
           }`}
         >
           Ready to Ship ({shipments.length})
         </button>
         <button
+          onClick={() => setActiveTab('onhold')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'onhold'
+              ? 'border-accent text-foreground'
+              : 'border-transparent text-foreground-secondary hover:text-foreground'
+          }`}
+        >
+          On Hold ({heldShipments.length})
+        </button>
+        <button
           onClick={() => setActiveTab('problems')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'problems'
-              ? 'border-[#e07a42] text-white'
-              : 'border-transparent text-[#71717a] hover:text-white'
+              ? 'border-accent text-foreground'
+              : 'border-transparent text-foreground-secondary hover:text-foreground'
           }`}
         >
           Problem Orders ({problemOrders.length})
@@ -364,8 +477,8 @@ export default function ShippingDashboard({
           onClick={() => setActiveTab('batches')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'batches'
-              ? 'border-[#e07a42] text-white'
-              : 'border-transparent text-[#71717a] hover:text-white'
+              ? 'border-accent text-foreground'
+              : 'border-transparent text-foreground-secondary hover:text-foreground'
           }`}
         >
           Recent Batches ({recentBatches.length})
@@ -378,7 +491,7 @@ export default function ShippingDashboard({
           <AlertTriangle className="w-5 h-5 text-yellow-400" />
           <div>
             <p className="text-yellow-400 font-medium">ShipStation Not Connected</p>
-            <p className="text-sm text-[#71717a]">Connect ShipStation in Settings to generate shipping labels.</p>
+            <p className="text-sm text-foreground-secondary">Connect ShipStation in Settings to generate shipping labels.</p>
           </div>
         </div>
       )}
@@ -390,11 +503,11 @@ export default function ShippingDashboard({
           <div className="flex flex-wrap items-center gap-4">
             {/* Product Filter */}
             <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-[#71717a]" />
+              <Filter className="w-4 h-4 text-foreground-secondary" />
               <select
                 value={productFilter}
                 onChange={(e) => setProductFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white text-sm focus:outline-none focus:border-[#e07a42]/50"
+                className="px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-foreground text-sm focus:outline-none focus:border-accent/50"
               >
                 <option value="">All Products</option>
                 {productNames.map(name => (
@@ -405,11 +518,11 @@ export default function ShippingDashboard({
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4 text-[#71717a]" />
+              <ArrowUpDown className="w-4 h-4 text-foreground-secondary" />
               <select
                 value={sortField}
                 onChange={(e) => handleSort(e.target.value as SortField)}
-                className="px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white text-sm focus:outline-none focus:border-[#e07a42]/50"
+                className="px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-foreground text-sm focus:outline-none focus:border-accent/50"
               >
                 <option value="product_name">Product → Size (Smart Sort)</option>
                 <option value="variant_name">Size Only</option>
@@ -424,16 +537,16 @@ export default function ShippingDashboard({
                 type="checkbox"
                 checked={showWaitWarnings}
                 onChange={(e) => setShowWaitWarnings(e.target.checked)}
-                className="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-transparent text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                className="w-4 h-4 rounded border-border bg-transparent text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
               />
-              <span className="text-sm text-[#71717a]">Show wait warnings</span>
+              <span className="text-sm text-foreground-secondary">Show wait warnings</span>
             </label>
 
             <div className="flex-1" />
 
             {/* Selection Info */}
             {selectedCount > 0 && (
-              <span className="text-sm text-[#71717a]">
+              <span className="text-sm text-foreground-secondary">
                 {selectedCount} selected
               </span>
             )}
@@ -442,7 +555,7 @@ export default function ShippingDashboard({
             <button
               onClick={handleMerge}
               disabled={!canMerge || isMerging}
-              className="px-4 py-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white text-sm font-medium hover:bg-[rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-surface-secondary border border-border text-foreground text-sm font-medium hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isMerging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Merge className="w-4 h-4" />}
               Merge Selected
@@ -452,7 +565,7 @@ export default function ShippingDashboard({
             <button
               onClick={handleGenerateLabels}
               disabled={selectedCount === 0 || isGenerating || !shipstationConnected}
-              className="px-4 py-2 rounded-lg bg-[#e07a42] text-white text-sm font-medium hover:bg-[#e07a42]/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
               Generate Labels ({selectedCount})
@@ -461,13 +574,13 @@ export default function ShippingDashboard({
 
           {/* Batch Result Modal */}
           {batchResult && (
-            <div className="p-6 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
-              <h3 className="text-lg font-semibold text-white mb-4">Batch Complete</h3>
+            <div className="p-6 rounded-xl bg-surface border border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Batch Complete</h3>
 
               <div className="flex gap-6 mb-4">
                 <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-[#5CB87A]" />
-                  <span className="text-[#5CB87A] font-medium">{batchResult.success} Labels Ready</span>
+                  <Check className="w-5 h-5 text-green-500" />
+                  <span className="text-green-500 font-medium">{batchResult.success} Labels Ready</span>
                 </div>
                 {batchResult.failed > 0 && (
                   <div className="flex items-center gap-2">
@@ -482,7 +595,7 @@ export default function ShippingDashboard({
                   href={batchResult.pdfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#5CB87A] text-white font-medium hover:bg-[#5CB87A]/90"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600"
                 >
                   <Download className="w-4 h-4" />
                   Download Labels PDF
@@ -495,7 +608,7 @@ export default function ShippingDashboard({
                   <div className="space-y-2">
                     {batchResult.errors.map((err, i) => (
                       <div key={i} className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <span className="text-white font-medium">{err.orderNumber}:</span>
+                        <span className="text-foreground font-medium">{err.orderNumber}:</span>
                         <span className="text-red-400 ml-2">{err.error}</span>
                       </div>
                     ))}
@@ -505,7 +618,7 @@ export default function ShippingDashboard({
 
               <button
                 onClick={() => setBatchResult(null)}
-                className="mt-4 text-sm text-[#71717a] hover:text-white"
+                className="mt-4 text-sm text-foreground-secondary hover:text-foreground"
               >
                 Dismiss
               </button>
@@ -513,40 +626,40 @@ export default function ShippingDashboard({
           )}
 
           {/* Shipments Table */}
-          <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+          <div className="rounded-xl bg-surface border border-border overflow-hidden">
             {/* Table Header */}
-            <div className="grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+            <div className="grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-border bg-surface-secondary">
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={selectedIds.size === sortedShipments.length && sortedShipments.length > 0}
                   onChange={selectAll}
-                  className="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-transparent text-[#e07a42] focus:ring-[#e07a42] focus:ring-offset-0"
+                  className="w-4 h-4 rounded border-border bg-transparent text-accent focus:ring-accent focus:ring-offset-0"
                 />
               </div>
-              <div className="text-sm font-medium text-[#71717a]">Order / Product</div>
-              <div className="text-sm font-medium text-[#71717a]">Customer</div>
-              <div className="text-sm font-medium text-[#71717a]">Variant</div>
-              <div className="text-sm font-medium text-[#71717a]">Weight</div>
-              <div className="text-sm font-medium text-[#71717a]">Merge</div>
+              <div className="text-sm font-medium text-foreground-secondary">Order / Product</div>
+              <div className="text-sm font-medium text-foreground-secondary">Customer</div>
+              <div className="text-sm font-medium text-foreground-secondary">Variant</div>
+              <div className="text-sm font-medium text-foreground-secondary">Weight</div>
+              <div className="text-sm font-medium text-foreground-secondary">Merge</div>
             </div>
 
             {/* Grouped Rows */}
             {groupedShipments.length === 0 ? (
               <div className="p-12 text-center">
-                <Package className="w-12 h-12 text-[#71717a] mx-auto mb-4" />
-                <p className="text-[#71717a]">No shipments ready to ship</p>
+                <Package className="w-12 h-12 text-foreground-secondary mx-auto mb-4" />
+                <p className="text-foreground-secondary">No shipments ready to ship</p>
               </div>
             ) : (
               groupedShipments.map((group, groupIndex) => (
                 <div key={`${group.product}-${group.variant}-${groupIndex}`}>
                   {/* Group Header */}
-                  <div className="px-4 py-2 bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.04)]">
-                    <span className="text-sm font-medium text-[#e07a42]">
+                  <div className="px-4 py-2 bg-surface-secondary border-b border-border">
+                    <span className="text-sm font-medium text-accent">
                       {group.product}
-                      {group.variant && <span className="text-[#71717a] ml-2">- {group.variant}</span>}
+                      {group.variant && <span className="text-foreground-secondary ml-2">- {group.variant}</span>}
                     </span>
-                    <span className="text-xs text-[#52525b] ml-2">({group.items.length})</span>
+                    <span className="text-xs text-foreground-tertiary ml-2">({group.items.length})</span>
                   </div>
 
                   {/* Group Items */}
@@ -558,8 +671,8 @@ export default function ShippingDashboard({
                     return (
                       <div
                         key={shipment.id}
-                        className={`grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] ${
-                          selectedIds.has(shipment.id) ? 'bg-[#e07a42]/5' : ''
+                        className={`grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-border hover:bg-surface-secondary ${
+                          selectedIds.has(shipment.id) ? 'bg-accent/5' : ''
                         } ${isMergeable ? 'border-l-2 border-l-yellow-500' : ''} ${hasUpcoming && showWaitWarnings ? 'border-l-2 border-l-blue-500' : ''}`}
                       >
                         <div className="flex items-center">
@@ -567,12 +680,12 @@ export default function ShippingDashboard({
                             type="checkbox"
                             checked={selectedIds.has(shipment.id)}
                             onChange={() => toggleSelection(shipment.id)}
-                            className="w-4 h-4 rounded border-[rgba(255,255,255,0.2)] bg-transparent text-[#e07a42] focus:ring-[#e07a42] focus:ring-offset-0"
+                            className="w-4 h-4 rounded border-border bg-transparent text-accent focus:ring-accent focus:ring-offset-0"
                           />
                         </div>
                         <div>
-                          <p className="text-white font-medium">{shipment.order_number || '-'}</p>
-                          <p className="text-sm text-[#71717a]">{shipment.product_name}</p>
+                          <p className="text-foreground font-medium">{shipment.order_number || '-'}</p>
+                          <p className="text-sm text-foreground-secondary">{shipment.product_name}</p>
                           {/* Upcoming subscription warning */}
                           {hasUpcoming && showWaitWarnings && (
                             <div className="mt-1 flex items-center gap-1.5 text-xs text-blue-400">
@@ -584,17 +697,17 @@ export default function ShippingDashboard({
                           )}
                         </div>
                         <div>
-                          <p className="text-white">
+                          <p className="text-foreground">
                             {shipment.subscriber?.first_name} {shipment.subscriber?.last_name}
                           </p>
-                          <p className="text-sm text-[#71717a]">{shipment.subscriber?.email}</p>
+                          <p className="text-sm text-foreground-secondary">{shipment.subscriber?.email}</p>
                         </div>
                         <div>
-                          <span className="px-2 py-1 rounded-md bg-[rgba(255,255,255,0.05)] text-sm text-white">
+                          <span className="px-2 py-1 rounded-md bg-surface-secondary text-sm text-foreground">
                             {shipment.variant_name || '-'}
                           </span>
                         </div>
-                        <div className="text-sm text-[#71717a]">
+                        <div className="text-sm text-foreground-secondary">
                           {shipment.weight_oz ? `${shipment.weight_oz} oz` : '-'}
                         </div>
                         <div className="flex items-center gap-1">
@@ -628,14 +741,14 @@ export default function ShippingDashboard({
 
       {/* Problem Orders Tab */}
       {activeTab === 'problems' && (
-        <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        <div className="rounded-xl bg-surface border border-border overflow-hidden">
           {problemOrders.length === 0 ? (
             <div className="p-12 text-center">
-              <Check className="w-12 h-12 text-[#5CB87A] mx-auto mb-4" />
-              <p className="text-[#71717a]">No problem orders</p>
+              <Check className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <p className="text-foreground-secondary">No problem orders</p>
             </div>
           ) : (
-            <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+            <div className="divide-y divide-border">
               {problemOrders.map((order) => (
                 <div key={order.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -643,17 +756,17 @@ export default function ShippingDashboard({
                       <AlertTriangle className="w-5 h-5 text-red-400" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">
+                      <p className="text-foreground font-medium">
                         {order.order_number} - {order.subscriber?.first_name} {order.subscriber?.last_name}
                       </p>
-                      <p className="text-sm text-[#71717a]">{order.product_name}</p>
+                      <p className="text-sm text-foreground-secondary">{order.product_name}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className={`px-2 py-1 rounded-md text-xs font-medium ${
                       order.financial_status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
                       order.financial_status === 'voided' ? 'bg-red-500/10 text-red-400' :
-                      'bg-[#71717a]/10 text-[#71717a]'
+                      'bg-surface-secondary text-foreground-secondary'
                     }`}>
                       {order.financial_status || 'Unknown'}
                     </span>
@@ -670,32 +783,126 @@ export default function ShippingDashboard({
         </div>
       )}
 
+      {/* On Hold Tab */}
+      {activeTab === 'onhold' && (
+        <div className="space-y-4">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-400" />
+              <span className="text-foreground-secondary">
+                Orders held for potential merge with upcoming subscriptions
+              </span>
+            </div>
+            <button
+              onClick={handleReleaseSelected}
+              disabled={selectedHeldIds.size === 0 || isReleasing}
+              className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isReleasing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Release Selected ({selectedHeldIds.size})
+            </button>
+          </div>
+
+          <div className="rounded-xl bg-surface border border-border overflow-hidden">
+            {loadingHeld ? (
+              <div className="p-12 text-center">
+                <Loader2 className="w-12 h-12 text-foreground-secondary mx-auto mb-4 animate-spin" />
+                <p className="text-foreground-secondary">Loading held orders...</p>
+              </div>
+            ) : heldShipments.length === 0 ? (
+              <div className="p-12 text-center">
+                <Clock className="w-12 h-12 text-foreground-secondary mx-auto mb-4" />
+                <p className="text-foreground-secondary">No orders on hold</p>
+                <p className="text-sm text-foreground-tertiary mt-2">
+                  One-off orders near subscription renewal dates are automatically held for merging.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {heldShipments.map((shipment) => (
+                  <div
+                    key={shipment.id}
+                    className={`p-4 flex items-center justify-between hover:bg-surface-secondary ${
+                      selectedHeldIds.has(shipment.id) ? 'bg-accent/5' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedHeldIds.has(shipment.id)}
+                        onChange={() => toggleHeldSelection(shipment.id)}
+                        className="w-4 h-4 rounded border-border bg-transparent text-accent focus:ring-accent focus:ring-offset-0"
+                      />
+                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-foreground font-medium">
+                          {shipment.order_number} - {shipment.subscriber?.first_name} {shipment.subscriber?.last_name}
+                        </p>
+                        <p className="text-sm text-foreground-secondary">{shipment.product_name}</p>
+                        <p className="text-xs text-foreground-tertiary">{shipment.subscriber?.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        {shipment.held_until && (
+                          <div className="flex items-center gap-1.5 text-sm text-blue-400">
+                            <CalendarClock className="w-4 h-4" />
+                            <span>
+                              Release on {new Date(shipment.held_until).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.hold_reason && (
+                          <p className="text-xs text-foreground-tertiary mt-1">
+                            {shipment.hold_reason === 'predictive_merge' ? 'Waiting for subscription' : shipment.hold_reason}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => releaseSingleShipment(shipment.id)}
+                        disabled={isReleasing}
+                        className="px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-foreground text-sm hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Release Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Recent Batches Tab */}
       {activeTab === 'batches' && (
-        <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        <div className="rounded-xl bg-surface border border-border overflow-hidden">
           {recentBatches.length === 0 ? (
             <div className="p-12 text-center">
-              <Printer className="w-12 h-12 text-[#71717a] mx-auto mb-4" />
-              <p className="text-[#71717a]">No batches created yet</p>
+              <Printer className="w-12 h-12 text-foreground-secondary mx-auto mb-4" />
+              <p className="text-foreground-secondary">No batches created yet</p>
             </div>
           ) : (
-            <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+            <div className="divide-y divide-border">
               {recentBatches.map((batch) => (
                 <div key={batch.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#e07a42]/10 flex items-center justify-center">
-                      <Package className="w-5 h-5 text-[#e07a42]" />
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Package className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <p className="text-white font-medium">Batch #{batch.batch_number}</p>
-                      <p className="text-sm text-[#71717a]">
+                      <p className="text-foreground font-medium">Batch #{batch.batch_number}</p>
+                      <p className="text-sm text-foreground-secondary">
                         {new Date(batch.created_at).toLocaleDateString()} at {new Date(batch.created_at).toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-white">{batch.successful_labels} labels</p>
+                      <p className="text-foreground">{batch.successful_labels} labels</p>
                       {batch.failed_labels > 0 && (
                         <p className="text-sm text-red-400">{batch.failed_labels} failed</p>
                       )}
@@ -705,7 +912,7 @@ export default function ShippingDashboard({
                         href={batch.label_pdf_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-lg bg-[rgba(255,255,255,0.05)] text-white hover:bg-[rgba(255,255,255,0.1)]"
+                        className="p-2 rounded-lg bg-surface-secondary text-foreground hover:bg-surface"
                       >
                         <Download className="w-4 h-4" />
                       </a>
