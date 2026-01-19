@@ -39,14 +39,9 @@ export default clerkMiddleware(async (auth, request) => {
     }
   }
 
+  // Protect non-public routes using Clerk's auth.protect() (Next.js 16 pattern)
   if (!isPublicRoute(request)) {
-    const { userId } = await auth()
-
-    if (!userId) {
-      const signInUrl = new URL('/sign-in', request.url)
-      signInUrl.searchParams.set('redirect_url', request.nextUrl.pathname)
-      return NextResponse.redirect(signInUrl)
-    }
+    await auth.protect()
   }
 })
 
