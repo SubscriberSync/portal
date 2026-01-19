@@ -88,18 +88,18 @@ export default function RateSelectionModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-[#1a1a1a] rounded-2xl border border-[rgba(255,255,255,0.1)] w-full max-w-3xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+      <div className="relative bg-background-surface rounded-2xl border border-border-strong w-full max-w-3xl max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[rgba(255,255,255,0.06)]">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-semibold text-white">Select Shipping Rate</h2>
-            <p className="text-sm text-[#71717a] mt-1">
+            <h2 className="text-xl font-semibold text-foreground">Select Shipping Rate</h2>
+            <p className="text-sm text-foreground-muted mt-1">
               {shipmentCount} shipment{shipmentCount !== 1 ? 's' : ''} selected
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-[#71717a] hover:text-white hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+            className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-background-elevated transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -109,8 +109,8 @@ export default function RateSelectionModal({
         <div className="flex-1 overflow-y-auto p-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-[#e07a42] animate-spin mb-4" />
-              <p className="text-[#a1a1aa]">Fetching rates from ShipStation...</p>
+              <Loader2 className="w-8 h-8 text-accent animate-spin mb-4" />
+              <p className="text-foreground-tertiary">Fetching rates from ShipStation...</p>
             </div>
           ) : error ? (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
@@ -130,7 +130,7 @@ export default function RateSelectionModal({
                       <p className="text-yellow-400 font-medium">
                         {shipmentsWithErrors.length} shipment{shipmentsWithErrors.length !== 1 ? 's' : ''} could not be rated
                       </p>
-                      <p className="text-sm text-[#a1a1aa] mt-1">
+                      <p className="text-sm text-foreground-tertiary mt-1">
                         These will be skipped. Common issues: missing address, unsupported destination.
                       </p>
                     </div>
@@ -141,15 +141,15 @@ export default function RateSelectionModal({
               {/* Rate options */}
               {commonServices.length === 0 ? (
                 <div className="text-center py-12">
-                  <Truck className="w-12 h-12 text-[#52525b] mx-auto mb-4" />
-                  <p className="text-[#a1a1aa]">No common shipping services available for all shipments</p>
-                  <p className="text-sm text-[#52525b] mt-2">
+                  <Truck className="w-12 h-12 text-foreground-tertiary mx-auto mb-4" />
+                  <p className="text-foreground-tertiary">No common shipping services available for all shipments</p>
+                  <p className="text-sm text-foreground-muted mt-2">
                     Try selecting fewer shipments or check for address issues
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-[#71717a] mb-4">
+                  <p className="text-sm text-foreground-muted mb-4">
                     Services available for all {shipmentsWithRates.length} shipments:
                   </p>
 
@@ -161,36 +161,36 @@ export default function RateSelectionModal({
                         onClick={() => setSelectedService(service)}
                         className={`w-full p-4 rounded-xl border transition-all text-left ${
                           isSelected
-                            ? 'border-[#e07a42] bg-[#e07a42]/10'
-                            : 'border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)]'
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border bg-background-secondary hover:bg-background-elevated'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div
                               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                isSelected ? 'border-[#e07a42] bg-[#e07a42]' : 'border-[#52525b]'
+                                isSelected ? 'border-accent bg-accent' : 'border-foreground-muted'
                               }`}
                             >
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
                             <div>
-                              <p className="text-white font-medium">{service.carrierName}</p>
-                              <p className="text-sm text-[#a1a1aa]">{service.serviceName}</p>
+                              <p className="text-foreground font-medium">{service.carrierName}</p>
+                              <p className="text-sm text-foreground-tertiary">{service.serviceName}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-semibold">
+                            <p className="text-foreground font-semibold">
                               ${service.totalCost.toFixed(2)}
                             </p>
-                            <p className="text-xs text-[#71717a]">
+                            <p className="text-xs text-foreground-muted">
                               ~${service.avgCost.toFixed(2)} avg/label
                             </p>
                           </div>
                         </div>
 
                         {service.deliveryDays && (
-                          <div className="flex items-center gap-2 mt-3 text-sm text-[#71717a]">
+                          <div className="flex items-center gap-2 mt-3 text-sm text-foreground-muted">
                             <Clock className="w-4 h-4" />
                             <span>{service.deliveryDays} business day{service.deliveryDays !== 1 ? 's' : ''}</span>
                           </div>
@@ -205,7 +205,7 @@ export default function RateSelectionModal({
               {shipmentsWithRates.length > 0 && (
                 <button
                   onClick={() => setShowDetails(!showDetails)}
-                  className="flex items-center gap-2 mt-6 text-sm text-[#71717a] hover:text-white transition-colors"
+                  className="flex items-center gap-2 mt-6 text-sm text-foreground-muted hover:text-foreground transition-colors"
                 >
                   {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   {showDetails ? 'Hide' : 'Show'} individual shipment rates
@@ -217,14 +217,14 @@ export default function RateSelectionModal({
                   {shipmentRates.map((sr) => (
                     <div
                       key={sr.shipmentId}
-                      className="p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)]"
+                      className="p-4 rounded-xl bg-background-secondary border border-border"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <p className="text-white font-medium">{sr.subscriberName}</p>
-                          <p className="text-xs text-[#71717a]">{sr.orderNumber || sr.shipmentId.slice(0, 8)}</p>
+                          <p className="text-foreground font-medium">{sr.subscriberName}</p>
+                          <p className="text-xs text-foreground-muted">{sr.orderNumber || sr.shipmentId.slice(0, 8)}</p>
                         </div>
-                        <span className="text-sm text-[#71717a]">{sr.weight} oz</span>
+                        <span className="text-sm text-foreground-muted">{sr.weight} oz</span>
                       </div>
 
                       {sr.error ? (
@@ -239,12 +239,12 @@ export default function RateSelectionModal({
                               key={rate.rate_id}
                               className={`p-2 rounded-lg text-xs ${
                                 selectedService?.serviceCode === rate.service_code
-                                  ? 'bg-[#e07a42]/10 border border-[#e07a42]/30'
-                                  : 'bg-[rgba(255,255,255,0.02)]'
+                                  ? 'bg-accent/10 border border-accent/30'
+                                  : 'bg-background-elevated'
                               }`}
                             >
-                              <p className="text-[#a1a1aa]">{rate.service_type}</p>
-                              <p className="text-white font-medium">${rate.shipping_amount.amount.toFixed(2)}</p>
+                              <p className="text-foreground-tertiary">{rate.service_type}</p>
+                              <p className="text-foreground font-medium">${rate.shipping_amount.amount.toFixed(2)}</p>
                             </div>
                           ))}
                         </div>
@@ -258,29 +258,29 @@ export default function RateSelectionModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[rgba(255,255,255,0.06)] p-6">
+        <div className="border-t border-border p-6">
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={saveAsDefault}
                 onChange={(e) => setSaveAsDefault(e.target.checked)}
-                className="w-4 h-4 rounded border-[#52525b] bg-transparent text-[#e07a42] focus:ring-[#e07a42] focus:ring-offset-0"
+                className="w-4 h-4 rounded border-foreground-muted bg-transparent text-accent focus:ring-accent focus:ring-offset-0"
               />
-              <span className="text-sm text-[#a1a1aa]">Save as default service</span>
+              <span className="text-sm text-foreground-tertiary">Save as default service</span>
             </label>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg bg-[rgba(255,255,255,0.05)] text-white font-medium hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+                className="px-4 py-2 rounded-lg bg-background-elevated text-foreground font-medium hover:bg-background-secondary transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={!selectedService || isPurchasing || isLoading}
-                className="px-6 py-2 rounded-lg bg-[#e07a42] text-white font-semibold hover:bg-[#c86a35] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2 rounded-lg bg-accent text-white font-semibold hover:bg-accent-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isPurchasing ? (
                   <>

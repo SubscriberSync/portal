@@ -736,7 +736,7 @@ export default function ShippingDashboard({
               <select
                 value={productFilter}
                 onChange={(e) => setProductFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-foreground text-sm focus:outline-none focus:border-accent/50"
+                className="px-3 py-1.5 rounded-lg bg-background-secondary border border-border text-foreground text-sm focus:outline-none focus:border-accent/50"
               >
                 <option value="">All Products</option>
                 {productNames.map(name => (
@@ -751,7 +751,7 @@ export default function ShippingDashboard({
               <select
                 value={sortField}
                 onChange={(e) => handleSort(e.target.value as SortField)}
-                className="px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-foreground text-sm focus:outline-none focus:border-accent/50"
+                className="px-3 py-1.5 rounded-lg bg-background-secondary border border-border text-foreground text-sm focus:outline-none focus:border-accent/50"
               >
                 <option value="product_name">Product → Size (Smart Sort)</option>
                 <option value="variant_name">Size Only</option>
@@ -784,7 +784,7 @@ export default function ShippingDashboard({
             <button
               onClick={handleMerge}
               disabled={!canMerge || isMerging}
-              className="px-4 py-2 rounded-lg bg-surface-secondary border border-border text-foreground text-sm font-medium hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-background-secondary border border-border text-foreground text-sm font-medium hover:bg-background-elevated disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isMerging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Merge className="w-4 h-4" />}
               Merge Selected
@@ -837,19 +837,19 @@ export default function ShippingDashboard({
                       className="fixed inset-0 z-10"
                       onClick={() => setShowActionDropdown(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] shadow-xl z-20 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-background-surface border border-border-strong shadow-xl z-20 overflow-hidden">
                       {/* Buy Labels - Main action */}
                       <button
                         onClick={() => {
                           setShowActionDropdown(false)
                           handleFetchRates()
                         }}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)]"
+                        className="w-full px-4 py-3 text-left text-foreground hover:bg-background-elevated flex items-center gap-3 border-b border-border"
                       >
-                        <DollarSign className="w-4 h-4 text-[#5CB87A]" />
+                        <DollarSign className="w-4 h-4 text-green-400" />
                         <div>
                           <p className="font-medium">Buy Labels</p>
-                          <p className="text-xs text-[#71717a]">Compare rates & purchase in-app</p>
+                          <p className="text-xs text-foreground-muted">Compare rates & purchase in-app</p>
                         </div>
                       </button>
 
@@ -860,16 +860,16 @@ export default function ShippingDashboard({
                           handleGenerateLabels()
                         }}
                         disabled={isGenerating}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)] disabled:opacity-50"
+                        className="w-full px-4 py-3 text-left text-foreground hover:bg-background-elevated flex items-center gap-3 border-b border-border disabled:opacity-50"
                       >
                         {isGenerating ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Send className="w-4 h-4 text-[#e07a42]" />
+                          <Send className="w-4 h-4 text-accent" />
                         )}
                         <div>
                           <p className="font-medium">Push to ShipStation</p>
-                          <p className="text-xs text-[#71717a]">Create orders, print there</p>
+                          <p className="text-xs text-foreground-muted">Create orders, print there</p>
                         </div>
                       </button>
 
@@ -879,12 +879,12 @@ export default function ShippingDashboard({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setShowActionDropdown(false)}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3"
+                        className="w-full px-4 py-3 text-left text-foreground hover:bg-background-elevated flex items-center gap-3"
                       >
-                        <ExternalLink className="w-4 h-4 text-[#71717a]" />
+                        <ExternalLink className="w-4 h-4 text-foreground-muted" />
                         <div>
                           <p className="font-medium">Open ShipStation</p>
-                          <p className="text-xs text-[#71717a]">Print in ShipStation dashboard</p>
+                          <p className="text-xs text-foreground-muted">Print in ShipStation dashboard</p>
                         </div>
                       </a>
                     </div>
@@ -896,7 +896,7 @@ export default function ShippingDashboard({
 
           {/* Batch Result Modal */}
           {batchResult && (
-            <div className="p-6 rounded-xl bg-surface border border-border">
+            <div className="p-6 rounded-xl bg-background-surface border border-border">
               <h3 className="text-lg font-semibold text-foreground mb-4">Batch Complete</h3>
 
               <div className="flex flex-wrap gap-6 mb-4">
@@ -912,8 +912,8 @@ export default function ShippingDashboard({
                 )}
                 {batchResult.totalShippingCost !== undefined && batchResult.totalShippingCost > 0 && (
                   <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-[#e07a42]" />
-                    <span className="text-[#e07a42] font-medium">
+                    <DollarSign className="w-5 h-5 text-accent" />
+                    <span className="text-accent font-medium">
                       ${batchResult.totalShippingCost.toFixed(2)} Total
                     </span>
                   </div>
@@ -941,7 +941,7 @@ export default function ShippingDashboard({
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-secondary text-foreground text-sm hover:bg-surface"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-background-secondary text-foreground text-sm hover:bg-background-elevated"
                       >
                         <Download className="w-3 h-3" />
                         Label {i + 1}
@@ -980,9 +980,9 @@ export default function ShippingDashboard({
           )}
 
           {/* Shipments Table */}
-          <div className="rounded-xl bg-surface border border-border overflow-hidden">
+          <div className="rounded-xl bg-background-surface border border-border overflow-hidden">
             {/* Table Header */}
-            <div className="grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-border bg-surface-secondary">
+            <div className="grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-border bg-background-secondary">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -1008,7 +1008,7 @@ export default function ShippingDashboard({
               groupedShipments.map((group, groupIndex) => (
                 <div key={`${group.product}-${group.variant}-${groupIndex}`}>
                   {/* Group Header */}
-                  <div className="px-4 py-2 bg-surface-secondary border-b border-border">
+                  <div className="px-4 py-2 bg-background-secondary border-b border-border">
                     <span className="text-sm font-medium text-accent">
                       {group.product}
                       {group.variant && <span className="text-foreground-secondary ml-2">- {group.variant}</span>}
@@ -1025,7 +1025,7 @@ export default function ShippingDashboard({
                     return (
                       <div
                         key={shipment.id}
-                        className={`grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-border hover:bg-surface-secondary ${
+                        className={`grid grid-cols-[auto,1fr,1fr,1fr,auto,auto] gap-4 p-4 border-b border-border hover:bg-background-secondary ${
                           selectedIds.has(shipment.id) ? 'bg-accent/5' : ''
                         } ${isMergeable ? 'border-l-2 border-l-yellow-500' : ''} ${hasUpcoming && showWaitWarnings ? 'border-l-2 border-l-blue-500' : ''}`}
                       >
@@ -1057,7 +1057,7 @@ export default function ShippingDashboard({
                           <p className="text-sm text-foreground-secondary">{shipment.subscriber?.email}</p>
                         </div>
                         <div>
-                          <span className="px-2 py-1 rounded-md bg-surface-secondary text-sm text-foreground">
+                          <span className="px-2 py-1 rounded-md bg-background-secondary text-sm text-foreground">
                             {shipment.variant_name || '-'}
                           </span>
                         </div>
@@ -1095,10 +1095,10 @@ export default function ShippingDashboard({
 
       {/* Problem Orders Tab */}
       {activeTab === 'problems' && (
-        <div className="rounded-xl bg-surface border border-border overflow-hidden">
+        <div className="rounded-xl bg-background-surface border border-border overflow-hidden">
           {problemOrders.length === 0 ? (
             <div className="p-12 text-center">
-              <Check className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <Check className="w-12 h-12 text-green-400 mx-auto mb-4" />
               <p className="text-foreground-secondary">No problem orders</p>
             </div>
           ) : (
@@ -1120,7 +1120,7 @@ export default function ShippingDashboard({
                     <span className={`px-2 py-1 rounded-md text-xs font-medium ${
                       order.financial_status === 'pending' ? 'bg-yellow-500/10 text-yellow-400' :
                       order.financial_status === 'voided' ? 'bg-red-500/10 text-red-400' :
-                      'bg-surface-secondary text-foreground-secondary'
+                      'bg-background-secondary text-foreground-secondary'
                     }`}>
                       {order.financial_status || 'Unknown'}
                     </span>
@@ -1158,7 +1158,7 @@ export default function ShippingDashboard({
             </button>
           </div>
 
-          <div className="rounded-xl bg-surface border border-border overflow-hidden">
+          <div className="rounded-xl bg-background-surface border border-border overflow-hidden">
             {loadingHeld ? (
               <div className="p-12 text-center">
                 <Loader2 className="w-12 h-12 text-foreground-secondary mx-auto mb-4 animate-spin" />
@@ -1177,7 +1177,7 @@ export default function ShippingDashboard({
                 {heldShipments.map((shipment) => (
                   <div
                     key={shipment.id}
-                    className={`p-4 flex items-center justify-between hover:bg-surface-secondary ${
+                    className={`p-4 flex items-center justify-between hover:bg-background-secondary ${
                       selectedHeldIds.has(shipment.id) ? 'bg-accent/5' : ''
                     }`}
                   >
@@ -1218,7 +1218,7 @@ export default function ShippingDashboard({
                       <button
                         onClick={() => releaseSingleShipment(shipment.id)}
                         disabled={isReleasing}
-                        className="px-3 py-1.5 rounded-lg bg-surface-secondary border border-border text-foreground text-sm hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1.5 rounded-lg bg-background-secondary border border-border text-foreground text-sm hover:bg-background-elevated disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Release Now
                       </button>
@@ -1233,7 +1233,7 @@ export default function ShippingDashboard({
 
       {/* Recent Batches Tab */}
       {activeTab === 'batches' && (
-        <div className="rounded-xl bg-surface border border-border overflow-hidden">
+        <div className="rounded-xl bg-background-surface border border-border overflow-hidden">
           {recentBatches.length === 0 ? (
             <div className="p-12 text-center">
               <Printer className="w-12 h-12 text-foreground-secondary mx-auto mb-4" />
@@ -1266,7 +1266,7 @@ export default function ShippingDashboard({
                         href={batch.label_pdf_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-lg bg-surface-secondary text-foreground hover:bg-surface"
+                        className="p-2 rounded-lg bg-background-secondary text-foreground hover:bg-background-elevated"
                       >
                         <Download className="w-4 h-4" />
                       </a>
