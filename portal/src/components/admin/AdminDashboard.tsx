@@ -600,22 +600,34 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [isTestPortal, setIsTestPortal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setIsSubmitting(true)
 
     const res = await fetch('/api/admin/organizations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, slug, isTestPortal }),
+      body: JSON.stringify({ name, slug, isTestPortal, inviteEmail: isTestPortal ? inviteEmail : undefined }),
     })
 
+    const data = await res.json()
+
     if (res.ok) {
+      if (data.invitationSent) {
+        alert(`Test portal created! Invitation sent to ${data.inviteEmail}`)
+      }
+      window.location.reload()
+    } else if (res.status === 207) {
+      // Partial success - Supabase worked but Clerk failed
+      alert(`Warning: ${data.warning}. You may need to manually set up the Clerk organization.`)
       window.location.reload()
     } else {
-      alert('Failed to create organization')
+      setError(data.error || 'Failed to create organization')
       setIsSubmitting(false)
     }
   }
@@ -668,11 +680,32 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
                 <TestTube className="w-4 h-4 text-purple-400" />
                 <div>
                   <span className="text-sm text-[#F5F0E8]">Create as Test Portal</span>
-                  <p className="text-xs text-[#6B6660]">No payment required - for testing and demos</p>
+                  <p className="text-xs text-[#6B6660]">Sends invite email to test user</p>
                 </div>
               </div>
             </label>
           </div>
+          {isTestPortal && (
+            <div>
+              <label className="block text-sm text-[#A8A39B] mb-2">Invite Email Address</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="testuser@example.com"
+                required={isTestPortal}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] placeholder-[#6B6660] focus:outline-none focus:border-[#e07a42]/50"
+              />
+              <p className="text-xs text-[#6B6660] mt-1">
+                This email will receive an invitation to join the portal
+              </p>
+            </div>
+          )}
+          {error && (
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -683,10 +716,10 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (isTestPortal && !inviteEmail)}
               className="flex-1 px-4 py-2.5 rounded-xl bg-[#e07a42] hover:bg-[#c56a35] text-white font-medium transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Creating...' : 'Create'}
+              {isSubmitting ? 'Creating...' : isTestPortal ? 'Create & Send Invite' : 'Create'}
             </button>
           </div>
         </form>
