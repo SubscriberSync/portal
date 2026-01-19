@@ -1,29 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getPackingData } from '@/lib/airtable-shipping'
-import { getClientBySlug } from '@/lib/airtable'
+import { NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
+import { getShipments, Shipment } from '@/lib/supabase/data'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+interface PackBatch {
+  batch: string
+  box: string
+  total: number
+  packed: number
+  sizeBreakdown: Record<string, number>
+}
+
+export async function GET() {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
-    // Get client slug from query params
-    const { searchParams } = new URL(request.url)
-    const clientSlug = searchParams.get('client')
+    // Get all shipments for packing
+    const shipments = await getShipments(orgId, {})
 
-    let backstageBaseId: string | undefined
+    // Group by product (batch) and sequence (box)
+    const batches = new Map<string, PackBatch>()
 
-    // If client slug provided, look up their backstage base ID
-    if (clientSlug) {
-      const client = await getClientBySlug(clientSlug)
-      if (client?.backstageBaseId) {
-        backstageBaseId = client.backstageBaseId
-        console.log(`[Packing API] Using client ${clientSlug}'s base: ${backstageBaseId}`)
+    for (const shipment of shipments) {
+      const batch = shipment.product_name || 'Unknown'
+      const box = shipment.sequence_id ? `Episode ${shipment.sequence_id}` : 'One-Off'
+      const key = `${batch}|${box}`
+
+      if (!batches.has(key)) {
+        batches.set(key, {
+          batch,
+          box,
+          total: 0,
+          packed: 0,
+          sizeBreakdown: {},
+        })
       }
+
+      const batchData = batches.get(key)!
+      batchData.total++
+      
+      if (shipment.status === 'Packed' || shipment.status === 'Shipped') {
+        batchData.packed++
+      }
+
+      // Track size breakdown
+      const size = 'N/A' // Size tracking would need to be added via subscriber join
+      batchData.sizeBreakdown[size] = (batchData.sizeBreakdown[size] || 0) + 1
     }
 
-    const batches = await getPackingData(backstageBaseId)
+    // Sort by batch name
+    const sortedBatches = Array.from(batches.values()).sort((a, b) => 
+      a.batch.localeCompare(b.batch)
+    )
 
-    return NextResponse.json({ batches })
+    return NextResponse.json({ batches: sortedBatches })
   } catch (error) {
     console.error('[Packing API] Error:', error)
     return NextResponse.json({ error: 'Failed to fetch packing data' }, { status: 500 })

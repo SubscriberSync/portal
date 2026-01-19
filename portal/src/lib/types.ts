@@ -7,7 +7,6 @@ export interface ClientIntegrations {
   shopify: IntegrationStatus
   recharge: IntegrationStatus
   klaviyo: IntegrationStatus
-  airtable: IntegrationStatus
   discord?: IntegrationStatus // Only present if Discord is configured
 }
 
@@ -16,7 +15,6 @@ export interface ClientData {
   slug: string
   status: 'Discovery' | 'Scoping' | 'Building' | 'Testing' | 'Training' | 'Live'
   logoUrl?: string
-  airtableUrl?: string
   loomUrl?: string
   totalSubscribers: number
   activeSubscribers: number
@@ -25,10 +23,8 @@ export interface ClientData {
   hostingRenewal: string | null
   // Integration fields
   discordServerId?: string
-  // Integration status (based on credentials in Airtable)
+  // Integration status
   integrations?: ClientIntegrations
-  // Client's own Backstage base (duplicated from template)
-  backstageBaseId?: string
 }
 
 export const statusStages = [

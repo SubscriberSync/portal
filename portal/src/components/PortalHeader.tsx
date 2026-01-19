@@ -46,11 +46,6 @@ export default function PortalHeader({ company, logoUrl, status, integrations: c
       connected: clientIntegrations.klaviyo.connected,
       lastSync: clientIntegrations.klaviyo.lastSync,
     })
-    integrations.push({
-      name: 'Airtable',
-      connected: clientIntegrations.airtable.connected,
-      lastSync: clientIntegrations.airtable.lastSync,
-    })
 
     // Only add Discord if configured
     if (clientIntegrations.discord) {

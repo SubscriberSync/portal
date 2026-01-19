@@ -10,7 +10,6 @@ export interface Organization {
   step1_complete: boolean
   step2_complete: boolean
   hosting_renewal: string | null
-  airtable_url: string | null
   loom_url: string | null
   // Subscription fields
   stripe_customer_id: string | null

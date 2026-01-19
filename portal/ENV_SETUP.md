@@ -1,103 +1,63 @@
 # Environment Variables Setup
 
-This portal is designed to be used with multiple Airtable bases. Configure these environment variables in your Vercel project settings (or `.env.local` for local development).
+This portal uses Supabase for data storage and Clerk for authentication. Configure these environment variables in your Vercel project settings (or `.env.local` for local development).
 
 ## Required Variables
 
-### Airtable Authentication
+### Clerk Authentication
 ```
-AIRTABLE_TOKEN=your_personal_access_token_here
-```
-Your Airtable Personal Access Token. Must have access to both the portal base and shipping base.
-
-## Base & Table IDs
-
-### Portal Base (Clients & Intake)
-```
-AIRTABLE_PORTAL_BASE_ID=appVyyEPy9cs8XBtB
-AIRTABLE_CLIENTS_TABLE_ID=tblEsjEgVXfHhARrX
-AIRTABLE_INTAKE_TABLE_ID=tbl9Kvgjt5q0BeIQv
-AIRTABLE_REQUESTS_TABLE_ID=tbl43z7z4A3DmI8Zb
-AIRTABLE_CREDENTIALS_TABLE_ID=tbl79QSaPz2MBS8K0
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
 ```
 
-### Shipping Base (Subscribers & Packing)
+### Supabase Database
 ```
-AIRTABLE_SHIPPING_BASE_ID=appmtPTf4hLxhx437
-AIRTABLE_SUBSCRIBERS_TABLE_ID=tblt9Q0GjZBN4l6Xl
-AIRTABLE_EVENTS_TABLE_ID=tblwDeNXF7Nv9gzEs
-AIRTABLE_PRODUCTS_TABLE_ID=tblb1rIMt2ibAp37H
-AIRTABLE_SHIPMENTS_TABLE_ID=tblYPiCjzrA1dDpqM
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-## Field Name Overrides (Optional)
-
-If your Airtable uses different field names than the defaults, override them here.
-
-### Client Table Fields
+### Stripe (Billing)
 ```
-FIELD_CLIENT_NAME=Client
-FIELD_CLIENT_SLUG=Slug
-FIELD_PORTAL_STATUS=Portal Status
-FIELD_LOGO_URL=Logo URL
-FIELD_AIRTABLE_URL=Airtable URL
-FIELD_LOOM_URL=Loom URL
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_...
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
 ```
 
-### Subscriber/Shipping Table Fields
+### Discord Integration (Optional)
 ```
-FIELD_FIRST_NAME=First Name
-FIELD_LAST_NAME=Last Name
-FIELD_EMAIL=Email
-FIELD_PHONE=Phone
-FIELD_ADDRESS=Address
-FIELD_ADDRESS_2=Address 2
-FIELD_CITY=City
-FIELD_STATE=State
-FIELD_ZIP=Zip
-FIELD_COUNTRY=Country
+DISCORD_CLIENT_ID=your-client-id
+DISCORD_CLIENT_SECRET=your-client-secret
+DISCORD_BOT_TOKEN=your-bot-token
+DISCORD_ENCRYPTION_KEY=your-32-char-encryption-key
 ```
 
-### Pack Mode Fields
+### Integration OAuth (For Client Onboarding)
 ```
-FIELD_BATCH=Batch
-FIELD_BOX=Box
-FIELD_SHIRT_SIZE=Shirt Size
-FIELD_PACKED=Packed
-```
-
-### Intake Table Fields
-```
-FIELD_INTAKE_CLIENT=Client
-FIELD_INTAKE_ITEM=Item
-FIELD_INTAKE_VALUE=Value
-FIELD_INTAKE_STATUS=Status
-FIELD_REJECTION_NOTE=Rejection Note
+SHOPIFY_CLIENT_ID=your-shopify-client-id
+SHOPIFY_CLIENT_SECRET=your-shopify-client-secret
+RECHARGE_CLIENT_ID=your-recharge-client-id
+RECHARGE_CLIENT_SECRET=your-recharge-client-secret
+KLAVIYO_CLIENT_ID=your-klaviyo-client-id
+KLAVIYO_CLIENT_SECRET=your-klaviyo-client-secret
 ```
 
-## How to Get Base & Table IDs
-
-1. Open your Airtable base
-2. Look at the URL: `https://airtable.com/appXXXXXX/tblYYYYYY/viwZZZZZZ`
-   - `appXXXXXX` is the **Base ID**
-   - `tblYYYYYY` is the **Table ID**
-
-## Setting Up a New Client
-
-1. Duplicate the template Airtable base
-2. Get the new Base ID and Table IDs
-3. Create a new Vercel project (or add environment variables to existing)
-4. Set all the environment variables above
-5. Deploy
-
-## Default Values (SubscriberSync Template)
-
-If no environment variables are set, these defaults are used:
-
+### Application URLs
 ```
-AIRTABLE_PORTAL_BASE_ID=appVyyEPy9cs8XBtB
-AIRTABLE_CLIENTS_TABLE_ID=tblEsjEgVXfHhARrX
-AIRTABLE_INTAKE_TABLE_ID=tbl9Kvgjt5q0BeIQv
-AIRTABLE_SHIPPING_BASE_ID=appmtPTf4hLxhx437
-AIRTABLE_SUBSCRIBERS_TABLE_ID=tblt9Q0GjZBN4l6Xl
+NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
 ```
+
+## Setting Up for Development
+
+1. Copy `.env.local.example` to `.env.local`
+2. Fill in your Supabase and Clerk credentials
+3. Run migrations against your Supabase database
+4. Run `npm run dev`
+
+## Setting Up for Production
+
+1. Create a new Vercel project
+2. Add all environment variables above
+3. Connect your GitHub repository
+4. Deploy

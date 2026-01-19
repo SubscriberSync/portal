@@ -5,9 +5,12 @@ Client-facing portal for SubscriberSync subscription box automation service.
 ## Features
 
 - **Status Tracking**: Visual progress bar showing build status
-- **Live Stats**: Subscriber counts synced from Airtable
-- **Klaviyo Reference**: Quick guides for using synced data
-- **Video Walkthrough**: Embedded Loom for each client
+- **Live Stats**: Subscriber counts synced from Supabase
+- **Onboarding Flow**: Guided OAuth setup for Shopify, Recharge, Klaviyo
+- **Pack Mode**: Streamlined packing workflow for fulfillment
+- **Subscriber Management**: Search and view subscriber details
+- **Discord Integration**: Optional MemberLink for community management
+- **Shipping Providers**: Support for ShipStation, Pirateship, or Shopify Shipping
 - **Support Info**: Contact and renewal information
 
 ## Setup
@@ -22,33 +25,27 @@ npm install
 
 ### 2. Environment Variables
 
-Copy `.env.example` to `.env.local`:
+Copy `.env.local.example` to `.env.local`:
 
 ```bash
-cp .env.example .env.local
+cp .env.local.example .env.local
 ```
 
-Add your Airtable credentials:
-- `AIRTABLE_API_KEY`: Your Airtable API key
-- `AIRTABLE_BASE_ID`: Your Clients base ID
+Add your credentials (see ENV_SETUP.md for full list):
+- Clerk authentication keys
+- Supabase project URL and keys
+- Stripe billing keys (optional)
+- Discord integration keys (optional)
 
-### 3. Airtable Setup
+### 3. Database Setup
 
-Your Clients table needs these fields:
-- `Company` (Primary field)
-- `Slug` (URL-friendly company name, e.g., "acme-boxes")
-- `Contact` (Contact name)
-- `Email` (Contact email)
-- `Portal Status` (Select: Paid, Access, Building, Testing, Live)
-- `Total Subscribers` (Number)
-- `Active Subscribers` (Number)
-- `Paused Subscribers` (Number)
-- `Cancelled Subscribers` (Number)
-- `Go Live Date` (Date)
-- `Hosting Renewal` (Date)
-- `Loom URL` (URL)
-- `Airtable URL` (URL - link to their dashboard)
-- `Logo URL` (URL)
+Run the migrations in your Supabase SQL Editor:
+- `supabase/migrations/003_forensic_audit.sql`
+- `supabase/migrations/004_stripe_subscriptions.sql`
+- `supabase/migrations/005_discord_memberlink.sql`
+- `supabase/migrations/006_discord_prompt.sql`
+- `supabase/migrations/007_shipping_provider.sql`
+- `supabase/migrations/008_subscriber_activity.sql`
 
 ### 4. Run Development Server
 
@@ -56,7 +53,7 @@ Your Clients table needs these fields:
 npm run dev
 ```
 
-Visit `http://localhost:3000/portal/acme-boxes` (demo mode without Airtable).
+Visit `http://localhost:3000` to see the portal.
 
 ## Deployment (Vercel)
 
@@ -68,15 +65,11 @@ Visit `http://localhost:3000/portal/acme-boxes` (demo mode without Airtable).
 Each client portal is accessible at:
 `https://your-domain.vercel.app/portal/[client-slug]`
 
-## Client URLs
-
-Give each client their unique portal URL based on their slug:
-- Acme Boxes → `/portal/acme-boxes`
-- Mystery Co → `/portal/mystery-co`
-
 ## Tech Stack
 
-- Next.js 14 (App Router)
+- Next.js 15 (App Router)
 - TypeScript
 - Tailwind CSS
-- Airtable SDK
+- Supabase (Database)
+- Clerk (Authentication)
+- Stripe (Billing)

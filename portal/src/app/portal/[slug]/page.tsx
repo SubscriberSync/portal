@@ -54,10 +54,6 @@ function transformIntegrations(integrations: Awaited<ReturnType<typeof getIntegr
       connected: findIntegration('klaviyo')?.connected || false,
       lastSync: findIntegration('klaviyo')?.last_sync_at || undefined,
     },
-    airtable: {
-      connected: false, // No longer using Airtable
-      lastSync: undefined,
-    },
     discord: findIntegration('discord') ? {
       connected: findIntegration('discord')?.connected || false,
       lastSync: findIntegration('discord')?.last_sync_at || undefined,
@@ -160,7 +156,6 @@ export default async function PortalPage({ params }: PortalPageProps) {
     company: organization.name,
     logoUrl: organization.logo_url || undefined,
     status: organization.status,
-    airtableUrl: organization.airtable_url || undefined,
     loomUrl: organization.loom_url || undefined,
     hostingRenewal: organization.hosting_renewal,
     integrations: transformedIntegrations,

@@ -9,7 +9,7 @@ export interface ShipmentGroup {
 }
 
 export interface ComboShipment {
-  id: string;            // Airtable record ID
+  id: string;            // Shipment record ID
   type: "Subscription" | "One-Off";
   sequenceId: number | null;
   name: string;          // "Episode 3 Box" or "Order #1045"
