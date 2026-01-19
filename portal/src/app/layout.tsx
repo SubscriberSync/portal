@@ -29,10 +29,7 @@ export default function RootLayout({
 }) {
   return (
      <ClerkProvider
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
-          signInFallbackRedirectUrl="/admin"
-          signUpFallbackRedirectUrl="/admin"
+         publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
           appearance={{
             variables: {
               colorPrimary: '#e07a42',
