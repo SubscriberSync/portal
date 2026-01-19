@@ -1,11 +1,7 @@
 import { CheckCircle, Mail, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function CheckoutSuccessPage({
-  searchParams,
-}: {
-  searchParams: { session_id?: string }
-}) {
+export default async function CheckoutSuccessPage() {
   return (
     <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-6">
       <div className="max-w-md w-full">
