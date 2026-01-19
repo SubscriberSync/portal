@@ -49,12 +49,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Create organization in Supabase first
-    const organization = await createOrganization({
-      name,
-      slug,
-      status,
-      is_test_portal: isTestPortal || false,
-    })
+    let organization
+    try {
+      organization = await createOrganization({
+        name,
+        slug,
+        status,
+        is_test_portal: isTestPortal || false,
+      })
+    } catch (dbError) {
+      const errorMessage = dbError instanceof Error ? dbError.message : 'Failed to create organization'
+      return NextResponse.json({ error: errorMessage }, { status: 400 })
+    }
 
     if (!organization) {
       return NextResponse.json({ error: 'Failed to create organization' }, { status: 500 })
@@ -92,13 +98,20 @@ export async function POST(request: NextRequest) {
           invitationSent: true,
           inviteEmail
         })
-      } catch (clerkError) {
+      } catch (clerkError: any) {
         console.error('[Admin] Error creating Clerk org/invitation:', clerkError)
+        // Extract more specific error message from Clerk
+        let clerkErrorMessage = 'Failed to create Clerk organization or send invite'
+        if (clerkError?.errors?.[0]?.message) {
+          clerkErrorMessage = clerkError.errors[0].message
+        } else if (clerkError?.message) {
+          clerkErrorMessage = clerkError.message
+        }
         // Still return success for Supabase org, but note Clerk failed
         return NextResponse.json({
           organization,
-          clerkError: 'Failed to create Clerk organization or send invite',
-          warning: 'Organization created in database but Clerk setup failed'
+          clerkError: clerkErrorMessage,
+          warning: `Organization created in database but Clerk setup failed: ${clerkErrorMessage}`
         }, { status: 207 }) // 207 Multi-Status
       }
     }

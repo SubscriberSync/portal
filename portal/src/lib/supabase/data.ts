@@ -603,7 +603,11 @@ export async function createOrganization(data: {
 
   if (error) {
     console.error('[createOrganization] Error:', error)
-    return null
+    // Throw error with message so caller can surface it
+    if (error.code === '23505') {
+      throw new Error('An organization with this slug already exists')
+    }
+    throw new Error(error.message || 'Failed to create organization')
   }
 
   return org as Organization
