@@ -26,8 +26,8 @@ export async function DELETE(request: Request) {
 async function proxyToClerk(request: Request) {
   const url = new URL(request.url)
 
-  // Remove the /__clerk prefix and forward to Clerk's Frontend API
-  const clerkPath = url.pathname.replace(/^\/__clerk/, '')
+  // Remove the /api/__clerk prefix and forward to Clerk's Frontend API
+  const clerkPath = url.pathname.replace(/^\/api\/__clerk/, '')
   const clerkUrl = `${CLERK_FRONTEND_API}${clerkPath}${url.search}`
 
   // Clone headers
@@ -35,7 +35,7 @@ async function proxyToClerk(request: Request) {
 
   // Remove host header and add required Clerk proxy headers
   headers.delete('host')
-  headers.set('Clerk-Proxy-Url', 'https://www.subscribersync.com/__clerk')
+  headers.set('Clerk-Proxy-Url', 'https://www.subscribersync.com/api/__clerk')
   headers.set('Clerk-Secret-Key', process.env.CLERK_SECRET_KEY || '')
 
   // Get the client IP from x-forwarded-for or x-real-ip

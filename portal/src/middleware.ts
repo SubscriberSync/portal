@@ -11,7 +11,7 @@ const isPublicRoute = createRouteMatcher([
   '/checkout(.*)',
   '/terms',
   '/privacy',
-  '/__clerk(.*)',
+  '/api/__clerk(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
@@ -19,7 +19,7 @@ export default clerkMiddleware(async (auth, request) => {
   const url = new URL(request.url)
 
   // Force www redirect in production (except for Clerk proxy route)
-  if (host === 'subscribersync.com' && !url.pathname.startsWith('/__clerk')) {
+  if (host === 'subscribersync.com' && !url.pathname.startsWith('/api/__clerk')) {
     url.host = 'www.subscribersync.com'
     return NextResponse.redirect(url, 308)
   }
