@@ -17,7 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 
-type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | null
+type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
 
 interface ShippingProviderSectionProps {
   clientSlug: string
@@ -65,7 +65,7 @@ export default function ShippingProviderSection({
       return
     }
 
-    // For pirateship, save directly
+    // For pirateship and 3pl, save directly
     await savePreference(provider)
   }
 
@@ -138,6 +138,7 @@ export default function ShippingProviderSection({
       case 'shipstation': return 'ShipStation'
       case 'pirateship': return 'Pirateship'
       case 'shopify_shipping': return 'Shopify Shipping'
+      case '3pl': return '3PL / Fulfillment Center'
       default: return 'Not selected'
     }
   }
@@ -364,6 +365,42 @@ export default function ShippingProviderSection({
             </div>
             <p className="text-xs text-[#A8A39B]">
               We generate formatted CSVs that you can upload directly to Pirateship. Great rates and easy to use!
+            </p>
+          </button>
+
+          {/* 3PL / Fulfillment Center */}
+          <button
+            onClick={() => handleSelectProvider('3pl')}
+            disabled={isLoading}
+            className={`w-full p-4 rounded-xl border transition-all text-left ${
+              selectedProvider === '3pl'
+                ? 'bg-[#6366f1]/10 border-[#6366f1]/30'
+                : 'bg-[#0D0D0D] border-[rgba(245,240,232,0.06)] hover:border-[rgba(245,240,232,0.12)]'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#6366f1]/20 flex items-center justify-center">
+                  <PackageCheck className="w-5 h-5 text-[#6366f1]" />
+                </div>
+                <div>
+                  <h5 className="font-medium text-[#F5F0E8]">3PL / Fulfillment Center</h5>
+                  <p className="text-xs text-[#6B6660]">Export data for your 3PL partner</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-[#6366f1]/20 text-[#6366f1]">
+                  CSV Export
+                </span>
+                {selectedProvider === '3pl' && (
+                  <div className="w-5 h-5 rounded-full bg-[#5CB87A] flex items-center justify-center">
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-[#A8A39B]">
+              Export shipment data as CSV to send to your third-party logistics provider or fulfillment center.
             </p>
           </button>
 

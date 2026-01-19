@@ -11,7 +11,7 @@ interface Integration {
   lastSync?: string
 }
 
-type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | null
+type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
 
 interface OnboardingSectionProps {
   clientSlug: string

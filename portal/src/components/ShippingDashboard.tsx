@@ -71,6 +71,8 @@ interface ShipmentWithSubscriber extends Shipment {
   } | null
 }
 
+type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
+
 interface ShippingDashboardProps {
   clientSlug: string
   organizationId: string
@@ -78,6 +80,8 @@ interface ShippingDashboardProps {
   recentBatches: PrintBatch[]
   problemOrders: ShipmentWithSubscriber[]
   shipstationConnected: boolean
+  shippingProvider?: ShippingProvider
+  shopifyShopUrl?: string | null
 }
 
 type SortField = 'product_name' | 'variant_name' | 'customer' | 'created_at'
@@ -111,6 +115,8 @@ export default function ShippingDashboard({
   recentBatches,
   problemOrders,
   shipstationConnected,
+  shippingProvider,
+  shopifyShopUrl,
 }: ShippingDashboardProps) {
   const [shipments, setShipments] = useState<ShipmentWithSubscriber[]>(initialShipments)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -138,6 +144,7 @@ export default function ShippingDashboard({
   const [commonServices, setCommonServices] = useState<ServiceTotal[]>([])
   const [shipmentRates, setShipmentRates] = useState<ShipmentRateData[]>([])
   const [showActionDropdown, setShowActionDropdown] = useState(false)
+  const [isExportingCSV, setIsExportingCSV] = useState(false)
 
   // Upcoming subscriptions state
   const [upcomingSubscriptions, setUpcomingSubscriptions] = useState<Record<string, UpcomingSubscription[]>>({})
@@ -568,6 +575,47 @@ export default function ShippingDashboard({
     }
   }
 
+  // Export selected shipments to CSV (for PirateShip)
+  const handleExportCSV = async () => {
+    if (selectedIds.size === 0) return
+
+    setIsExportingCSV(true)
+
+    try {
+      const selectedShipments = sortedShipments.filter(s => selectedIds.has(s.id))
+      const orderedIds = selectedShipments.map(s => s.id)
+
+      const response = await fetch('/api/shipping/csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shipmentIds: orderedIds,
+          format: 'pirateship',
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to export CSV')
+      }
+
+      // Download the CSV
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `shipments-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to export CSV')
+    } finally {
+      setIsExportingCSV(false)
+    }
+  }
+
   // Toggle sort
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -628,15 +676,53 @@ export default function ShippingDashboard({
         </button>
       </div>
 
-      {/* ShipStation Warning */}
-      {!shipstationConnected && activeTab === 'ready' && (
-        <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-400" />
-          <div>
-            <p className="text-yellow-400 font-medium">ShipStation Not Connected</p>
-            <p className="text-sm text-foreground-secondary">Connect ShipStation in Settings to generate shipping labels.</p>
-          </div>
-        </div>
+      {/* Provider-specific info */}
+      {activeTab === 'ready' && (
+        <>
+          {/* ShipStation users without connection */}
+          {(shippingProvider === 'shipstation' || !shippingProvider) && !shipstationConnected && (
+            <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-400" />
+              <div>
+                <p className="text-yellow-400 font-medium">ShipStation Not Connected</p>
+                <p className="text-sm text-foreground-secondary">Connect ShipStation in Settings to generate shipping labels.</p>
+              </div>
+            </div>
+          )}
+
+          {/* PirateShip users */}
+          {shippingProvider === 'pirateship' && (
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
+              <Download className="w-5 h-5 text-blue-400" />
+              <div>
+                <p className="text-blue-400 font-medium">Using PirateShip</p>
+                <p className="text-sm text-foreground-secondary">Select shipments, sort them how you want, then export to CSV for PirateShip import.</p>
+              </div>
+            </div>
+          )}
+
+          {/* 3PL users */}
+          {shippingProvider === '3pl' && (
+            <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-3">
+              <Download className="w-5 h-5 text-indigo-400" />
+              <div>
+                <p className="text-indigo-400 font-medium">Using 3PL / Fulfillment Center</p>
+                <p className="text-sm text-foreground-secondary">Select shipments, sort them how you want, then export to CSV for your fulfillment partner.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Shopify Shipping users */}
+          {shippingProvider === 'shopify_shipping' && (
+            <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+              <ExternalLink className="w-5 h-5 text-green-400" />
+              <div>
+                <p className="text-green-400 font-medium">Using Shopify Shipping</p>
+                <p className="text-sm text-foreground-secondary">Sort and merge orders here, then buy labels directly in Shopify.</p>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Ready to Ship Tab */}
@@ -704,80 +790,108 @@ export default function ShippingDashboard({
               Merge Selected
             </button>
 
-            {/* Action Dropdown */}
-            <div className="relative">
+            {/* Provider-specific Actions */}
+            {/* PirateShip / 3PL: Export CSV */}
+            {(shippingProvider === 'pirateship' || shippingProvider === '3pl') && (
               <button
-                onClick={() => setShowActionDropdown(!showActionDropdown)}
-                disabled={selectedCount === 0 || !shipstationConnected}
+                onClick={handleExportCSV}
+                disabled={selectedCount === 0 || isExportingCSV}
                 className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                <Printer className="w-4 h-4" />
-                Ship Labels ({selectedCount})
-                <ChevronDown className="w-4 h-4" />
+                {isExportingCSV ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Export CSV ({selectedCount})
               </button>
+            )}
 
-              {/* Dropdown Menu */}
-              {showActionDropdown && (
-                <>
-                  {/* Backdrop to close dropdown */}
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowActionDropdown(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] shadow-xl z-20 overflow-hidden">
-                    {/* Buy Labels - Main action */}
-                    <button
-                      onClick={() => {
-                        setShowActionDropdown(false)
-                        handleFetchRates()
-                      }}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)]"
-                    >
-                      <DollarSign className="w-4 h-4 text-[#5CB87A]" />
-                      <div>
-                        <p className="font-medium">Buy Labels</p>
-                        <p className="text-xs text-[#71717a]">Compare rates & purchase in-app</p>
-                      </div>
-                    </button>
+            {/* Shopify Shipping: Link to Shopify */}
+            {shippingProvider === 'shopify_shipping' && (
+              <a
+                href={shopifyShopUrl || 'https://admin.shopify.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Shopify Orders
+              </a>
+            )}
 
-                    {/* Push to ShipStation */}
-                    <button
-                      onClick={() => {
-                        setShowActionDropdown(false)
-                        handleGenerateLabels()
-                      }}
-                      disabled={isGenerating}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)] disabled:opacity-50"
-                    >
-                      {isGenerating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4 text-[#e07a42]" />
-                      )}
-                      <div>
-                        <p className="font-medium">Push to ShipStation</p>
-                        <p className="text-xs text-[#71717a]">Create orders, print there</p>
-                      </div>
-                    </button>
+            {/* ShipStation: Full dropdown */}
+            {(shippingProvider === 'shipstation' || !shippingProvider) && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowActionDropdown(!showActionDropdown)}
+                  disabled={selectedCount === 0 || !shipstationConnected}
+                  className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Ship Labels ({selectedCount})
+                  <ChevronDown className="w-4 h-4" />
+                </button>
 
-                    {/* Open ShipStation */}
-                    <a
-                      href="https://ship.shipstation.com/orders/awaiting-shipment"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                {/* Dropdown Menu */}
+                {showActionDropdown && (
+                  <>
+                    {/* Backdrop to close dropdown */}
+                    <div
+                      className="fixed inset-0 z-10"
                       onClick={() => setShowActionDropdown(false)}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3"
-                    >
-                      <ExternalLink className="w-4 h-4 text-[#71717a]" />
-                      <div>
-                        <p className="font-medium">Open ShipStation</p>
-                        <p className="text-xs text-[#71717a]">Print in ShipStation dashboard</p>
-                      </div>
-                    </a>
-                  </div>
-                </>
-              )}
-            </div>
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] shadow-xl z-20 overflow-hidden">
+                      {/* Buy Labels - Main action */}
+                      <button
+                        onClick={() => {
+                          setShowActionDropdown(false)
+                          handleFetchRates()
+                        }}
+                        className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)]"
+                      >
+                        <DollarSign className="w-4 h-4 text-[#5CB87A]" />
+                        <div>
+                          <p className="font-medium">Buy Labels</p>
+                          <p className="text-xs text-[#71717a]">Compare rates & purchase in-app</p>
+                        </div>
+                      </button>
+
+                      {/* Push to ShipStation */}
+                      <button
+                        onClick={() => {
+                          setShowActionDropdown(false)
+                          handleGenerateLabels()
+                        }}
+                        disabled={isGenerating}
+                        className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)] disabled:opacity-50"
+                      >
+                        {isGenerating ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Send className="w-4 h-4 text-[#e07a42]" />
+                        )}
+                        <div>
+                          <p className="font-medium">Push to ShipStation</p>
+                          <p className="text-xs text-[#71717a]">Create orders, print there</p>
+                        </div>
+                      </button>
+
+                      {/* Open ShipStation */}
+                      <a
+                        href="https://ship.shipstation.com/orders/awaiting-shipment"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setShowActionDropdown(false)}
+                        className="w-full px-4 py-3 text-left text-white hover:bg-[rgba(255,255,255,0.05)] flex items-center gap-3"
+                      >
+                        <ExternalLink className="w-4 h-4 text-[#71717a]" />
+                        <div>
+                          <p className="font-medium">Open ShipStation</p>
+                          <p className="text-xs text-[#71717a]">Print in ShipStation dashboard</p>
+                        </div>
+                      </a>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Batch Result Modal */}

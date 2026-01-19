@@ -67,12 +67,33 @@ export default async function ShippingPage({ params }: ShippingPageProps) {
     .eq('type', 'shipstation')
     .single()
 
+  // Get Shopify shop URL for Shopify Shipping users
+  const { data: shopifyIntegration } = await supabase
+    .from('integrations')
+    .select('credentials_encrypted')
+    .eq('organization_id', organization.id)
+    .eq('type', 'shopify')
+    .eq('connected', true)
+    .single()
+
+  const shopifyShopUrl = shopifyIntegration?.credentials_encrypted?.shop
+    ? `https://${shopifyIntegration.credentials_encrypted.shop}/admin/orders`
+    : null
+
+  // Get the shipping provider preference
+  const shippingProvider = organization.shipping_provider as 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
+
   return (
     <main className="min-h-screen p-8">
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Shipping Dashboard</h1>
-        <p className="text-[#71717a]">Generate labels, merge orders, and prepare batches for packing</p>
+        <p className="text-[#71717a]">
+          {shippingProvider === 'pirateship' && 'Sort orders, merge shipments, and export to CSV for PirateShip'}
+          {shippingProvider === '3pl' && 'Sort orders, merge shipments, and export to CSV for your fulfillment partner'}
+          {shippingProvider === 'shopify_shipping' && 'Sort orders, merge shipments, and fulfill in Shopify'}
+          {(shippingProvider === 'shipstation' || !shippingProvider) && 'Generate labels, merge orders, and prepare batches for packing'}
+        </p>
       </div>
 
       <ShippingDashboard
@@ -82,6 +103,8 @@ export default async function ShippingPage({ params }: ShippingPageProps) {
         recentBatches={recentBatches || []}
         problemOrders={problemOrders || []}
         shipstationConnected={shipstationIntegration?.connected || false}
+        shippingProvider={shippingProvider}
+        shopifyShopUrl={shopifyShopUrl}
       />
     </main>
   )

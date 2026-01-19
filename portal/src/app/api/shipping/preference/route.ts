@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
-type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | null
+type ShippingProvider = 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
 
 /**
  * POST /api/shipping/preference
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { provider } = body
 
     // Validate provider value
-    const validProviders: ShippingProvider[] = ['shipstation', 'pirateship', 'shopify_shipping', null]
+    const validProviders: ShippingProvider[] = ['shipstation', 'pirateship', 'shopify_shipping', '3pl', null]
     if (!validProviders.includes(provider)) {
       return NextResponse.json({ error: 'Invalid provider' }, { status: 400 })
     }
