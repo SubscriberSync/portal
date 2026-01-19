@@ -33,3 +33,6 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 .claude/
+
+# clerk configuration (can include secrets)
+/.clerk/

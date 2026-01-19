@@ -1,5 +1,3 @@
-'use client'
-
 import { SignIn } from '@clerk/nextjs'
 
 export default function SignInPage() {
@@ -12,7 +10,7 @@ export default function SignInPage() {
             card: 'bg-[#1a1a1a]',
           }
         }}
-        fallbackRedirectUrl="/"
+        fallbackRedirectUrl="/admin"
       />
     </div>
   )
