@@ -9,7 +9,7 @@ import {
 import AdminDashboard from '@/components/admin/AdminDashboard'
 
 export default async function AdminPage() {
-  const { userId } = await auth()
+  const { userId, orgSlug } = await auth()
   const user = await currentUser()
 
   if (!userId || !user) {
@@ -19,11 +19,11 @@ export default async function AdminPage() {
   // Check if user is admin
   const email = user.emailAddresses[0]?.emailAddress
 
-  // Log for debugging
-  console.log('[Admin] Checking access for email:', email)
-
   if (!isAdmin(email)) {
-    console.log('[Admin] Access denied - not an admin email')
+    // Redirect non-admins to their portal (if they have one) or home
+    if (orgSlug) {
+      redirect(`/portal/${orgSlug}`)
+    }
     redirect('/')
   }
 

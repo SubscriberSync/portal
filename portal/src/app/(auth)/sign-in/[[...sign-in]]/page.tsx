@@ -12,7 +12,7 @@ export default function SignInPage() {
             card: 'bg-[#1a1a1a]',
           }
         }}
-        fallbackRedirectUrl="/"
+        fallbackRedirectUrl="/admin"
       />
     </div>
   )
