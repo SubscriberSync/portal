@@ -2,7 +2,8 @@ import { auth } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 import { getOrganizationBySlug } from '@/lib/supabase/data'
 import { createServiceClient } from '@/lib/supabase/service'
-import { AlertCircle, Plus } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import UnknownSkusClient from './UnknownSkusClient'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,6 @@ export default async function UnknownSkusPage({ params }: UnknownSkusPageProps) 
     notFound()
   }
 
-  // Fetch shipments with unknown SKUs (product_name that doesn't match any product)
   const supabase = createServiceClient()
 
   // Get all products for this org
@@ -35,6 +35,14 @@ export default async function UnknownSkusPage({ params }: UnknownSkusPageProps) 
   const knownProducts = new Set(products?.map(p => p.name) || [])
   const knownSkus = new Set(products?.map(p => p.sku).filter(Boolean) || [])
 
+  // Get existing SKU aliases
+  const { data: existingAliases } = await supabase
+    .from('sku_aliases')
+    .select('shopify_sku, product_sequence_id, product_name')
+    .eq('organization_id', organization.id)
+
+  const aliasedSkus = new Set(existingAliases?.map(a => a.shopify_sku) || [])
+
   // Get shipments and find unknown SKUs
   const { data: shipments } = await supabase
     .from('shipments')
@@ -42,16 +50,29 @@ export default async function UnknownSkusPage({ params }: UnknownSkusPageProps) 
     .eq('organization_id', organization.id)
     .not('product_name', 'is', null)
 
-  // Find unique unknown product names
+  // Find unique unknown product names (not in products table AND not already aliased)
   const unknownSkus = new Map<string, number>()
   shipments?.forEach(s => {
-    if (s.product_name && !knownProducts.has(s.product_name) && !knownSkus.has(s.product_name)) {
+    if (
+      s.product_name &&
+      !knownProducts.has(s.product_name) &&
+      !knownSkus.has(s.product_name) &&
+      !aliasedSkus.has(s.product_name)
+    ) {
       unknownSkus.set(s.product_name, (unknownSkus.get(s.product_name) || 0) + 1)
     }
   })
 
   const unknownSkusList = Array.from(unknownSkus.entries())
-    .sort((a, b) => b[1] - a[1]) // Sort by count descending
+    .sort((a, b) => b[1] - a[1])
+    .map(([sku, count]) => ({ sku, count }))
+
+  // Get existing aliases for display
+  const existingAliasesList = existingAliases?.map(a => ({
+    sku: a.shopify_sku,
+    sequence: a.product_sequence_id,
+    name: a.product_name,
+  })) || []
 
   return (
     <main className="min-h-screen p-8">
@@ -59,9 +80,9 @@ export default async function UnknownSkusPage({ params }: UnknownSkusPageProps) 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <AlertCircle className="w-8 h-8 text-[#e07a42]" />
-          <h1 className="text-3xl font-bold text-white">Unknown SKUs</h1>
+          <h1 className="text-3xl font-bold text-white">SKU Mapper</h1>
         </div>
-        <p className="text-[#71717a]">Products found in orders that aren&apos;t in your product catalog</p>
+        <p className="text-[#71717a]">Map product SKUs to box/episode sequence numbers for accurate pack mode</p>
       </div>
 
       {/* Info Box */}
@@ -69,43 +90,19 @@ export default async function UnknownSkusPage({ params }: UnknownSkusPageProps) 
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-[#e07a42] mt-0.5" />
           <div>
-            <p className="text-white font-medium">Why does this matter?</p>
+            <p className="text-white font-medium">Why map SKUs?</p>
             <p className="text-sm text-[#71717a] mt-1">
-              Unknown SKUs can cause issues during packing. Add these products to your catalog so pack mode knows how to handle them.
+              SKU mapping tells the system which box number each product represents. This is essential for the Forensic Audit to correctly determine a subscriber&apos;s box history.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Unknown SKUs List */}
-      <div className="rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-        {unknownSkusList.length > 0 ? (
-          <div className="divide-y divide-[rgba(255,255,255,0.06)]">
-            {unknownSkusList.map(([sku, count]) => (
-              <div key={sku} className="p-4 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)]">
-                <div>
-                  <p className="text-white font-medium">{sku}</p>
-                  <p className="text-sm text-[#71717a]">{count} shipment{count !== 1 ? 's' : ''}</p>
-                </div>
-                <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#e07a42]/10 text-[#e07a42] hover:bg-[#e07a42]/20 transition-colors text-sm font-medium">
-                  <Plus className="w-4 h-4" />
-                  Add to Products
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#5CB87A]/10 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-[#5CB87A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-white mb-2">All SKUs Recognized</h3>
-            <p className="text-[#71717a]">Every product in your shipments is in your catalog.</p>
-          </div>
-        )}
-      </div>
+      <UnknownSkusClient
+        clientSlug={slug}
+        unknownSkus={unknownSkusList}
+        existingAliases={existingAliasesList}
+      />
     </main>
   )
 }
