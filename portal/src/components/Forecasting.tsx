@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BarChart, Card, Title, Text, Flex } from '@tremor/react'
+import { BarChart, Card, Text, Flex } from '@tremor/react'
 import { Package, TrendingUp, Sparkles, Loader2 } from 'lucide-react'
 
 interface ForecastingProps {
@@ -81,7 +81,7 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
         {/* Sequence Histogram - Tremor Card */}
         <Card className="lg:col-span-2 bg-background-surface border-border ring-0">
           <Flex justifyContent="between" alignItems="center" className="mb-4">
-            <Title className="text-foreground">Subscribers by Episode</Title>
+            <h4 className="font-semibold text-foreground">Subscribers by Episode</h4>
             {data?.totalActive && (
               <Text className="text-foreground-muted">
                 {data.totalActive} active subscribers
@@ -140,7 +140,7 @@ export default function Forecasting({ clientSlug }: ForecastingProps) {
         <Card className="bg-background-surface border-border ring-0">
           <Flex justifyContent="start" alignItems="center" className="gap-2 mb-6">
             <Package className="w-5 h-5 text-accent" />
-            <Title className="text-foreground">Add-On Products</Title>
+            <h4 className="font-semibold text-foreground">Add-On Products</h4>
           </Flex>
 
           {isLoading ? (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Card, Metric, Text, Flex, Grid, Title, BadgeDelta } from '@tremor/react';
+import { Card, Metric, Text, Flex, Grid, BadgeDelta } from '@tremor/react';
 import { Users, UserCheck, UserX, Pause, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { SubscriberSearch } from '@/components/backstage/SubscriberSearch';
 
@@ -70,7 +70,7 @@ export default function SubscribersPage() {
     <main className="min-h-screen p-8">
       <div className="space-y-6">
         <div>
-          <Title className="text-3xl font-bold text-foreground mb-2">Subscribers</Title>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Subscribers</h1>
           <Text className="text-foreground-secondary">
             Search and view subscriber details
           </Text>
@@ -137,7 +137,7 @@ export default function SubscribersPage() {
           {/* Monthly Summary */}
           {stats && (
             <Card className="bg-background-surface border-border ring-0">
-              <Title className="text-foreground mb-4">This Month</Title>
+              <h2 className="text-lg font-semibold text-foreground mb-4">This Month</h2>
               <div className="space-y-4">
                 <Flex justifyContent="between" alignItems="center">
                   <Flex justifyContent="start" alignItems="center" className="gap-3">
@@ -178,7 +178,7 @@ export default function SubscribersPage() {
 
           {/* Recent Activity */}
           <Card className="bg-background-surface border-border ring-0">
-            <Title className="text-foreground mb-4">Recent Activity</Title>
+            <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
             {isLoading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (

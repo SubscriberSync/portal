@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { UserButton } from '@clerk/nextjs'
-import { Card, Metric, Text, Flex, Grid, Title, TabGroup, TabList, Tab, TabPanels, TabPanel, TextInput, Badge } from '@tremor/react'
+import { Card, Metric, Text, Flex, Grid, TabGroup, TabList, Tab, TabPanels, TabPanel, TextInput, Badge } from '@tremor/react'
 import {
   Building2,
   Users,
@@ -51,7 +51,7 @@ export default function AdminDashboard({
                 <LayoutDashboard className="w-5 h-5 text-white" />
               </div>
               <div>
-                <Title className="text-foreground">Admin Dashboard</Title>
+                <h1 className="text-xl font-semibold text-foreground">Admin Dashboard</h1>
                 <Text className="text-foreground-muted">{adminEmail}</Text>
               </div>
             </Flex>
@@ -130,7 +130,7 @@ function OverviewTab({
 
   return (
     <Card className="bg-background-surface border-border ring-0">
-      <Title className="text-foreground mb-4">Recent Organizations</Title>
+      <h3 className="text-lg font-semibold text-foreground mb-4">Recent Organizations</h3>
       <div className="space-y-3">
         {recentOrgs.length === 0 ? (
           <Text className="text-foreground-muted">No organizations yet</Text>
@@ -399,7 +399,7 @@ function CreateOrganizationModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <Card className="w-full max-w-md bg-background-surface border-border ring-0">
-        <Title className="text-foreground mb-6">Create Organization</Title>
+        <h2 className="text-xl font-semibold text-foreground mb-6">Create Organization</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Text className="text-foreground-secondary mb-2">Organization Name</Text>
