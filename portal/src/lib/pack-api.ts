@@ -1,4 +1,4 @@
-// Pack Mode API Functions
+// Pack Mode API Functions - Using internal Supabase APIs
 
 import type {
   OverviewResponse,
@@ -10,10 +10,8 @@ import type {
   FlagReason,
 } from './pack-types';
 
-const BASE_URL = 'https://n8n.everlorehollow.com/webhook';
-
 export async function fetchPackOverview(clientSlug: string): Promise<OverviewResponse> {
-  const res = await fetch(`${BASE_URL}/pack/overview?client=${clientSlug}`);
+  const res = await fetch('/api/pack/overview');
   if (!res.ok) {
     throw new Error(`Failed to fetch pack overview: ${res.statusText}`);
   }
@@ -21,7 +19,7 @@ export async function fetchPackOverview(clientSlug: string): Promise<OverviewRes
 }
 
 export async function fetchPackQueue(clientSlug: string): Promise<QueueResponse> {
-  const res = await fetch(`${BASE_URL}/pack/queue?client=${clientSlug}`);
+  const res = await fetch('/api/pack/queue');
   if (!res.ok) {
     throw new Error(`Failed to fetch pack queue: ${res.statusText}`);
   }
@@ -32,7 +30,7 @@ export async function markShipmentComplete(
   clientSlug: string,
   shipmentId: string
 ): Promise<CompleteResponse> {
-  const res = await fetch(`${BASE_URL}/pack/complete?client=${clientSlug}`, {
+  const res = await fetch('/api/pack/complete', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ shipmentId }),
@@ -48,7 +46,7 @@ export async function flagShipment(
   shipmentId: string,
   reason: FlagReason
 ): Promise<FlagResponse> {
-  const res = await fetch(`${BASE_URL}/pack/flag?client=${clientSlug}`, {
+  const res = await fetch('/api/pack/flag', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ shipmentId, reason }),
@@ -64,7 +62,7 @@ export async function mergeShipments(
   primaryId: string,
   secondaryId: string
 ): Promise<MergeResponse> {
-  const res = await fetch(`${BASE_URL}/pack/merge?client=${clientSlug}`, {
+  const res = await fetch('/api/pack/merge', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ primaryId, secondaryId }),
@@ -79,7 +77,7 @@ export async function unmergeShipment(
   clientSlug: string,
   shipmentId: string
 ): Promise<UnmergeResponse> {
-  const res = await fetch(`${BASE_URL}/pack/unmerge?client=${clientSlug}`, {
+  const res = await fetch('/api/pack/unmerge', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ shipmentId }),
@@ -91,7 +89,7 @@ export async function unmergeShipment(
 }
 
 export function getExportCsvUrl(clientSlug: string): string {
-  return `${BASE_URL}/pack/export-csv?client=${clientSlug}`;
+  return '/api/shipping/csv';
 }
 
 export function getShopifyOrdersUrl(shopifyStore: string): string {
