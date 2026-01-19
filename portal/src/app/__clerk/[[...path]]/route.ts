@@ -35,7 +35,7 @@ async function proxyToClerk(request: Request) {
 
   // Remove host header and add required Clerk proxy headers
   headers.delete('host')
-  headers.set('Clerk-Proxy-Url', 'https://subscribersync.com/__clerk')
+  headers.set('Clerk-Proxy-Url', 'https://www.subscribersync.com/__clerk')
   headers.set('Clerk-Secret-Key', process.env.CLERK_SECRET_KEY || '')
 
   // Get the client IP from x-forwarded-for or x-real-ip
