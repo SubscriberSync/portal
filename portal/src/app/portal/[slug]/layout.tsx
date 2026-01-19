@@ -1,8 +1,7 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 import { getOrganizationBySlug, upsertOrganization } from '@/lib/supabase/data'
 import { checkPortalAccess } from '@/lib/subscription'
-import { isAdmin } from '@/lib/admin'
 import PortalSidebar from '@/components/PortalSidebar'
 import SubscriptionBlockedPage from '@/components/SubscriptionBlockedPage'
 import SubscriptionWarningBanner from '@/components/SubscriptionWarningBanner'
@@ -14,13 +13,9 @@ interface PortalLayoutProps {
 
 export default async function PortalLayout({ children, params }: PortalLayoutProps) {
   const { orgId, orgSlug } = await auth()
-  const user = await currentUser()
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const userIsAdmin = isAdmin(userEmail)
 
   // Verify the user has access to this organization
-  // Admins can access any portal (for test portals and debugging)
-  if (orgSlug !== params.slug && !userIsAdmin) {
+  if (orgSlug !== params.slug) {
     notFound()
   }
 

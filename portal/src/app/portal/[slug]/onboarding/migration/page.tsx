@@ -1,8 +1,7 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import { notFound, redirect } from 'next/navigation'
 import { getOrganizationBySlug, getIntegrations } from '@/lib/supabase/data'
 import { createServiceClient } from '@/lib/supabase/service'
-import { isAdmin } from '@/lib/admin'
 import MigrationCenter from '@/components/MigrationCenter'
 
 export const dynamic = 'force-dynamic'
@@ -13,11 +12,8 @@ interface MigrationPageProps {
 
 export default async function MigrationPage({ params }: MigrationPageProps) {
   const { orgSlug, orgRole } = await auth()
-  const user = await currentUser()
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const userIsAdmin = isAdmin(userEmail)
 
-  if (orgSlug !== params.slug && !userIsAdmin) {
+  if (orgSlug !== params.slug) {
     notFound()
   }
 

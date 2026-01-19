@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth } from '@clerk/nextjs/server'
 import {
   getOrganizationBySlug,
   getIntakeSubmissions,
@@ -8,7 +8,6 @@ import {
   getIntegrations,
   upsertOrganization
 } from '@/lib/supabase/data'
-import { isAdmin } from '@/lib/admin'
 import StatusBar from '@/components/StatusBar'
 import SupportSection from '@/components/SupportSection'
 import OnboardingSection from '@/components/OnboardingSection'
@@ -99,13 +98,9 @@ function transformDiscordConfig(config: DiscordConfig | null) {
 export default async function PortalPage({ params }: PortalPageProps) {
   // Get Clerk auth to verify user has access
   const { orgId, orgSlug } = await auth()
-  const user = await currentUser()
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const userIsAdmin = isAdmin(userEmail)
 
   // Verify the user has access to this organization
-  // Admins can access any portal (for test portals and debugging)
-  if (orgSlug !== params.slug && !userIsAdmin) {
+  if (orgSlug !== params.slug) {
     notFound()
   }
 

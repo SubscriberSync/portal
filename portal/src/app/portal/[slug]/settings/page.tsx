@@ -1,7 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { notFound } from 'next/navigation'
 import { getOrganizationBySlug, getIntegrations } from '@/lib/supabase/data'
-import { isAdmin } from '@/lib/admin'
 import { Settings, Plug, User, Bell, Shield } from 'lucide-react'
 import ShipStationSettings from '@/components/ShipStationSettings'
 
@@ -14,10 +13,8 @@ interface SettingsPageProps {
 export default async function SettingsPage({ params }: SettingsPageProps) {
   const { orgSlug } = await auth()
   const user = await currentUser()
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  const userIsAdmin = isAdmin(userEmail)
 
-  if (orgSlug !== params.slug && !userIsAdmin) {
+  if (orgSlug !== params.slug) {
     notFound()
   }
 
