@@ -37,6 +37,7 @@ export default function ShippingProviderSection({
   const [isLoading, setIsLoading] = useState(false)
   const [showShopifyWarning, setShowShopifyWarning] = useState(false)
   const [showShipStationForm, setShowShipStationForm] = useState(false)
+  const [isSkipped, setIsSkipped] = useState(false)
   
   // ShipStation form state
   const [apiKey, setApiKey] = useState('')
@@ -132,8 +133,16 @@ export default function ShippingProviderSection({
     }
   }
 
+  // Hidden state when skipped
+  if (isSkipped && !selectedProvider) {
+    return null
+  }
+
+  // The effective provider is either the saved one or the newly selected one
+  const effectiveProvider = selectedProvider || currentProvider
+
   // Collapsed state when provider is selected
-  if (currentProvider && !isExpanded) {
+  if (effectiveProvider && !isExpanded) {
     return (
       <div className="relative rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)] overflow-hidden">
         <button
@@ -150,8 +159,8 @@ export default function ShippingProviderSection({
                 <span className="px-2 py-0.5 rounded text-xs bg-[rgba(245,240,232,0.05)] text-[#6B6660]">Optional</span>
               </div>
               <p className="text-sm text-[#5CB87A]">
-                {getProviderLabel(currentProvider)}
-                {currentProvider === 'shipstation' && isShipStationConnected && ' - Connected'}
+                {getProviderLabel(effectiveProvider)}
+                {effectiveProvider === 'shipstation' && isShipStationConnected && ' - Connected'}
               </p>
             </div>
           </div>
@@ -179,7 +188,7 @@ export default function ShippingProviderSection({
                 <p className="text-sm text-[#6B6660]">Choose how you want to create shipping labels</p>
               </div>
             </div>
-            {currentProvider && (
+            {effectiveProvider && (
               <button
                 onClick={() => setIsExpanded(false)}
                 className="p-2 rounded-lg hover:bg-[rgba(255,255,255,0.05)] transition-colors"
@@ -391,10 +400,10 @@ export default function ShippingProviderSection({
           </button>
 
           {/* Skip option */}
-          {!currentProvider && (
+          {!effectiveProvider && (
             <div className="pt-2 text-center">
               <button
-                onClick={() => setIsExpanded(false)}
+                onClick={() => setIsSkipped(true)}
                 className="text-sm text-[#6B6660] hover:text-[#A8A39B] transition-colors"
               >
                 Skip for now - set up later in Settings
@@ -407,7 +416,16 @@ export default function ShippingProviderSection({
       {/* Shopify Warning Modal */}
       {showShopifyWarning && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#1a1a1a] rounded-2xl border border-[rgba(255,255,255,0.1)] p-6 w-full max-w-md mx-4 shadow-2xl">
+          <div className="bg-[#1a1a1a] rounded-2xl border border-[rgba(255,255,255,0.1)] p-6 w-full max-w-md mx-4 shadow-2xl relative">
+            {/* Close button */}
+            <button
+              onClick={() => setShowShopifyWarning(false)}
+              className="absolute top-4 right-4 p-2 rounded-lg text-[#6B6660] hover:text-[#F5F0E8] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-[#EF4444]/10 flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-[#EF4444]" />
