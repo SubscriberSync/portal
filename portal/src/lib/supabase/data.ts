@@ -24,7 +24,9 @@ export interface Organization {
   discord_prompt_dismissed: boolean | null
   discord_prompt_remind_at: string | null
   // Shipping provider preference
-  shipping_provider: 'shipstation' | 'pirateship' | 'shopify_shipping' | null
+  shipping_provider: 'shipstation' | 'pirateship' | 'shopify_shipping' | '3pl' | null
+  // Migration state
+  migration_complete: boolean
   // Timestamps
   created_at: string
   updated_at: string

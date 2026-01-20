@@ -67,6 +67,23 @@ When configuring your Klaviyo app (at https://developers.klaviyo.com/), add this
 # Recharge uses API key authentication, no OAuth credentials needed
 ```
 
+### OpenAI (Optional - AI Assist Features)
+```
+OPENAI_API_KEY=sk-...
+```
+
+The OpenAI API key enables AI-powered features in the Migration Center:
+- **SKU Mapping Suggestions:** AI analyzes product names and suggests box number mappings
+- **Pattern Detection:** AI identifies naming patterns in your product data
+- **Flag Explanations:** AI explains why subscribers were flagged in plain English
+
+**Note:** AI features are optional. The Migration Center works fully without them - you'll just use manual matching instead. AI assist uses the `gpt-4o-mini` model which is cost-effective (typically under $0.01 per suggestion batch).
+
+To get an API key:
+1. Go to https://platform.openai.com/api-keys
+2. Create a new API key
+3. Add it to your environment variables
+
 ### Application URLs
 ```
 NEXT_PUBLIC_APP_URL=https://your-domain.com
