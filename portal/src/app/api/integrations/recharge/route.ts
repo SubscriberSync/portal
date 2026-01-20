@@ -401,3 +401,49 @@ export async function GET() {
     tokenName: (data.credentials_encrypted as { token_name?: string })?.token_name,
   })
 }
+
+// PUT /api/integrations/recharge
+// Trigger a resync without disconnecting
+export async function PUT() {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = createServiceClient()
+
+  // Get existing credentials
+  const { data: integration } = await supabase
+    .from('integrations')
+    .select('credentials_encrypted')
+    .eq('organization_id', orgId)
+    .eq('type', 'recharge')
+    .eq('connected', true)
+    .single()
+
+  if (!integration?.credentials_encrypted) {
+    return NextResponse.json({ error: 'Recharge not connected' }, { status: 400 })
+  }
+
+  const apiKey = integration.credentials_encrypted.api_key as string
+
+  try {
+    // Run the sync
+    const syncResult = await initialSync(orgId, apiKey)
+
+    // Update last sync time
+    await supabase
+      .from('integrations')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('organization_id', orgId)
+      .eq('type', 'recharge')
+
+    return NextResponse.json({
+      success: true,
+      ...syncResult,
+    })
+  } catch (error) {
+    return handleApiError(error, 'Recharge Resync', 'Resync failed')
+  }
+}
