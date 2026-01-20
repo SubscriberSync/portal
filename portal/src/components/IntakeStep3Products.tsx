@@ -450,32 +450,32 @@ export default function IntakeStep3Products({
                   <div>
                     <p className="text-sm text-blue-800 font-medium mb-2">How to map your products:</p>
                     <ol className="text-xs text-blue-700 space-y-1.5 list-decimal list-inside">
-                      <li><strong>Create a Story</strong> - Your subscription product (e.g., "Echoes of the Crucible")</li>
-                      <li><strong>Select products below</strong> - Click checkboxes next to products that belong to this story</li>
-                      <li><strong>Click a tier button</strong> - Assign selected products to a tier (e.g., "Ritual", "Vault")</li>
+                      <li><strong>Create a Subscription</strong> - Define your subscription product (e.g., "Monthly Box", "VIP Membership")</li>
+                      <li><strong>Select products below</strong> - Click checkboxes next to products that belong to this subscription</li>
+                      <li><strong>Click a tier button</strong> - Assign selected products to a tier (e.g., "Basic", "Standard", "Premium")</li>
                       <li><strong>Repeat</strong> until all subscription products are assigned</li>
                     </ol>
                     <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
                       <Undo2 className="w-3 h-3" />
-                      Made a mistake? Select the product and click "Unassign" to remove it from a story.
+                      Made a mistake? Select the product and click "Unassign" to remove it.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Stories Section */}
+              {/* Subscriptions Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-foreground flex items-center gap-2">
                     <Layers className="w-4 h-4" />
-                    Your Stories
+                    Your Subscriptions
                   </h4>
                   <button
                     onClick={() => setShowCreateStory(true)}
                     className="px-3 py-1.5 text-sm text-accent hover:text-accent-hover flex items-center gap-1"
                   >
                     <Plus className="w-4 h-4" />
-                    Create Story
+                    Create Subscription
                   </button>
                 </div>
 
@@ -484,9 +484,9 @@ export default function IntakeStep3Products({
                     <div className="flex gap-3">
                       <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                       <div>
-                        <p className="text-sm text-amber-800 font-medium">Step 1: Create a story first</p>
+                        <p className="text-sm text-amber-800 font-medium">Step 1: Create a subscription first</p>
                         <p className="text-xs text-amber-700 mt-1">
-                          Click "+ Create Story" above to define your subscription product.
+                          Click "+ Create Subscription" above to define your subscription product.
                           Then you can assign the products below to it.
                         </p>
                       </div>
@@ -645,19 +645,21 @@ export default function IntakeStep3Products({
                         onClick={() => handleUnassign()}
                         className="px-2 py-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded"
                       >
-                        Unassign from story
+                        Unassign
                       </button>
                       <button
                         onClick={() => handleMarkAs('ignored')}
                         className="px-2 py-1 text-foreground-tertiary hover:text-foreground hover:bg-background-elevated rounded"
+                        title="Hide products that aren't relevant (like test orders or discontinued items)"
                       >
                         Mark as Ignored
                       </button>
                       <button
                         onClick={() => handleMarkAs('addon')}
                         className="px-2 py-1 text-foreground-tertiary hover:text-foreground hover:bg-background-elevated rounded"
+                        title="One-time purchases that aren't part of a recurring subscription (like merchandise or single purchases)"
                       >
-                        Mark as One-time Addon
+                        Mark as One-time Purchase
                       </button>
                     </div>
                   </div>
@@ -750,14 +752,14 @@ export default function IntakeStep3Products({
         </div>
       )}
 
-      {/* Create Story Modal */}
+      {/* Create Subscription Modal */}
       {showCreateStory && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-background rounded-xl border border-border w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
                 <FolderPlus className="w-5 h-5" />
-                Create Story
+                Create Subscription
               </h3>
               <button
                 onClick={() => setShowCreateStory(false)}
@@ -770,20 +772,20 @@ export default function IntakeStep3Products({
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Story Name
+                  Subscription Name
                 </label>
                 <input
                   type="text"
                   value={newStoryName}
                   onChange={e => setNewStoryName(e.target.value)}
-                  placeholder="e.g., Echoes of the Crucible"
+                  placeholder="e.g., Monthly Box, VIP Membership"
                   className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
-                  Story Type
+                  Subscription Type
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -794,8 +796,8 @@ export default function IntakeStep3Products({
                         : 'border-border hover:border-border-strong'
                     }`}
                   >
-                    <p className="font-medium text-sm">Sequential</p>
-                    <p className="text-xs text-foreground-tertiary">Ends after N episodes</p>
+                    <p className="font-medium text-sm">Fixed Length</p>
+                    <p className="text-xs text-foreground-tertiary">Ends after N shipments</p>
                   </button>
                   <button
                     onClick={() => setNewStoryType('recurring')}
@@ -805,8 +807,8 @@ export default function IntakeStep3Products({
                         : 'border-border hover:border-border-strong'
                     }`}
                   >
-                    <p className="font-medium text-sm">Recurring</p>
-                    <p className="text-xs text-foreground-tertiary">Continues forever</p>
+                    <p className="font-medium text-sm">Ongoing</p>
+                    <p className="text-xs text-foreground-tertiary">Continues until cancelled</p>
                   </button>
                 </div>
               </div>
@@ -815,7 +817,7 @@ export default function IntakeStep3Products({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      Total Episodes
+                      Total Shipments
                     </label>
                     <input
                       type="number"
@@ -828,13 +830,13 @@ export default function IntakeStep3Products({
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1">
-                      Installment Name
+                      Shipment Label
                     </label>
                     <input
                       type="text"
                       value={newStoryInstallment}
                       onChange={e => setNewStoryInstallment(e.target.value)}
-                      placeholder="Episode"
+                      placeholder="Box, Issue, Month"
                       className="w-full px-3 py-2 bg-background-elevated border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
                     />
                   </div>
@@ -846,7 +848,7 @@ export default function IntakeStep3Products({
                   Pricing Tiers
                 </label>
                 <p className="text-xs text-foreground-tertiary mb-2">
-                  Add tiers if you have different pricing levels (e.g., Standard, Premium)
+                  Add tiers if you offer different pricing levels (e.g., Basic, Standard, Premium)
                 </p>
                 <div className="space-y-2">
                   {newStoryTiers.map((tier, index) => (
@@ -899,7 +901,7 @@ export default function IntakeStep3Products({
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  Create Story
+                  Create Subscription
                 </button>
               </div>
             </div>

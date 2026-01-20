@@ -132,7 +132,7 @@ export default function StoryMigrationCenter({
         </h2>
         <p className="text-foreground-secondary mb-4">
           This is the most important setup step. We need to understand your products and
-          import your existing customers with their correct episode positions.
+          import your existing customers with their correct shipment positions.
         </p>
 
         {/* Why this matters callout */}
@@ -142,8 +142,8 @@ export default function StoryMigrationCenter({
             <div>
               <p className="text-sm font-medium text-amber-200">Why this matters</p>
               <p className="text-xs text-amber-300/80 mt-1">
-                If products are mapped incorrectly or customers have wrong episode numbers,
-                they'll receive the wrong content. Take your time to get this right.
+                If products are mapped incorrectly or customers have wrong shipment numbers,
+                they'll receive the wrong items. Take your time to get this right.
               </p>
             </div>
           </div>
@@ -247,8 +247,8 @@ export default function StoryMigrationCenter({
                 </p>
                 <ul className="text-xs text-amber-300/80 space-y-1 list-disc list-inside">
                   <li>New orders will be processed based on your product mappings</li>
-                  <li>Customers will be assigned episode numbers based on imported data</li>
-                  <li>Incorrect mappings could result in customers receiving wrong content</li>
+                  <li>Customers will be assigned shipment numbers based on imported data</li>
+                  <li>Incorrect mappings could result in customers receiving the wrong items</li>
                 </ul>
               </div>
 
@@ -278,7 +278,7 @@ export default function StoryMigrationCenter({
                   <div>
                     <p className="text-sm text-foreground">Product mappings are correct</p>
                     <p className="text-xs text-foreground-tertiary">
-                      I've verified that each product variation is assigned to the correct story and tier
+                      I've verified that each product variation is assigned to the correct subscription and tier
                     </p>
                   </div>
                 </label>
@@ -291,9 +291,9 @@ export default function StoryMigrationCenter({
                     className="mt-0.5 w-4 h-4 rounded border-foreground-tertiary"
                   />
                   <div>
-                    <p className="text-sm text-foreground">Customer episode numbers are accurate</p>
+                    <p className="text-sm text-foreground">Customer shipment numbers are accurate</p>
                     <p className="text-xs text-foreground-tertiary">
-                      I've reviewed customer episode positions and made any necessary adjustments
+                      I've reviewed customer shipment positions and made any necessary adjustments
                     </p>
                   </div>
                 </label>
@@ -308,7 +308,7 @@ export default function StoryMigrationCenter({
                   <div>
                     <p className="text-sm text-foreground">I understand this will activate the system</p>
                     <p className="text-xs text-foreground-tertiary">
-                      New orders will be processed immediately and customers will receive content based on these settings
+                      New orders will be processed immediately and customers will receive shipments based on these settings
                     </p>
                   </div>
                 </label>
