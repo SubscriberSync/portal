@@ -214,13 +214,13 @@ export default function MigrationCenter({
   const [resetting, setResetting] = useState(false)
   const [newPattern, setNewPattern] = useState<{ pattern: string; type: 'contains' | 'regex' | 'starts_with' | 'ends_with'; sequence: number }>({ pattern: '', type: 'contains', sequence: 0 })
 
-  // Check AI availability on mount
-  useEffect(() => {
-    fetch('/api/migration/ai-suggest')
-      .then(res => res.json())
-      .then(data => setAiAvailable(data.available))
-      .catch(() => setAiAvailable(false))
-  }, [])
+  // AI feature disabled - keeping state for potential future use
+  // useEffect(() => {
+  //   fetch('/api/migration/ai-suggest')
+  //     .then(res => res.json())
+  //     .then(data => setAiAvailable(data.available))
+  //     .catch(() => setAiAvailable(false))
+  // }, [])
 
   // Detect SKUs on mount if in mapping step
   useEffect(() => {
@@ -681,12 +681,6 @@ export default function MigrationCenter({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {aiAvailable && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20">
-                <Sparkles className="w-4 h-4 text-[#5865F2]" />
-                <span className="text-sm text-[#5865F2]">AI Assist Available</span>
-              </div>
-            )}
             {isAdmin && (
               <button
                 onClick={() => setShowResetConfirm(true)}
@@ -783,16 +777,6 @@ export default function MigrationCenter({
                 </p>
               </div>
               <div className="flex gap-2">
-                {aiAvailable && detectedSkus.length > 0 && (
-                  <button
-                    onClick={requestAiPatternSuggestions}
-                    disabled={aiLoading}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#5865F2]/10 hover:bg-[#5865F2]/20 border border-[#5865F2]/30 text-[#5865F2] text-sm transition-colors disabled:opacity-50"
-                  >
-                    {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    AI Suggest Patterns
-                  </button>
-                )}
                 <button
                   onClick={detectSkus}
                   disabled={loadingSkus}
@@ -803,37 +787,6 @@ export default function MigrationCenter({
                 </button>
               </div>
             </div>
-
-            {/* AI Pattern Suggestions */}
-            {suggestedPatterns.length > 0 && (
-              <div className="mb-4 p-4 rounded-lg bg-[#5865F2]/5 border border-[#5865F2]/20">
-                <h4 className="text-sm font-medium text-[#5865F2] mb-2">AI Detected Patterns</h4>
-                <p className="text-xs text-[#71717a] mb-3">We found naming patterns in your products. Click &quot;Add Pattern&quot; to automatically map matching products.</p>
-                <div className="space-y-2">
-                  {suggestedPatterns.map((pattern, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded bg-[rgba(255,255,255,0.02)]">
-                      <div>
-                        <code className="text-sm text-white">{pattern.pattern}</code>
-                        <span className="text-xs text-[#71717a] ml-2">({pattern.match_count} matches)</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setNewPattern({
-                            pattern: pattern.pattern,
-                            type: pattern.pattern_type,
-                            sequence: pattern.sequence,
-                          })
-                          setShowPatternForm(true)
-                        }}
-                        className="text-xs text-[#5865F2] hover:underline"
-                      >
-                        Add Pattern
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {loadingSkus ? (
               <div className="flex flex-col items-center justify-center py-12">

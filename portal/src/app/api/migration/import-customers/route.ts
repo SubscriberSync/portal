@@ -142,18 +142,18 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Fetch orders from Shopify (last 2 years)
+    // Fetch orders from Shopify (last 3 years)
     const customerMap = new Map<string, CustomerData>()
 
     const params = new URLSearchParams({
       status: 'any',
       limit: '250',
-      created_at_min: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at_min: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000).toISOString(),
     })
 
     let currentUrl: string | null = `https://${shop}/admin/api/2024-01/orders.json?${params.toString()}`
     let pageCount = 0
-    const maxPages = 50
+    const maxPages = 100 // Increased to support larger stores with 3 years of data
 
     while (currentUrl && pageCount < maxPages) {
       const orderResponse: Response = await fetch(currentUrl, {

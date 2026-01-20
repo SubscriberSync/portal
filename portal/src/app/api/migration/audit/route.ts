@@ -6,6 +6,7 @@ import {
   getSkuMap,
   fetchCustomerOrders,
   analyzeOrderHistory,
+  analyzeOrderHistoryByCount,
   saveAuditResult,
   ShopifyCredentials,
 } from '@/lib/forensic-audit'
@@ -92,6 +93,9 @@ export async function POST(request: NextRequest) {
       error?: string
     }> = []
 
+    // Get matching SKUs for order count fallback
+    const matchingSKUs = new Set(Array.from(skuMap.keys()))
+
     for (const subscriber of subscribers) {
       try {
         // Fetch orders from Shopify
@@ -101,8 +105,18 @@ export async function POST(request: NextRequest) {
           subscriber.email
         )
 
-        // Analyze the history
-        const auditResult = analyzeOrderHistory(orders, skuMap)
+        // Analyze the history using hybrid mode:
+        // 1. First try SKU mapping (for different SKU per episode)
+        // 2. If all orders map to same sequence, use order count (for same-SKU subscriptions)
+        let auditResult = analyzeOrderHistory(orders, skuMap)
+
+        // Check if all detected sequences are the same (same-SKU scenario)
+        const uniqueSequences = new Set(auditResult.detectedSequences)
+        if (auditResult.detectedSequences.length > 0 && uniqueSequences.size === 1) {
+          // All orders have same SKU/sequence - use order counting instead
+          // Each order = 1 episode (e.g., ordered "Echoes of the Crucible" 5 times = Episode 5)
+          auditResult = analyzeOrderHistoryByCount(orders, matchingSKUs, subscriber.email, subscriber.shopify_customer_id)
+        }
 
         // Save to database
         await saveAuditResult(

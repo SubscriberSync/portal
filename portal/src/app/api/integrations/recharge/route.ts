@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Initial sync - pull all existing subscriptions
+// Initial sync - pull all existing subscriptions (including cancelled/expired with remaining shipments)
 async function initialSync(
   orgId: string,
   apiKey: string
@@ -198,46 +198,80 @@ async function initialSync(
       nextCursor = data.next_cursor || null
     } while (nextCursor)
 
-    // Fetch subscriptions
-    nextCursor = null
-    do {
-      const url = new URL(`${RECHARGE_API_BASE}/subscriptions`)
-      url.searchParams.set('limit', '250')
-      url.searchParams.set('status', 'ACTIVE')
-      if (nextCursor) url.searchParams.set('cursor', nextCursor)
+    // Fetch ALL subscriptions (not just ACTIVE) to include cancelled/expired with remaining shipments
+    // We need to fetch each status separately since Recharge doesn't support multiple statuses
+    const statuses = ['ACTIVE', 'CANCELLED', 'EXPIRED']
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          'X-Recharge-Access-Token': apiKey,
-          'X-Recharge-Version': '2021-11',
-        },
-      })
+    for (const status of statuses) {
+      nextCursor = null
+      do {
+        const url = new URL(`${RECHARGE_API_BASE}/subscriptions`)
+        url.searchParams.set('limit', '250')
+        url.searchParams.set('status', status)
+        if (nextCursor) url.searchParams.set('cursor', nextCursor)
 
-      if (!response.ok) break
+        const response = await fetch(url.toString(), {
+          headers: {
+            'X-Recharge-Access-Token': apiKey,
+            'X-Recharge-Version': '2021-11',
+          },
+        })
 
-      const data = await response.json()
-      const subscriptions = data.subscriptions || []
+        if (!response.ok) break
 
-      // Update subscriber records with subscription data
-      for (const sub of subscriptions) {
-        const frequency = mapFrequency(sub.order_interval_unit, sub.order_interval_frequency)
+        const data = await response.json()
+        const subscriptions = data.subscriptions || []
 
-        await supabase
-          .from('subscribers')
-          .update({
-            status: 'Active',
-            sku: sub.sku || sub.product_title,
-            frequency: frequency,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('organization_id', orgId)
-          .eq('recharge_customer_id', sub.customer_id.toString())
+        // Update subscriber records with subscription data
+        for (const sub of subscriptions) {
+          const frequency = mapFrequency(sub.order_interval_unit, sub.order_interval_frequency)
 
-        subscriptionCount++
-      }
+          // Determine if this is a prepaid subscription and calculate remaining shipments
+          const isPrepaid = detectPrepaidSubscription(sub)
+          const prepaidTotal = isPrepaid ? calculatePrepaidTotal(sub) : null
 
-      nextCursor = data.next_cursor || null
-    } while (nextCursor)
+          // Get charge count to calculate orders remaining
+          const chargeCount = await fetchChargeCount(apiKey, sub.customer_id, sub.id)
+          const ordersRemaining = prepaidTotal ? Math.max(0, prepaidTotal - chargeCount) : null
+
+          // Determine effective status:
+          // - ACTIVE subscriptions are always Active
+          // - CANCELLED subscriptions are Cancelled (user chose to cancel)
+          // - EXPIRED subscriptions with orders remaining are Active (prepaid still delivering)
+          // - EXPIRED subscriptions with no orders remaining are Expired
+          let effectiveStatus: 'Active' | 'Paused' | 'Cancelled' | 'Expired' = 'Active'
+          if (sub.status === 'CANCELLED') {
+            // True cancellation - user cancelled
+            effectiveStatus = 'Cancelled'
+          } else if (sub.status === 'EXPIRED') {
+            // Expired could mean prepaid finished OR prepaid still has remaining
+            effectiveStatus = (ordersRemaining && ordersRemaining > 0) ? 'Active' : 'Expired'
+          }
+
+          await supabase
+            .from('subscribers')
+            .update({
+              status: effectiveStatus,
+              sku: sub.sku || sub.product_title,
+              frequency: frequency,
+              is_prepaid: isPrepaid,
+              prepaid_total: prepaidTotal,
+              orders_remaining: ordersRemaining,
+              recharge_subscription_id: sub.id.toString(),
+              cancelled_at: sub.cancelled_at ? new Date(sub.cancelled_at).toISOString() : null,
+              cancel_reason: sub.cancellation_reason || null,
+              next_charge_date: sub.next_charge_scheduled_at || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('organization_id', orgId)
+            .eq('recharge_customer_id', sub.customer_id.toString())
+
+          subscriptionCount++
+        }
+
+        nextCursor = data.next_cursor || null
+      } while (nextCursor)
+    }
 
     console.log(`[Recharge] Initial sync: ${customerCount} customers, ${subscriptionCount} subscriptions`)
   } catch (error) {
@@ -245,6 +279,88 @@ async function initialSync(
   }
 
   return { customers: customerCount, subscriptions: subscriptionCount }
+}
+
+// Detect if a subscription is prepaid based on properties or charge interval
+function detectPrepaidSubscription(sub: {
+  charge_interval_frequency?: number
+  order_interval_frequency?: number
+  order_interval_unit?: string
+  properties?: Array<{ name: string; value: string }>
+}): boolean {
+  // Check for prepaid property
+  const prepaidProp = sub.properties?.find(
+    p => p.name.toLowerCase().includes('prepaid') || p.name.toLowerCase().includes('subscription_type')
+  )
+  if (prepaidProp?.value?.toLowerCase().includes('prepaid')) {
+    return true
+  }
+
+  // Check if charge interval differs from order interval (prepaid pays once, ships multiple)
+  // e.g., charge every 12 months, ship every 1 month = 12 shipments prepaid
+  if (sub.charge_interval_frequency && sub.order_interval_frequency) {
+    if (sub.charge_interval_frequency > sub.order_interval_frequency) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// Calculate total shipments for prepaid subscription
+function calculatePrepaidTotal(sub: {
+  charge_interval_frequency?: number
+  order_interval_frequency?: number
+  order_interval_unit?: string
+  properties?: Array<{ name: string; value: string }>
+}): number {
+  // Check for explicit total in properties
+  const totalProp = sub.properties?.find(
+    p => p.name.toLowerCase().includes('total') ||
+         p.name.toLowerCase().includes('episodes') ||
+         p.name.toLowerCase().includes('shipments')
+  )
+  if (totalProp) {
+    const num = parseInt(totalProp.value, 10)
+    if (!isNaN(num) && num > 0) return num
+  }
+
+  // Calculate from charge/order interval ratio
+  if (sub.charge_interval_frequency && sub.order_interval_frequency) {
+    return Math.floor(sub.charge_interval_frequency / sub.order_interval_frequency)
+  }
+
+  // Default for common prepaid scenarios
+  return 12 // Assume yearly prepaid with monthly shipments
+}
+
+// Fetch count of successful charges for a subscription
+async function fetchChargeCount(
+  apiKey: string,
+  customerId: number,
+  subscriptionId: number
+): Promise<number> {
+  try {
+    const url = new URL(`${RECHARGE_API_BASE}/charges`)
+    url.searchParams.set('customer_id', customerId.toString())
+    url.searchParams.set('subscription_id', subscriptionId.toString())
+    url.searchParams.set('status', 'SUCCESS')
+    url.searchParams.set('limit', '250')
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'X-Recharge-Access-Token': apiKey,
+        'X-Recharge-Version': '2021-11',
+      },
+    })
+
+    if (!response.ok) return 0
+
+    const data = await response.json()
+    return (data.charges || []).length
+  } catch {
+    return 0
+  }
 }
 
 function mapFrequency(unit: string, frequency: number): 'Monthly' | 'Quarterly' | 'Yearly' | null {

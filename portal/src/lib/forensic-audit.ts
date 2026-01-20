@@ -42,7 +42,8 @@ export interface RechargeChargeRecord {
 export type AuditMode =
   | 'sku_mapping'      // Use SKU → sequence mapping (different SKU per episode)
   | 'charge_count'     // Count Recharge charges (same SKU, recurring)
-  | 'hybrid'           // Try SKU first, fall back to charge count
+  | 'order_count'      // Count Shopify orders (each matching order = 1 episode)
+  | 'hybrid'           // Try SKU first, fall back to order count
 
 // Types
 export interface SkuAlias {
@@ -209,7 +210,7 @@ export async function fetchUniqueSKUs(
 
   let currentUrl: string | null = `https://${shop}/admin/api/2024-01/orders.json?${params.toString()}`
   let pageCount = 0
-  const maxPages = 20 // Limit to prevent runaway requests
+  const maxPages = 100 // Increased to support larger stores with 3 years of data
 
   while (currentUrl && pageCount < maxPages) {
     const response: Response = await fetch(currentUrl, {
@@ -660,6 +661,102 @@ export function analyzeOrderHistory(
 }
 
 /**
+ * Analyze order history by counting orders (for same-SKU subscriptions)
+ * Each matching order = 1 episode, counted chronologically
+ *
+ * This is useful when:
+ * - All subscription items have the same SKU (e.g., "Echoes of the Crucible")
+ * - Customer ordered the same product 5 times = Episode 5
+ */
+export function analyzeOrderHistoryByCount(
+  orders: ShopifyOrder[],
+  matchingSKUs: Set<string>, // SKUs that represent subscription items
+  customerEmail?: string,
+  shopifyCustomerId?: string | null
+): AuditResult {
+  const sequenceEvents: SequenceEvent[] = []
+  const flagReasons: string[] = []
+  const unmappedItems: UnmappedLineItem[] = []
+
+  // Step 1: Extract all subscription items from orders (by matching SKU)
+  // Sort orders by date first
+  const sortedOrders = [...orders].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+
+  let episodeCounter = 0
+
+  for (const order of sortedOrders) {
+    for (const item of order.line_items) {
+      const skuLower = item.sku?.toLowerCase() || ''
+      const nameLower = item.name?.toLowerCase() || ''
+
+      // Check if this item matches any subscription SKU or product name
+      const isMatch = matchingSKUs.size === 0 || // If no SKUs specified, match all items
+        matchingSKUs.has(skuLower) ||
+        Array.from(matchingSKUs).some(sku => nameLower.includes(sku))
+
+      if (isMatch && !isLikelyNonSubscriptionItem(item.name)) {
+        // Each quantity unit counts as a separate episode
+        for (let q = 0; q < item.quantity; q++) {
+          episodeCounter++
+          sequenceEvents.push({
+            sequence: episodeCounter,
+            date: order.created_at,
+            orderId: order.id.toString(),
+            orderNumber: order.order_number,
+            sku: item.sku || '',
+            productName: item.name,
+          })
+        }
+      } else if (!isLikelyNonSubscriptionItem(item.name)) {
+        // Track as unmapped
+        unmappedItems.push({
+          orderId: order.id.toString(),
+          orderNumber: order.order_number,
+          orderDate: order.created_at,
+          sku: item.sku || null,
+          productName: item.name,
+          customerEmail: customerEmail || order.customer?.email || '',
+          shopifyCustomerId: shopifyCustomerId || order.customer?.id?.toString() || null,
+        })
+      }
+    }
+  }
+
+  // Step 2: Handle no history case
+  if (sequenceEvents.length === 0) {
+    return {
+      status: 'flagged',
+      flagReasons: ['no_history'],
+      detectedSequences: [],
+      sequenceEvents: [],
+      proposedNextBox: 1,
+      rawOrders: orders,
+      unmappedItems,
+      confidenceScore: 0,
+    }
+  }
+
+  // For order-count mode, sequences are always clean (1, 2, 3, 4...)
+  // No gaps or duplicates possible by definition
+  const detectedSequences = sequenceEvents.map(e => e.sequence)
+  const maxSeq = Math.max(...detectedSequences)
+  const proposedNextBox = maxSeq + 1
+
+  return {
+    status: 'clean',
+    flagReasons,
+    detectedSequences,
+    sequenceEvents,
+    proposedNextBox,
+    rawOrders: orders,
+    unmappedItems,
+    confidenceScore: 1.0, // High confidence - order count is definitive
+  }
+}
+
+/**
  * Heuristic to filter out items that are clearly not subscription boxes
  */
 function isLikelyNonSubscriptionItem(productName: string): boolean {
@@ -687,7 +784,8 @@ function isLikelyNonSubscriptionItem(productName: string): boolean {
  * Supports multiple audit modes:
  * - sku_mapping: Use SKU → sequence mapping (different SKU per episode)
  * - charge_count: Count Recharge charges (same SKU, recurring)
- * - hybrid: Try SKU mapping first, fall back to charge count if no mappings
+ * - order_count: Count Shopify orders (each matching order = 1 episode)
+ * - hybrid: Try SKU mapping first, fall back to order count
  */
 export async function auditSubscriber(
   organizationId: string,
@@ -702,6 +800,7 @@ export async function auditSubscriber(
     rechargeCredentials?: RechargeCredentials
     rechargeCustomerId?: string
     subscriptionSku?: string // The recurring SKU to track charges for
+    matchingSKUs?: Set<string> // SKUs to match for order_count mode
   }
 ): Promise<AuditResult & { subscriberId: string }> {
   const auditMode = options?.auditMode || 'sku_mapping'
@@ -717,15 +816,33 @@ export async function auditSubscriber(
     return { ...result, subscriberId }
   }
 
-  // Hybrid mode - try SKU mapping first
+  // Order count mode - count each Shopify order as an episode
+  if (auditMode === 'order_count') {
+    const orders = await fetchCustomerOrders(credentials, shopifyCustomerId, email)
+    const matchingSKUs = options?.matchingSKUs || new Set(Array.from(skuMap.keys()))
+    const result = analyzeOrderHistoryByCount(orders, matchingSKUs, email, shopifyCustomerId)
+    return { ...result, subscriberId }
+  }
+
+  // Hybrid mode - try SKU mapping first, fall back to order count
   if (auditMode === 'hybrid') {
     // First try SKU mapping via Shopify orders
     const orders = await fetchCustomerOrders(credentials, shopifyCustomerId, email)
     const skuResult = analyzeOrderHistory(orders, skuMap, patterns, email, shopifyCustomerId)
 
-    // If we got clean results with SKU mapping, use them
-    if (skuResult.status === 'clean' && skuResult.detectedSequences.length > 0) {
+    // If we got clean results with SKU mapping and multiple sequences, use them
+    // (If only 1 sequence detected, likely same-SKU scenario - fall back to order count)
+    const uniqueSequences = new Set(skuResult.detectedSequences)
+    if (skuResult.status === 'clean' && uniqueSequences.size > 1) {
       return { ...skuResult, subscriberId }
+    }
+
+    // Fall back to order count for same-SKU subscriptions
+    if (skuResult.detectedSequences.length > 0 && uniqueSequences.size === 1) {
+      // All orders map to same sequence - use order count instead
+      const matchingSKUs = options?.matchingSKUs || new Set(Array.from(skuMap.keys()))
+      const countResult = analyzeOrderHistoryByCount(orders, matchingSKUs, email, shopifyCustomerId)
+      return { ...countResult, subscriberId }
     }
 
     // Fall back to charge count if no SKU mapping results and we have Recharge creds

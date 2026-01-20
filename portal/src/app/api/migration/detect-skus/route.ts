@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
       access_token: shopifyIntegration.credentials_encrypted.access_token as string,
     }
 
-    // Get date filter from query params (default: last 2 years)
+    // Get date filter from query params (default: last 3 years)
     const searchParams = request.nextUrl.searchParams
-    const yearsBack = parseInt(searchParams.get('years') || '2', 10)
+    const yearsBack = parseInt(searchParams.get('years') || '3', 10)
     const sinceDate = new Date()
     sinceDate.setFullYear(sinceDate.getFullYear() - yearsBack)
 
