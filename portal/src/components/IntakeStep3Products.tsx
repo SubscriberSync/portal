@@ -18,6 +18,9 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  ArrowRight,
+  HelpCircle,
+  Undo2,
 } from 'lucide-react'
 
 interface Story {
@@ -267,6 +270,37 @@ export default function IntakeStep3Products({
     }
   }
 
+  const handleUnassign = async () => {
+    if (selectedVariations.size === 0) return
+
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/migration/products`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          variationIds: Array.from(selectedVariations),
+          storyId: null,
+          tierId: null,
+          variationType: 'subscription', // Reset to subscription so it shows in unassigned
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to unassign variations')
+      }
+
+      setSelectedVariations(new Set())
+      await fetchProducts()
+    } catch (error) {
+      console.error('Error unassigning variations:', error)
+      alert(error instanceof Error ? error.message : 'Failed to unassign variations')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const toggleSelection = (id: string) => {
     const newSelection = new Set(selectedVariations)
     if (newSelection.has(id)) {
@@ -409,6 +443,26 @@ export default function IntakeStep3Products({
           {/* Products found */}
           {stats.total > 0 && (
             <>
+              {/* How It Works - Instructional Guide */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex gap-3">
+                  <HelpCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-blue-800 font-medium mb-2">How to map your products:</p>
+                    <ol className="text-xs text-blue-700 space-y-1.5 list-decimal list-inside">
+                      <li><strong>Create a Story</strong> - Your subscription product (e.g., "Echoes of the Crucible")</li>
+                      <li><strong>Select products below</strong> - Click checkboxes next to products that belong to this story</li>
+                      <li><strong>Click a tier button</strong> - Assign selected products to a tier (e.g., "Ritual", "Vault")</li>
+                      <li><strong>Repeat</strong> until all subscription products are assigned</li>
+                    </ol>
+                    <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                      <Undo2 className="w-3 h-3" />
+                      Made a mistake? Select the product and click "Unassign" to remove it from a story.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Stories Section */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -430,10 +484,10 @@ export default function IntakeStep3Products({
                     <div className="flex gap-3">
                       <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                       <div>
-                        <p className="text-sm text-amber-800 font-medium">Create a story first</p>
+                        <p className="text-sm text-amber-800 font-medium">Step 1: Create a story first</p>
                         <p className="text-xs text-amber-700 mt-1">
-                          A story represents your subscription product (e.g., "Echoes of the Crucible").
-                          Create one to start assigning products.
+                          Click "+ Create Story" above to define your subscription product.
+                          Then you can assign the products below to it.
                         </p>
                       </div>
                     </div>
@@ -470,19 +524,28 @@ export default function IntakeStep3Products({
                               key={tier.id}
                               onClick={() => selectedVariations.size > 0 && handleAssignVariations(story.id, tier.id)}
                               disabled={selectedVariations.size === 0}
-                              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
                                 selectedVariations.size > 0
-                                  ? 'bg-accent/10 text-accent hover:bg-accent/20 cursor-pointer'
+                                  ? 'bg-accent text-white hover:bg-accent-hover cursor-pointer shadow-sm animate-pulse-subtle'
                                   : 'bg-background text-foreground-secondary cursor-default'
                               }`}
                             >
+                              {selectedVariations.size > 0 && (
+                                <Plus className="w-3 h-3 inline mr-1" />
+                              )}
                               {tier.name}
-                              {tier.is_default && (
+                              {tier.is_default && selectedVariations.size === 0 && (
                                 <span className="ml-1 text-xs opacity-60">(default)</span>
                               )}
                             </button>
                           ))}
                         </div>
+                        {selectedVariations.size > 0 && (
+                          <p className="text-xs text-accent mt-2 flex items-center gap-1">
+                            <ArrowRight className="w-3 h-3" />
+                            Click a tier to assign {selectedVariations.size} selected product{selectedVariations.size > 1 ? 's' : ''}
+                          </p>
+                        )}
 
                         {/* Show create tier form */}
                         {showCreateTier === story.id && (
@@ -559,29 +622,44 @@ export default function IntakeStep3Products({
 
                 {/* Selection Actions */}
                 {selectedVariations.size > 0 && (
-                  <div className="flex items-center gap-2 mb-3 p-3 bg-accent/10 rounded-lg">
-                    <span className="text-sm font-medium text-accent">
-                      {selectedVariations.size} selected
-                    </span>
-                    <div className="flex-1" />
-                    <button
-                      onClick={() => handleMarkAs('ignored')}
-                      className="px-2 py-1 text-xs text-foreground-tertiary hover:text-foreground"
-                    >
-                      Mark as Ignored
-                    </button>
-                    <button
-                      onClick={() => handleMarkAs('addon')}
-                      className="px-2 py-1 text-xs text-foreground-tertiary hover:text-foreground"
-                    >
-                      Mark as Addon
-                    </button>
-                    <button
-                      onClick={clearSelection}
-                      className="px-2 py-1 text-xs text-foreground-tertiary hover:text-foreground"
-                    >
-                      Clear
-                    </button>
+                  <div className="mb-3 p-3 bg-accent/10 rounded-lg border border-accent/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-accent">
+                        {selectedVariations.size} product{selectedVariations.size > 1 ? 's' : ''} selected
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-accent" />
+                      <span className="text-sm text-accent">
+                        Click a tier above to assign
+                      </span>
+                      <div className="flex-1" />
+                      <button
+                        onClick={clearSelection}
+                        className="px-2 py-1 text-xs text-foreground-tertiary hover:text-foreground"
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-foreground-tertiary">Or:</span>
+                      <button
+                        onClick={() => handleUnassign()}
+                        className="px-2 py-1 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded"
+                      >
+                        Unassign from story
+                      </button>
+                      <button
+                        onClick={() => handleMarkAs('ignored')}
+                        className="px-2 py-1 text-foreground-tertiary hover:text-foreground hover:bg-background-elevated rounded"
+                      >
+                        Mark as Ignored
+                      </button>
+                      <button
+                        onClick={() => handleMarkAs('addon')}
+                        className="px-2 py-1 text-foreground-tertiary hover:text-foreground hover:bg-background-elevated rounded"
+                      >
+                        Mark as One-time Addon
+                      </button>
+                    </div>
                   </div>
                 )}
 
