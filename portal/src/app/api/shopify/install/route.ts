@@ -5,15 +5,15 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { generateState, buildShopifyAuthUrl, getShopifyAppSecret } from '@/lib/oauth'
 
 /**
- * Shopify App Store Install Handler
+ * Shopify Install Handler
  * 
- * This endpoint handles the initial redirect when a merchant installs the app
- * from the Shopify App Store. It validates the request, checks for existing
- * installations, and redirects to Shopify OAuth.
+ * This endpoint handles both:
+ * 1. App Store installs (with HMAC validation)
+ * 2. Direct OAuth initiation (manual install URL)
  * 
  * Flow:
- * 1. Shopify App Store redirects merchant here with ?shop=xxx&hmac=xxx
- * 2. We validate the HMAC to ensure request is from Shopify
+ * 1. Validate shop domain format
+ * 2. If HMAC present, validate it (App Store flow)
  * 3. Check if shop already has an organization (re-install case)
  * 4. Store install context in cookie
  * 5. Redirect to Shopify OAuth authorization
@@ -93,22 +93,29 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Validate HMAC signature
-  let shopifySecret = ''
-  try {
-    shopifySecret = getShopifyAppSecret()
-  } catch (error) {
-    console.error('[Shopify Install] Missing Shopify app secret', error)
-    return NextResponse.redirect(
-      new URL('/error?message=Server+configuration+error', request.url)
-    )
-  }
+  // Validate HMAC signature if present (App Store installs include HMAC)
+  // For direct OAuth initiation (manual URL), HMAC is not required
+  const hmac = searchParams.get('hmac')
+  if (hmac) {
+    let shopifySecret = ''
+    try {
+      shopifySecret = getShopifyAppSecret()
+    } catch (error) {
+      console.error('[Shopify Install] Missing Shopify app secret', error)
+      return NextResponse.redirect(
+        new URL('/error?message=Server+configuration+error', request.url)
+      )
+    }
 
-  if (!validateShopifyHmac(searchParams, shopifySecret)) {
-    console.error('[Shopify Install] Invalid HMAC signature')
-    return NextResponse.redirect(
-      new URL('/error?message=Invalid+request+signature', request.url)
-    )
+    if (!validateShopifyHmac(searchParams, shopifySecret)) {
+      console.error('[Shopify Install] Invalid HMAC signature')
+      return NextResponse.redirect(
+        new URL('/error?message=Invalid+request+signature', request.url)
+      )
+    }
+    console.log('[Shopify Install] HMAC validated (App Store install)')
+  } else {
+    console.log('[Shopify Install] Direct OAuth initiation (no HMAC)')
   }
 
   // Check if this shop already has an organization (re-install case)
