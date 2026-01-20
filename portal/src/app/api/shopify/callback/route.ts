@@ -86,13 +86,36 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Parse install context
+  // Parse install context from cookie
   let context: InstallContext | null = null
   if (contextCookie) {
     try {
       context = JSON.parse(contextCookie)
     } catch {
       console.error('[Shopify Callback] Failed to parse context cookie')
+    }
+  }
+
+  // IMPORTANT: Always check database for existing org as fallback
+  // Cookies may not persist across cross-origin OAuth redirects
+  // Also handles case where org was created manually before Shopify install
+  const supabase = createServiceClient()
+  if (!context?.isReinstall && shop) {
+    const { data: existingOrg } = await supabase
+      .from('organizations')
+      .select('id, slug')
+      .eq('shopify_shop_domain', shop)
+      .single()
+
+    if (existingOrg) {
+      console.log('[Shopify Callback] Found existing org via DB lookup:', existingOrg.id)
+      context = {
+        shop,
+        isReinstall: true,
+        existingOrgId: existingOrg.id,
+        existingOrgSlug: existingOrg.slug,
+        existingClerkOrgId: existingOrg.id, // id IS the Clerk org ID in this schema
+      }
     }
   }
 
@@ -117,8 +140,7 @@ export async function GET(request: NextRequest) {
 
     console.log('[Shopify Callback] Shop info:', shopInfo.name, shopInfo.email)
 
-    const supabase = createServiceClient()
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.subscribersync.com'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://subscribersync.com'
 
     // Generate webhook secret
     const webhookSecret = crypto.randomBytes(32).toString('hex')
@@ -211,18 +233,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Create or update organization in Supabase
+    // Note: The 'id' column IS the Clerk org ID (they're the same in this schema)
     const { data: org, error: orgError } = await supabase
       .from('organizations')
       .upsert({
-        clerk_org_id: clerkOrgId,
+        id: clerkOrgId,
         name: shopInfo.name,
         slug: orgSlug,
         shopify_shop_domain: shop,
-        status: 'active',
+        status: 'Building',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
-        onConflict: 'clerk_org_id',
+        onConflict: 'id',
       })
       .select()
       .single()
@@ -232,7 +255,7 @@ export async function GET(request: NextRequest) {
       // Don't fail completely - the Clerk org exists
     }
 
-    const orgId = org?.id || clerkOrgId
+    const orgId = clerkOrgId // id IS the Clerk org ID
 
     // Store Shopify integration
     await supabase

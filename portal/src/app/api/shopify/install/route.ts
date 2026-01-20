@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceClient()
   const { data: existingOrg } = await supabase
     .from('organizations')
-    .select('id, slug, clerk_org_id')
+    .select('id, slug')
     .eq('shopify_shop_domain', shop)
     .single()
 
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
     isReinstall: !!existingOrg,
     existingOrgId: existingOrg?.id,
     existingOrgSlug: existingOrg?.slug,
-    existingClerkOrgId: existingOrg?.clerk_org_id,
+    existingClerkOrgId: existingOrg?.id, // id IS the Clerk org ID in this schema
   }), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
