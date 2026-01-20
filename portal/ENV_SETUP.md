@@ -34,10 +34,24 @@ DISCORD_BOT_TOKEN=your-bot-token
 DISCORD_ENCRYPTION_KEY=your-32-char-encryption-key
 ```
 
-### Integration OAuth (For Client Onboarding)
+### Shopify Integration
 ```
+# Shopify App credentials (from Shopify Partner Dashboard)
 SHOPIFY_CLIENT_ID=your-shopify-client-id
 SHOPIFY_CLIENT_SECRET=your-shopify-client-secret
+```
+
+**Shopify App Store Setup:**
+When configuring your Shopify app in the Partner Dashboard, set these URLs:
+- **App URL:** `https://your-domain.com/api/shopify/install`
+- **Allowed redirection URLs:** `https://your-domain.com/api/shopify/callback`
+- **GDPR webhooks:**
+  - Customer data request: `https://your-domain.com/api/webhooks/shopify/app`
+  - Customer data erasure: `https://your-domain.com/api/webhooks/shopify/app`
+  - Shop data erasure: `https://your-domain.com/api/webhooks/shopify/app`
+
+### Other Integration OAuth
+```
 RECHARGE_CLIENT_ID=your-recharge-client-id
 RECHARGE_CLIENT_SECRET=your-recharge-client-secret
 KLAVIYO_CLIENT_ID=your-klaviyo-client-id
