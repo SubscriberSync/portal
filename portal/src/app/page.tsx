@@ -78,7 +78,7 @@ export default async function HomePage({
           <div className="flex items-center gap-6">
             <Link
               href="/case-study/everlore-hollow"
-              className="px-4 py-2 text-sm text-[#a1a1aa] hover:text-white transition-colors"
+              className="px-3 py-1.5 text-sm font-medium rounded-full bg-[#e07a42]/10 text-[#e07a42] border border-[#e07a42]/30 hover:bg-[#e07a42]/20 hover:border-[#e07a42]/50 transition-colors"
             >
               Case Study
             </Link>
