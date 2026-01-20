@@ -923,7 +923,7 @@ export async function saveAuditResult(
     await supabase
       .from('subscribers')
       .update({
-        current_product_sequence: result.proposedNextBox - 1, // Current = last received
+        box_number: result.proposedNextBox - 1, // Current = last received
         migration_status: 'audited',
         updated_at: new Date().toISOString(),
       })
@@ -1177,7 +1177,7 @@ export async function resolveAuditRecord(
     await supabase
       .from('subscribers')
       .update({
-        current_product_sequence: resolvedNextBox - 1,
+        box_number: resolvedNextBox - 1,
         migration_status: 'resolved',
         updated_at: new Date().toISOString(),
       })
