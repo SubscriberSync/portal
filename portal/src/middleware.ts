@@ -17,6 +17,8 @@ const isPublicRoute = createRouteMatcher([
   // Public API routes
   '/api/webhooks(.*)',
   '/api/checkout(.*)',
+  '/api/shopify(.*)',
+  '/api/debug(.*)',
 
   // Checkout flow
   '/checkout(.*)',
