@@ -12,6 +12,7 @@
     "@clerk/nextjs": "^6.36.8",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
+    "@tanstack/react-table": "^8.21.3",
     "@tremor/react": "^4.0.0-beta-tremor-v4.4",
     "lucide-react": "^0.469.0",
     "next": "^16.1.3",
