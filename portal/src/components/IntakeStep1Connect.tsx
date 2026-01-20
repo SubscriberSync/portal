@@ -354,15 +354,7 @@ export default function IntakeStep1Connect({
                     <p className="text-xs font-medium text-[#A8A39B]">How to get your API token (takes 30 seconds):</p>
                     <ol className="text-xs text-[#6B6660] space-y-2 list-decimal list-inside">
                       <li>
-                        Open your{' '}
-                        <a
-                          href="https://admin.shopify.com/apps/recharge"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#5C6BC0] hover:underline"
-                        >
-                          Recharge app in Shopify
-                        </a>
+                        Open the <span className="text-[#F5F0E8]">Recharge app</span> from your Shopify admin
                       </li>
                       <li>
                         In the left sidebar, click <span className="text-[#F5F0E8]">Tools &amp; apps</span> <span className="text-[#A8A39B]">▼</span>
