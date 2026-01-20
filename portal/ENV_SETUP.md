@@ -50,18 +50,32 @@ When configuring your Shopify app in the Partner Dashboard, set these URLs:
   - Customer data erasure: `https://your-domain.com/api/webhooks/shopify/app`
   - Shop data erasure: `https://your-domain.com/api/webhooks/shopify/app`
 
-### Other Integration OAuth
+### Klaviyo Integration
 ```
-RECHARGE_CLIENT_ID=your-recharge-client-id
-RECHARGE_CLIENT_SECRET=your-recharge-client-secret
 KLAVIYO_CLIENT_ID=your-klaviyo-client-id
 KLAVIYO_CLIENT_SECRET=your-klaviyo-client-secret
 ```
 
+**Klaviyo App Setup:**
+When configuring your Klaviyo app (at https://developers.klaviyo.com/), add this redirect URL to the allowlist:
+- **OAuth Redirect URL:** `https://your-domain.com/api/auth/klaviyo/callback`
+
+**Important:** The domain must exactly match your `NEXT_PUBLIC_APP_URL` (no www if your app uses no www).
+
+### Recharge Integration
+```
+# Recharge uses API key authentication, no OAuth credentials needed
+```
+
 ### Application URLs
 ```
-NEXT_PUBLIC_APP_URL=https://your-domain.vercel.app
+NEXT_PUBLIC_APP_URL=https://your-domain.com
 ```
+
+**Important:** This URL is used for OAuth redirect URIs. It must:
+- Match exactly what's configured in Klaviyo, Shopify, and other OAuth app settings
+- Use the canonical domain (typically no `www.`)
+- Include `https://` prefix
 
 ## Setting Up for Development
 
