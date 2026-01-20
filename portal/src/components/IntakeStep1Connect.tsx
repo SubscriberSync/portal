@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, ChevronDown, ChevronUp, Zap, Loader2, ExternalLink, AlertCircle } from 'lucide-react'
 import { ClientOnboardingData } from '@/lib/intake-types'
 import ShippingProviderSection from './ShippingProviderSection'
@@ -64,6 +64,24 @@ export default function IntakeStep1Connect({
   const completedCount = steps.filter(s => s.done).length
   const allComplete = completedCount === steps.length
   const progressPercent = (completedCount / steps.length) * 100
+
+  // Automatically mark step1 complete when all integrations are connected
+  useEffect(() => {
+    if (allComplete && !onboardingData.step1Complete) {
+      // Mark step 1 as complete in the database
+      fetch('/api/onboarding/complete-step1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            onRefresh()
+          }
+        })
+        .catch(err => console.error('Failed to mark step1 complete:', err))
+    }
+  }, [allComplete, onboardingData.step1Complete, onRefresh])
 
   // Connect Recharge
   const handleConnectRecharge = async () => {
