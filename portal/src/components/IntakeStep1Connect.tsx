@@ -372,11 +372,11 @@ export default function IntakeStep1Connect({
                         Check these permissions: <span className="text-[#F5F0E8]">read_customers</span>, <span className="text-[#F5F0E8]">read_gift_products</span>, <span className="text-[#F5F0E8]">read_gift_purchases</span>, <span className="text-[#F5F0E8]">read_orders</span>, <span className="text-[#F5F0E8]">read_plans</span>, <span className="text-[#F5F0E8]">read_subscriptions</span>
                       </li>
                       <li>
-                        Copy the token and paste it below
+                        Click <span className="text-[#F5F0E8]">Save</span>, then copy the <span className="text-[#F5F0E8]">API key</span> and paste it below
                       </li>
                     </ol>
                     <p className="text-xs text-[#6B6660] mt-2 pt-2 border-t border-[rgba(245,240,232,0.06)]">
-                      <span className="text-amber-500">Note:</span> Use an <span className="text-[#F5F0E8]">Admin token</span>, not a Storefront token.
+                      <span className="text-amber-500">Note:</span> You only need the <span className="text-[#F5F0E8]">API key</span> (no client secret). Use an <span className="text-[#F5F0E8]">Admin token</span>, not a Storefront token.
                     </p>
                   </div>
                   
