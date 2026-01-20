@@ -362,6 +362,42 @@ export async function getIntegrations(organizationId: string): Promise<Integrati
   return (data || []) as Integration[]
 }
 
+export async function getAllIntegrations(): Promise<Integration[]> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase
+    .from('integrations')
+    .select('*')
+    .eq('connected', true)
+
+  if (error) {
+    console.error('[getAllIntegrations] Error:', error)
+    return []
+  }
+
+  return (data || []) as Integration[]
+}
+
+export async function deleteIntegration(
+  organizationId: string,
+  type: Integration['type']
+): Promise<boolean> {
+  const supabase = createServiceClient()
+
+  const { error } = await supabase
+    .from('integrations')
+    .delete()
+    .eq('organization_id', organizationId)
+    .eq('type', type)
+
+  if (error) {
+    console.error('[deleteIntegration] Error:', error)
+    return false
+  }
+
+  return true
+}
+
 export async function upsertIntegration(
   organizationId: string,
   type: Integration['type'],

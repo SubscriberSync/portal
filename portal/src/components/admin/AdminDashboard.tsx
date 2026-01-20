@@ -15,7 +15,7 @@ import {
   TestTube,
   Trash2,
 } from 'lucide-react'
-import { Organization } from '@/lib/supabase/data'
+import { Organization, Integration } from '@/lib/supabase/data'
 
 interface AdminDashboardProps {
   organizations: Organization[]
@@ -25,15 +25,22 @@ interface AdminDashboardProps {
     totalSubscribers: number
   }
   adminEmail: string
+  integrationsByOrg: Record<string, Integration[]>
 }
 
 export default function AdminDashboard({
   organizations,
   stats,
   adminEmail,
+  integrationsByOrg,
 }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [integrationToDelete, setIntegrationToDelete] = useState<{
+    orgId: string
+    orgName: string
+    type: Integration['type']
+  } | null>(null)
 
   const filteredOrgs = organizations.filter(org =>
     org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -106,6 +113,8 @@ export default function AdminDashboard({
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 onCreateNew={() => setShowCreateModal(true)}
+                integrationsByOrg={integrationsByOrg}
+                onDeleteIntegration={(orgId, orgName, type) => setIntegrationToDelete({ orgId, orgName, type })}
               />
             </TabPanel>
           </TabPanels>
@@ -115,6 +124,16 @@ export default function AdminDashboard({
       {/* Create Organization Modal */}
       {showCreateModal && (
         <CreateOrganizationModal onClose={() => setShowCreateModal(false)} />
+      )}
+
+      {/* Delete Integration Modal */}
+      {integrationToDelete && (
+        <DeleteIntegrationModal
+          orgId={integrationToDelete.orgId}
+          orgName={integrationToDelete.orgName}
+          integrationType={integrationToDelete.type}
+          onClose={() => setIntegrationToDelete(null)}
+        />
       )}
     </div>
   )
@@ -159,11 +178,15 @@ function OrganizationsTab({
   searchQuery,
   onSearchChange,
   onCreateNew,
+  integrationsByOrg,
+  onDeleteIntegration,
 }: {
   organizations: Organization[]
   searchQuery: string
   onSearchChange: (query: string) => void
   onCreateNew: () => void
+  integrationsByOrg: Record<string, Integration[]>
+  onDeleteIntegration: (orgId: string, orgName: string, type: Integration['type']) => void
 }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -222,6 +245,7 @@ function OrganizationsTab({
               <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Organization</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Status</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Subscription</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Integrations</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Onboarding</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-foreground-muted">Created</th>
               <th className="text-right px-6 py-4 text-sm font-medium text-foreground-muted">Actions</th>
@@ -244,6 +268,14 @@ function OrganizationsTab({
                     status={org.subscription_status}
                     isTestPortal={org.is_test_portal}
                     failedPayments={org.failed_payment_count}
+                  />
+                </td>
+                <td className="px-6 py-4">
+                  <IntegrationBadges
+                    integrations={integrationsByOrg[org.id] || []}
+                    orgId={org.id}
+                    orgName={org.name}
+                    onDelete={onDeleteIntegration}
                   />
                 </td>
                 <td className="px-6 py-4">
@@ -349,6 +381,204 @@ function SubscriptionBadge({
       {failedPayments && failedPayments > 0 && (
         <span className="text-xs text-red-400">({failedPayments} failed)</span>
       )}
+    </div>
+  )
+}
+
+// Integration Badges Component
+function IntegrationBadges({
+  integrations,
+  orgId,
+  orgName,
+  onDelete,
+}: {
+  integrations: Integration[]
+  orgId: string
+  orgName: string
+  onDelete: (orgId: string, orgName: string, type: Integration['type']) => void
+}) {
+  if (integrations.length === 0) {
+    return <span className="text-sm text-foreground-muted">None</span>
+  }
+
+  const colorMap: Record<Integration['type'], 'emerald' | 'blue' | 'violet' | 'amber' | 'pink'> = {
+    shopify: 'emerald',
+    recharge: 'blue',
+    klaviyo: 'violet',
+    discord: 'amber',
+    shipstation: 'pink',
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {integrations.map(integration => (
+        <button
+          key={integration.type}
+          onClick={() => onDelete(orgId, orgName, integration.type)}
+          className="group relative"
+          title={`Click to delete ${integration.type} integration`}
+        >
+          <Badge
+            color={colorMap[integration.type]}
+            size="sm"
+            className="cursor-pointer group-hover:opacity-80 transition-opacity"
+          >
+            {integration.type}
+          </Badge>
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            ×
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Delete Integration Modal
+function DeleteIntegrationModal({
+  orgId,
+  orgName,
+  integrationType,
+  onClose,
+}: {
+  orgId: string
+  orgName: string
+  integrationType: Integration['type']
+  onClose: () => void
+}) {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState<Record<string, number> | null>(null)
+
+  const dataWarnings: Record<Integration['type'], string[]> = {
+    recharge: [
+      'All subscribers with Recharge data will be deleted',
+      'Subscription status, prepaid info, and charge dates will be lost',
+    ],
+    shopify: [
+      'All subscribers with Shopify data will be deleted',
+      'All shipment records will be deleted',
+      'SKU aliases and product mappings will be deleted',
+      'Audit logs and migration history will be deleted',
+    ],
+    shipstation: [
+      'Tracking numbers and carrier info will be cleared from shipments',
+      'ShipStation order IDs will be removed',
+    ],
+    klaviyo: [
+      'Integration credentials will be removed',
+      'Email syncing will stop',
+    ],
+    discord: [
+      'Discord guild connection will be removed',
+      'Role mappings will be deleted',
+      'Customer Discord connections will be removed',
+      'Discord activity logs will be deleted',
+    ],
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/admin/integrations', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: orgId, integrationType }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        setResult(data.deleted)
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        setError(data.error || 'Failed to delete integration')
+        setIsDeleting(false)
+      }
+    } catch {
+      setError('Network error. Please try again.')
+      setIsDeleting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <Card className="w-full max-w-md bg-background-surface border-border ring-0">
+        {result ? (
+          <div className="text-center py-4">
+            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">Integration Deleted</h2>
+            <p className="text-foreground-secondary mb-4">
+              Successfully deleted {integrationType} integration from {orgName}
+            </p>
+            <div className="text-sm text-foreground-muted space-y-1">
+              {Object.entries(result).map(([key, count]) => (
+                <p key={key}>
+                  {key}: {count} records
+                </p>
+              ))}
+            </div>
+            <p className="text-sm text-foreground-muted mt-4">Refreshing...</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">Delete Integration</h2>
+                <p className="text-sm text-foreground-muted">
+                  {integrationType} • {orgName}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
+              <p className="text-sm font-medium text-red-400 mb-2">
+                Warning: This action cannot be undone!
+              </p>
+              <ul className="text-sm text-red-300 space-y-1">
+                {dataWarnings[integrationType].map((warning, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="text-red-400 mt-0.5">•</span>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-4">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-background-secondary text-foreground-tertiary hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Integration'}
+              </button>
+            </div>
+          </>
+        )}
+      </Card>
     </div>
   )
 }
