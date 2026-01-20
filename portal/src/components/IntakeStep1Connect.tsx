@@ -348,20 +348,42 @@ export default function IntakeStep1Connect({
                   <span className="text-sm text-[#5CB87A] font-medium">Connected</span>
                 </div>
               ) : showRechargeInput ? (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3 w-full max-w-md">
+                  {/* Step-by-step instructions */}
+                  <div className="bg-[#0D0D0D] rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-medium text-[#A8A39B]">How to get your API token:</p>
+                    <ol className="text-xs text-[#6B6660] space-y-1.5 list-decimal list-inside">
+                      <li>
+                        Open{' '}
+                        <a
+                          href="https://merchants.rechargeapps.com/settings/integrations/api"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#5C6BC0] hover:underline"
+                        >
+                          Recharge API Settings
+                        </a>
+                      </li>
+                      <li>Click <span className="text-[#F5F0E8]">&quot;Create API token&quot;</span></li>
+                      <li>Name it <span className="text-[#F5F0E8]">&quot;SubscriberSync&quot;</span></li>
+                      <li>Enable <span className="text-[#F5F0E8]">Read access</span> for customers and subscriptions</li>
+                      <li>Copy the token and paste it below</li>
+                    </ol>
+                  </div>
+                  
                   <div className="flex items-center gap-2">
                     <input
                       type="password"
-                      placeholder="Recharge API Key"
+                      placeholder="Paste your Recharge API token"
                       value={rechargeApiKey}
                       onChange={(e) => setRechargeApiKey(e.target.value)}
-                      className="px-3 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] text-sm placeholder-[#6B6660] focus:outline-none focus:border-[#5C6BC0]/50 w-56"
+                      className="flex-1 px-3 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.08)] text-[#F5F0E8] text-sm placeholder-[#6B6660] focus:outline-none focus:border-[#5C6BC0]/50 font-mono"
                       onKeyDown={(e) => e.key === 'Enter' && handleConnectRecharge()}
                     />
                     <button
                       onClick={handleConnectRecharge}
                       disabled={isConnectingRecharge || !rechargeApiKey.trim()}
-                      className="px-4 py-2 rounded-lg bg-[#5C6BC0] hover:bg-[#4a5ab0] text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+                      className="px-4 py-2 rounded-lg bg-[#5C6BC0] hover:bg-[#4a5ab0] text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                     >
                       {isConnectingRecharge ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -373,14 +395,22 @@ export default function IntakeStep1Connect({
                   {rechargeError && (
                     <p className="text-xs text-red-400">{rechargeError}</p>
                   )}
-                  <a
-                    href="https://support.rechargepayments.com/hc/en-us/articles/360008683274-Creating-an-API-Token"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[#6B6660] hover:text-[#C9A962] flex items-center gap-1"
-                  >
-                    How to get your API key <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setShowRechargeInput(false)}
+                      className="text-xs text-[#6B6660] hover:text-[#A8A39B]"
+                    >
+                      Cancel
+                    </button>
+                    <a
+                      href="https://support.rechargepayments.com/hc/en-us/articles/360008683274-Creating-an-API-Token"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#6B6660] hover:text-[#C9A962] flex items-center gap-1"
+                    >
+                      Need help? <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
               ) : (
                 <button
