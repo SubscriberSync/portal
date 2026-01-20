@@ -116,9 +116,15 @@ export async function exchangeKlaviyoCode(
   redirectUri: string
 ): Promise<{ access_token: string; refresh_token: string; expires_in: number } | null> {
   try {
+    // Klaviyo requires Basic auth header with base64 encoded client_id:client_secret
+    const credentials = Buffer.from(
+      `${OAUTH_CONFIG.klaviyo.clientId}:${OAUTH_CONFIG.klaviyo.clientSecret}`
+    ).toString('base64')
+
     const response = await fetch(OAUTH_CONFIG.klaviyo.tokenUrl, {
       method: 'POST',
       headers: {
+        'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
@@ -126,8 +132,6 @@ export async function exchangeKlaviyoCode(
         code: code,
         code_verifier: codeVerifier,
         redirect_uri: redirectUri,
-        client_id: OAUTH_CONFIG.klaviyo.clientId,
-        client_secret: OAUTH_CONFIG.klaviyo.clientSecret,
       }).toString(),
     })
 
@@ -148,16 +152,20 @@ export async function refreshKlaviyoToken(
   refreshToken: string
 ): Promise<{ access_token: string; refresh_token: string; expires_in: number } | null> {
   try {
+    // Klaviyo requires Basic auth header with base64 encoded client_id:client_secret
+    const credentials = Buffer.from(
+      `${OAUTH_CONFIG.klaviyo.clientId}:${OAUTH_CONFIG.klaviyo.clientSecret}`
+    ).toString('base64')
+
     const response = await fetch(OAUTH_CONFIG.klaviyo.tokenUrl, {
       method: 'POST',
       headers: {
+        'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
-        client_id: OAUTH_CONFIG.klaviyo.clientId,
-        client_secret: OAUTH_CONFIG.klaviyo.clientSecret,
       }).toString(),
     })
 
