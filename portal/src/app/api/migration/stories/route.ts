@@ -141,3 +141,91 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+/**
+ * DELETE /api/migration/stories
+ *
+ * Delete a story and all its tiers
+ */
+export async function DELETE(request: NextRequest) {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = createServiceClient()
+
+  try {
+    const body = await request.json()
+    const { storyId } = body as { storyId: string }
+
+    if (!storyId) {
+      return NextResponse.json({ error: 'storyId is required' }, { status: 400 })
+    }
+
+    // Verify story belongs to org
+    const { data: story } = await supabase
+      .from('stories')
+      .select('id')
+      .eq('id', storyId)
+      .eq('organization_id', orgId)
+      .single()
+
+    if (!story) {
+      return NextResponse.json({ error: 'Story not found' }, { status: 404 })
+    }
+
+    // Unassign any products from this story's tiers first
+    const { data: tiers } = await supabase
+      .from('story_tiers')
+      .select('id')
+      .eq('story_id', storyId)
+
+    if (tiers && tiers.length > 0) {
+      const tierIds = tiers.map(t => t.id)
+      await supabase
+        .from('product_variations')
+        .update({ story_id: null, tier_id: null })
+        .in('tier_id', tierIds)
+    }
+
+    // Also unassign any products directly assigned to this story
+    await supabase
+      .from('product_variations')
+      .update({ story_id: null, tier_id: null })
+      .eq('story_id', storyId)
+
+    // Delete all tiers for this story (cascade should handle this, but be explicit)
+    await supabase
+      .from('story_tiers')
+      .delete()
+      .eq('story_id', storyId)
+
+    // Delete the story
+    const { error } = await supabase
+      .from('stories')
+      .delete()
+      .eq('id', storyId)
+      .eq('organization_id', orgId)
+
+    if (error) {
+      throw new Error(`Failed to delete story: ${error.message}`)
+    }
+
+    // If this was the default story, clear it from the organization
+    await supabase
+      .from('organizations')
+      .update({ default_story_id: null })
+      .eq('id', orgId)
+      .eq('default_story_id', storyId)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting story:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+}

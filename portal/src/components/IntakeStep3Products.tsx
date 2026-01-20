@@ -440,6 +440,43 @@ export default function IntakeStep3Products({
     }
   }
 
+  const handleDeleteStory = async (storyId: string, storyName: string) => {
+    // Check if any products are assigned to this story
+    const assignedProducts = variations.filter(v => v.story_id === storyId)
+
+    if (assignedProducts.length > 0) {
+      const confirmed = window.confirm(
+        `"${storyName}" has ${assignedProducts.length} product(s) assigned to it. ` +
+        `Deleting this subscription will unassign those products. Continue?`
+      )
+      if (!confirmed) return
+    } else {
+      const confirmed = window.confirm(`Delete the "${storyName}" subscription?`)
+      if (!confirmed) return
+    }
+
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/migration/stories`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storyId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete subscription')
+      }
+
+      await fetchProducts()
+    } catch (error) {
+      console.error('Error deleting story:', error)
+      alert(error instanceof Error ? error.message : 'Failed to delete subscription')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleAssignVariations = async (storyId: string, tierId?: string) => {
     if (selectedVariations.size === 0) return
 
@@ -773,13 +810,22 @@ export default function IntakeStep3Products({
                                 : 'Recurring'}
                             </p>
                           </div>
-                          <button
-                            onClick={() => setShowCreateTier(story.id)}
-                            className="text-xs text-foreground-tertiary hover:text-foreground flex items-center gap-1"
-                          >
-                            <Plus className="w-3 h-3" />
-                            Add Tier
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setShowCreateTier(story.id)}
+                              className="text-xs text-foreground-tertiary hover:text-foreground flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Add Tier
+                            </button>
+                            <button
+                              onClick={() => handleDeleteStory(story.id, story.name)}
+                              className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                              title="Delete subscription"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Tiers */}
