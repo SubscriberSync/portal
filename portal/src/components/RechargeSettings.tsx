@@ -21,6 +21,32 @@ export default function RechargeSettings({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [syncResult, setSyncResult] = useState<{ customers: number; subscriptions: number } | null>(null)
+  const [recalculating, setRecalculating] = useState(false)
+  const [recalcResult, setRecalcResult] = useState<{ updated: number; total: number } | null>(null)
+
+  const handleRecalculate = async () => {
+    setRecalculating(true)
+    setError(null)
+    setRecalcResult(null)
+
+    try {
+      const res = await fetch('/api/integrations/recharge/recalculate', {
+        method: 'POST',
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Recalculation failed')
+      }
+
+      setRecalcResult({ updated: data.updated, total: data.total })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Recalculation failed')
+    } finally {
+      setRecalculating(false)
+    }
+  }
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -112,6 +138,52 @@ export default function RechargeSettings({
           </span>
         </div>
       </div>
+
+      {/* Connected Actions */}
+      {connected && !showForm && (
+        <div className="border-t border-[rgba(255,255,255,0.06)] p-4 space-y-3">
+          {/* Recalculate Result */}
+          {recalcResult && (
+            <div className="flex items-center gap-2 text-sm text-[#5CB87A] bg-[#5CB87A]/10 rounded-lg p-3">
+              <Check className="w-4 h-4 flex-shrink-0" />
+              <span>Recalculated {recalcResult.updated} of {recalcResult.total} prepaid subscriptions</span>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && !showForm && (
+            <div className="flex items-center gap-2 text-sm text-[#ef4444] bg-[#ef4444]/10 rounded-lg p-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRecalculate}
+              disabled={recalculating}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white hover:bg-[rgba(255,255,255,0.1)] transition-colors disabled:opacity-50"
+            >
+              {recalculating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Recalculating...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="text-sm">Recalculate Episodes</span>
+                </>
+              )}
+            </button>
+            <span className="text-xs text-[#52525b]">
+              Updates prepaid episode counts from Recharge
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Connection Form */}
       {showForm && (

@@ -148,68 +148,84 @@ async function initialSync(
   let subscriptionCount = 0
 
   try {
-    // Fetch customers with pagination
-    let nextCursor: string | null = null
-    do {
-      const url = new URL(`${RECHARGE_API_BASE}/customers`)
-      url.searchParams.set('limit', '250')
-      if (nextCursor) url.searchParams.set('cursor', nextCursor)
+    // Fetch ALL customers with pagination (both ACTIVE and INACTIVE)
+    // Recharge's /customers endpoint filters by status, so we need to fetch both
+    const customerStatuses = ['ACTIVE', 'INACTIVE']
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          'X-Recharge-Access-Token': apiKey,
-          'X-Recharge-Version': '2021-11',
-        },
-      })
+    for (const customerStatus of customerStatuses) {
+      let nextCursor: string | null = null
+      do {
+        const url = new URL(`${RECHARGE_API_BASE}/customers`)
+        url.searchParams.set('limit', '250')
+        url.searchParams.set('status', customerStatus)
+        if (nextCursor) url.searchParams.set('cursor', nextCursor)
 
-      if (!response.ok) break
-
-      const data = await response.json()
-      const customers = data.customers || []
-
-      // Upsert customers to subscribers table
-      for (const customer of customers) {
-        await supabase.from('subscribers').upsert(
-          {
-            organization_id: orgId,
-            email: customer.email.toLowerCase(),
-            first_name: customer.first_name,
-            last_name: customer.last_name,
-            phone: customer.phone || null,
-            address1: customer.billing_address1 || null,
-            address2: customer.billing_address2 || null,
-            city: customer.billing_city || null,
-            state: customer.billing_province || null,
-            zip: customer.billing_zip || null,
-            country: customer.billing_country || 'US',
-            recharge_customer_id: customer.id.toString(),
-            shopify_customer_id: customer.shopify_customer_id?.toString() || null,
-            subscribed_at: customer.created_at,
-            migration_status: 'pending',
-            updated_at: new Date().toISOString(),
+        const response = await fetch(url.toString(), {
+          headers: {
+            'X-Recharge-Access-Token': apiKey,
+            'X-Recharge-Version': '2021-11',
           },
-          {
-            onConflict: 'organization_id,email',
-          }
-        )
-        customerCount++
-      }
+        })
 
-      // Check for next page
-      nextCursor = data.next_cursor || null
-    } while (nextCursor)
+        if (!response.ok) {
+          console.log(`[Recharge] Failed to fetch ${customerStatus} customers:`, response.status)
+          break
+        }
+
+        const data = await response.json()
+        const customers = data.customers || []
+
+        console.log(`[Recharge] Fetched ${customers.length} ${customerStatus} customers`)
+
+        // Upsert customers to subscribers table
+        for (const customer of customers) {
+          // Determine subscriber status from Recharge customer status
+          const subscriberStatus: 'Active' | 'Cancelled' | 'Expired' =
+            customerStatus === 'INACTIVE' ? 'Cancelled' : 'Active'
+
+          await supabase.from('subscribers').upsert(
+            {
+              organization_id: orgId,
+              email: customer.email.toLowerCase(),
+              first_name: customer.first_name,
+              last_name: customer.last_name,
+              phone: customer.phone || null,
+              address1: customer.billing_address1 || null,
+              address2: customer.billing_address2 || null,
+              city: customer.billing_city || null,
+              state: customer.billing_province || null,
+              zip: customer.billing_zip || null,
+              country: customer.billing_country || 'US',
+              recharge_customer_id: customer.id.toString(),
+              shopify_customer_id: customer.shopify_customer_id?.toString() || null,
+              subscribed_at: customer.created_at,
+              status: subscriberStatus,
+              migration_status: 'pending',
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: 'organization_id,email',
+            }
+          )
+          customerCount++
+        }
+
+        // Check for next page
+        nextCursor = data.next_cursor || null
+      } while (nextCursor)
+    }
 
     // Fetch ALL subscriptions (not just ACTIVE) to include cancelled/expired with remaining shipments
     // We need to fetch each status separately since Recharge doesn't support multiple statuses
     const statuses = ['ACTIVE', 'CANCELLED', 'EXPIRED']
 
     for (const status of statuses) {
-      nextCursor = null
+      let subCursor: string | null = null
       do {
         const url = new URL(`${RECHARGE_API_BASE}/subscriptions`)
         url.searchParams.set('limit', '250')
         url.searchParams.set('status', status)
-        if (nextCursor) url.searchParams.set('cursor', nextCursor)
+        if (subCursor) url.searchParams.set('cursor', subCursor)
 
         const response = await fetch(url.toString(), {
           headers: {
@@ -231,9 +247,13 @@ async function initialSync(
           const isPrepaid = detectPrepaidSubscription(sub)
           const prepaidTotal = isPrepaid ? calculatePrepaidTotal(sub) : null
 
-          // Get charge count to calculate orders remaining
-          const chargeCount = await fetchChargeCount(apiKey, sub.customer_id, sub.id)
-          const ordersRemaining = prepaidTotal ? Math.max(0, prepaidTotal - chargeCount) : null
+          // Estimate orders delivered based on subscription creation date and order interval
+          // This avoids making individual API calls per subscription (which is slow)
+          // The charge/success webhook will update counts accurately going forward
+          const ordersDelivered = isPrepaid ? estimateOrdersDelivered(sub) : null
+          const ordersRemaining = prepaidTotal && ordersDelivered !== null
+            ? Math.max(0, prepaidTotal - ordersDelivered)
+            : null
 
           // Determine effective status:
           // - ACTIVE subscriptions are always Active
@@ -270,8 +290,8 @@ async function initialSync(
           subscriptionCount++
         }
 
-        nextCursor = data.next_cursor || null
-      } while (nextCursor)
+        subCursor = data.next_cursor || null
+      } while (subCursor)
     }
 
     console.log(`[Recharge] Initial sync: ${customerCount} customers, ${subscriptionCount} subscriptions`)
@@ -335,33 +355,42 @@ function calculatePrepaidTotal(sub: {
   return 12 // Assume yearly prepaid with monthly shipments
 }
 
-// Fetch count of successful charges for a subscription
-async function fetchChargeCount(
-  apiKey: string,
-  customerId: number,
-  subscriptionId: number
-): Promise<number> {
-  try {
-    const url = new URL(`${RECHARGE_API_BASE}/charges`)
-    url.searchParams.set('customer_id', customerId.toString())
-    url.searchParams.set('subscription_id', subscriptionId.toString())
-    url.searchParams.set('status', 'SUCCESS')
-    url.searchParams.set('limit', '250')
+// Estimate how many orders have been delivered based on subscription creation date
+// This is used for initial sync to avoid slow per-subscription API calls
+// The charge/success webhook updates this accurately going forward
+function estimateOrdersDelivered(sub: {
+  created_at: string
+  order_interval_unit: string
+  order_interval_frequency: number
+  status: string
+  cancelled_at?: string | null
+}): number {
+  const createdAt = new Date(sub.created_at)
+  const now = new Date()
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'X-Recharge-Access-Token': apiKey,
-        'X-Recharge-Version': '2021-11',
-      },
-    })
+  // If cancelled, count up to cancellation date instead of now
+  const endDate = sub.cancelled_at ? new Date(sub.cancelled_at) : now
 
-    if (!response.ok) return 0
+  // Calculate months elapsed
+  const msElapsed = endDate.getTime() - createdAt.getTime()
+  const daysElapsed = msElapsed / (1000 * 60 * 60 * 24)
 
-    const data = await response.json()
-    return (data.charges || []).length
-  } catch {
-    return 0
+  let intervalsElapsed = 0
+
+  if (sub.order_interval_unit === 'month') {
+    // For monthly intervals, calculate based on months
+    const monthsElapsed = (endDate.getFullYear() - createdAt.getFullYear()) * 12
+      + (endDate.getMonth() - createdAt.getMonth())
+    intervalsElapsed = Math.floor(monthsElapsed / sub.order_interval_frequency)
+  } else if (sub.order_interval_unit === 'week') {
+    const weeksElapsed = Math.floor(daysElapsed / 7)
+    intervalsElapsed = Math.floor(weeksElapsed / sub.order_interval_frequency)
+  } else if (sub.order_interval_unit === 'day') {
+    intervalsElapsed = Math.floor(daysElapsed / sub.order_interval_frequency)
   }
+
+  // Add 1 for the initial order (subscription starts with first delivery)
+  return Math.max(1, intervalsElapsed + 1)
 }
 
 function mapFrequency(unit: string, frequency: number): 'Monthly' | 'Quarterly' | 'Yearly' | null {

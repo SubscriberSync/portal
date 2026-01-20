@@ -302,7 +302,7 @@ async function handleChargeEvent(
   orgId: string,
   charge: RechargeCharge
 ) {
-  // On successful charge, increment box number
+  // On successful charge, increment box number and decrement orders_remaining for prepaid
   if (charge.status === 'SUCCESS') {
     const { data: subscriber } = await supabase
       .from('subscribers')
@@ -314,18 +314,31 @@ async function handleChargeEvent(
     if (subscriber) {
       const newBoxNumber = (subscriber.box_number || 0) + 1
 
+      const updateData: Record<string, unknown> = {
+        box_number: newBoxNumber,
+        updated_at: new Date().toISOString(),
+      }
+
+      // For prepaid subscriptions, decrement orders_remaining
+      if (subscriber.is_prepaid && subscriber.orders_remaining !== null && subscriber.orders_remaining > 0) {
+        updateData.orders_remaining = subscriber.orders_remaining - 1
+
+        // If this was the last prepaid order, mark as Expired
+        if (subscriber.orders_remaining === 1) {
+          updateData.status = 'Expired'
+        }
+      }
+
       await supabase
         .from('subscribers')
-        .update({
-          box_number: newBoxNumber,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', subscriber.id)
 
       // Sync to Klaviyo with new box number
       await syncSubscriberToKlaviyo({
         ...subscriber,
         box_number: newBoxNumber,
+        orders_remaining: updateData.orders_remaining ?? subscriber.orders_remaining,
       } as Subscriber)
     }
   }
