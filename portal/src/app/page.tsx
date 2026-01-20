@@ -75,12 +75,21 @@ export default async function HomePage({
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="SubscriberSync" className="h-8" />
           </div>
-          <Link
-            href="/sign-in"
-            className="px-4 py-2 text-sm text-[#a1a1aa] hover:text-white transition-colors"
-          >
-            Sign In
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/case-study/everlore-hollow"
+              className="px-4 py-2 text-sm text-[#a1a1aa] hover:text-white transition-colors flex items-center gap-2"
+            >
+              <span className="hidden sm:inline">Case Study:</span>
+              <span className="text-[#e07a42]">15% Shipping Savings</span>
+            </Link>
+            <Link
+              href="/sign-in"
+              className="px-4 py-2 text-sm text-[#a1a1aa] hover:text-white transition-colors"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -226,6 +235,9 @@ export default async function HomePage({
               <img src="/logo.svg" alt="SubscriberSync" className="h-6" />
             </div>
             <div className="flex items-center gap-6 text-sm text-[#666]">
+              <Link href="/case-study/everlore-hollow" className="hover:text-white transition-colors">
+                Case Study
+              </Link>
               <a href="mailto:support@subscribersync.com" className="hover:text-white transition-colors">
                 Contact
               </a>
