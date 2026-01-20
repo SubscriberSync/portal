@@ -42,6 +42,7 @@ export default function IntakeStep1Connect({
   const [installmentName, setInstallmentName] = useState(initialInstallmentName || '')
   const [isSavingInstallment, setIsSavingInstallment] = useState(false)
   const [installmentSaved, setInstallmentSaved] = useState(!!initialInstallmentName)
+  const [klaviyoSkipped, setKlaviyoSkipped] = useState(false)
 
   const shopifyIntegration = integrations.find(i => i.type === 'shopify')
   const klaviyoIntegration = integrations.find(i => i.type === 'klaviyo')
@@ -457,22 +458,40 @@ export default function IntakeStep1Connect({
                   <Check className="w-4 h-4 text-[#5CB87A]" />
                   <span className="text-sm text-[#5CB87A] font-medium">Connected</span>
                 </div>
+              ) : klaviyoSkipped ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-[#6B6660]">Skipped</span>
+                  <button
+                    onClick={() => setKlaviyoSkipped(false)}
+                    className="text-xs text-[#C9A962] hover:text-[#D4B872]"
+                  >
+                    Connect instead
+                  </button>
+                </div>
               ) : (
-                <button
-                  onClick={handleConnectKlaviyo}
-                  disabled={isConnectingKlaviyo}
-                  className="px-4 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.15)] hover:border-[rgba(245,240,232,0.25)] text-[#F5F0E8] font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
-                >
-                  {isConnectingKlaviyo ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <ExternalLink className="w-4 h-4" />
-                  )}
-                  Connect Klaviyo
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleConnectKlaviyo}
+                    disabled={isConnectingKlaviyo}
+                    className="px-4 py-2 rounded-lg bg-[#0D0D0D] border border-[rgba(245,240,232,0.15)] hover:border-[rgba(245,240,232,0.25)] text-[#F5F0E8] font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isConnectingKlaviyo ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ExternalLink className="w-4 h-4" />
+                    )}
+                    Connect
+                  </button>
+                  <button
+                    onClick={() => setKlaviyoSkipped(true)}
+                    className="px-4 py-2 rounded-lg border border-[rgba(245,240,232,0.08)] hover:border-[rgba(245,240,232,0.15)] text-[#6B6660] hover:text-[#A8A39B] font-medium text-sm transition-colors"
+                  >
+                    Skip
+                  </button>
+                </div>
               )}
             </div>
-            {!isKlaviyoConnected && (
+            {!isKlaviyoConnected && !klaviyoSkipped && (
               <p className="mt-3 text-xs text-[#6B6660] pl-13">
                 You can skip this and connect Klaviyo later from Settings. The app works fully without it.
               </p>
