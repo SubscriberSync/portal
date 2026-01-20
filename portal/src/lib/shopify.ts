@@ -40,7 +40,7 @@ export async function getShopInfo(
   accessToken: string
 ): Promise<ShopifyShop | null> {
   try {
-    const response = await fetch(`https://${shop}/admin/api/2024-01/shop.json`, {
+    const response = await fetch(`https://${shop}/admin/api/2025-01/shop.json`, {
       method: 'GET',
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -71,7 +71,7 @@ export async function registerShopifyWebhook(
   address: string
 ): Promise<boolean> {
   try {
-    const response = await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
+    const response = await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
       method: 'POST',
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -112,7 +112,7 @@ export async function listShopifyWebhooks(
   accessToken: string
 ): Promise<{ id: number; topic: string; address: string }[]> {
   try {
-    const response = await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
+    const response = await fetch(`https://${shop}/admin/api/2025-01/webhooks.json`, {
       method: 'GET',
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -143,7 +143,7 @@ export async function deleteShopifyWebhook(
 ): Promise<boolean> {
   try {
     const response = await fetch(
-      `https://${shop}/admin/api/2024-01/webhooks/${webhookId}.json`,
+      `https://${shop}/admin/api/2025-01/webhooks/${webhookId}.json`,
       {
         method: 'DELETE',
         headers: {

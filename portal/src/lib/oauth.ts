@@ -7,7 +7,10 @@ export const OAUTH_CONFIG = {
   shopify: {
     clientId: process.env.SHOPIFY_CLIENT_ID!,
     clientSecret: process.env.SHOPIFY_CLIENT_SECRET!,
-    scopes: 'read_customers,write_customers,read_inventory,read_orders,write_orders,read_product_listings,read_products',
+    // Minimal scopes required for order/customer sync
+    // read_customers: Sync customer data from webhooks
+    // read_orders: Sync order data from webhooks  
+    scopes: 'read_customers,read_orders',
     callbackPath: '/api/auth/shopify/callback',
   },
   klaviyo: {

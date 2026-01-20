@@ -185,11 +185,18 @@ async function handleAppUninstalled(
     return
   }
 
-  // Mark integration as disconnected (don't delete - preserve data)
+  // Mark integration as disconnected and clear sensitive credentials
+  // Per Shopify requirements, access tokens should be deleted on uninstall
   await supabase
     .from('integrations')
     .update({
       connected: false,
+      credentials_encrypted: {
+        // Keep non-sensitive metadata for re-install detection
+        shop: (payload.myshopify_domain || shopDomain),
+        uninstalled_at: new Date().toISOString(),
+        // Access token is removed - will need re-auth on reinstall
+      },
       updated_at: new Date().toISOString(),
     })
     .eq('organization_id', organizationId)
