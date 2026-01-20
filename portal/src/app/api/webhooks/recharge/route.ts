@@ -331,7 +331,7 @@ async function handleChargeEvent(
   orgId: string,
   charge: RechargeCharge
 ) {
-  // On successful charge, increment box number and decrement orders_remaining for prepaid
+  // On successful charge, handle box number incrementing and decrement orders_remaining for prepaid
   if (charge.status === 'SUCCESS') {
     const { data: subscriber } = await supabase
       .from('subscribers')
@@ -341,7 +341,25 @@ async function handleChargeEvent(
       .single()
 
     if (subscriber) {
-      const newBoxNumber = (subscriber.box_number || 0) + 1
+      // Get current charge SKU
+      const currentChargeSku = charge.line_items[0]?.sku?.toLowerCase()
+
+      // Check if this subscriber has been audited (migration_status indicates forensic audit was run)
+      const hasBeenAudited = subscriber.migration_status === 'audited' || subscriber.migration_status === 'resolved'
+
+      let newBoxNumber = subscriber.box_number || 1
+
+      // For audited subscribers with same-SKU subscriptions, don't increment box_number
+      // The forensic audit system will handle episode counting based on order quantity
+      if (!hasBeenAudited || !currentChargeSku) {
+        // Not audited yet, or no SKU - use old logic (increment)
+        newBoxNumber = (subscriber.box_number || 0) + 1
+      } else {
+        // Check if this charge has a different SKU than what we expect for current box
+        // For now, assume same-SKU subscriptions don't increment box_number
+        // This will be corrected by re-running the forensic audit after each charge
+        // TODO: Implement more sophisticated SKU change detection
+      }
 
       const updateData: Record<string, unknown> = {
         box_number: newBoxNumber,
@@ -369,6 +387,45 @@ async function handleChargeEvent(
         box_number: newBoxNumber,
         orders_remaining: updateData.orders_remaining ?? subscriber.orders_remaining,
       } as Subscriber)
+
+      // For audited subscribers, re-run forensic audit to update episode counting
+      if (hasBeenAudited && subscriber.shopify_customer_id) {
+        try {
+          console.log(`[Recharge Webhook] Re-auditing subscriber ${subscriber.id} after charge ${charge.id}`)
+          // Import the audit function dynamically to avoid circular dependencies
+          const { auditSubscriber } = await import('@/lib/forensic-audit')
+
+          // Get organization credentials
+          const { data: shopifyIntegration } = await supabase
+            .from('integrations')
+            .select('credentials_encrypted')
+            .eq('organization_id', orgId)
+            .eq('type', 'shopify')
+            .eq('connected', true)
+            .single()
+
+          if (shopifyIntegration?.credentials_encrypted) {
+            const shopifyCredentials = {
+              shop: shopifyIntegration.credentials_encrypted.shop as string,
+              access_token: shopifyIntegration.credentials_encrypted.access_token as string,
+            }
+
+            // Re-run audit for this subscriber
+            await auditSubscriber(
+              orgId,
+              shopifyCredentials,
+              new Map(), // SKU map - will be loaded internally
+              [], // patterns - will be loaded internally
+              subscriber.id,
+              subscriber.shopify_customer_id,
+              subscriber.email
+            )
+          }
+        } catch (error) {
+          console.error(`[Recharge Webhook] Failed to re-audit subscriber ${subscriber.id}:`, error)
+          // Don't fail the webhook, just log the error
+        }
+      }
     }
   }
 }
