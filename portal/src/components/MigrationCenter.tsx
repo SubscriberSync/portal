@@ -208,6 +208,10 @@ export default function MigrationCenter({
   // Mapping state
   const [pendingMappings, setPendingMappings] = useState<Map<string, number>>(new Map())
   const [showPatternForm, setShowPatternForm] = useState(false)
+
+  // Reset state
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [newPattern, setNewPattern] = useState<{ pattern: string; type: 'contains' | 'regex' | 'starts_with' | 'ends_with'; sequence: number }>({ pattern: '', type: 'contains', sequence: 0 })
 
   // Check AI availability on mount
@@ -529,6 +533,41 @@ export default function MigrationCenter({
     }
   }
 
+  const resetMigration = async (full: boolean = false) => {
+    setResetting(true)
+    try {
+      const res = await fetch('/api/migration/reset', {
+        method: full ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (res.ok) {
+        // Reset all local state
+        setStep('mapping')
+        setMigrationRun(null)
+        setAuditStats({ total: 0, clean: 0, flagged: 0, resolved: 0, unmapped: 0 })
+        setFlaggedLogs([])
+        setUnmappedItems([])
+        setAuditProgress(0)
+        setSelectedLog(null)
+        setAiExplanation(null)
+        if (full) {
+          setSkuAliases([])
+          setDetectedSkus([])
+          setPendingMappings(new Map())
+          setPatterns([])
+        }
+        setShowResetConfirm(false)
+        // Reload the page to get fresh data
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Failed to reset migration:', error)
+    } finally {
+      setResetting(false)
+    }
+  }
+
   // AI Functions
   const requestAiExplanation = async (logId: string) => {
     setAiLoading(true)
@@ -641,12 +680,23 @@ export default function MigrationCenter({
                 : `Step ${['mapping', 'audit', 'review', 'complete'].indexOf(step) + 1} of 4`}
             </p>
           </div>
-          {aiAvailable && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20">
-              <Sparkles className="w-4 h-4 text-[#5865F2]" />
-              <span className="text-sm text-[#5865F2]">AI Assist Available</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {aiAvailable && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#5865F2]/10 border border-[#5865F2]/20">
+                <Sparkles className="w-4 h-4 text-[#5865F2]" />
+                <span className="text-sm text-[#5865F2]">AI Assist Available</span>
+              </div>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Reset
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Progress Steps */}
@@ -1388,6 +1438,63 @@ export default function MigrationCenter({
             Go to Dashboard
             <ArrowRight className="w-5 h-5" />
           </a>
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Reset Migration Data?</h3>
+            </div>
+            
+            <p className="text-[#a1a1aa] text-sm mb-4">
+              This will delete all migration progress and let you start fresh. This is useful for testing.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <div className="p-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+                <h4 className="text-white text-sm font-medium mb-1">Soft Reset (Recommended)</h4>
+                <p className="text-xs text-[#71717a]">
+                  Keeps your SKU mappings but clears audit results, flagged items, and progress. 
+                  You can re-run the scan without re-mapping everything.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                <h4 className="text-red-400 text-sm font-medium mb-1">Full Reset</h4>
+                <p className="text-xs text-[#71717a]">
+                  Deletes EVERYTHING including SKU mappings. Start completely from scratch.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-[rgba(255,255,255,0.1)] text-[#a1a1aa] hover:text-white hover:border-[rgba(255,255,255,0.2)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => resetMigration(false)}
+                disabled={resetting}
+                className="flex-1 px-4 py-2 rounded-lg bg-[#e07a42] hover:bg-[#d06932] text-white font-medium transition-colors disabled:opacity-50"
+              >
+                {resetting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Soft Reset'}
+              </button>
+              <button
+                onClick={() => resetMigration(true)}
+                disabled={resetting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors disabled:opacity-50"
+              >
+                {resetting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Full Reset'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
