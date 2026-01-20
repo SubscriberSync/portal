@@ -24,13 +24,15 @@ interface ShippingProviderSectionProps {
   currentProvider: ShippingProvider
   isShipStationConnected: boolean
   onRefresh: () => void
+  onSkip?: () => void
 }
 
 export default function ShippingProviderSection({
   clientSlug,
   currentProvider,
   isShipStationConnected,
-  onRefresh
+  onRefresh,
+  onSkip
 }: ShippingProviderSectionProps) {
   const [selectedProvider, setSelectedProvider] = useState<ShippingProvider>(currentProvider)
   const [isExpanded, setIsExpanded] = useState(!currentProvider)
@@ -143,13 +145,39 @@ export default function ShippingProviderSection({
     }
   }
 
-  // Hidden state when skipped
-  if (isSkipped && !selectedProvider) {
-    return null
-  }
-
   // The effective provider is either the saved one or the newly selected one
   const effectiveProvider = selectedProvider || currentProvider
+
+  // Collapsed state when skipped (show "Skipped" state with option to change)
+  if (isSkipped && !effectiveProvider && !isExpanded) {
+    return (
+      <div className="relative rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)] overflow-hidden">
+        <button
+          onClick={() => {
+            setIsSkipped(false)
+            setIsExpanded(true)
+          }}
+          className="w-full p-4 flex items-center justify-between hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#6B6660]/10 flex items-center justify-center">
+              <Ship className="w-5 h-5 text-[#6B6660]" />
+            </div>
+            <div className="text-left">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-[#F5F0E8]">Shipping Provider</h4>
+              </div>
+              <p className="text-sm text-[#6B6660]">Skipped - click to set up</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#6B6660]/10 border border-[#6B6660]/20">
+            <Check className="w-4 h-4 text-[#6B6660]" />
+            <span className="text-sm text-[#6B6660] font-medium">Skipped</span>
+          </div>
+        </button>
+      </div>
+    )
+  }
 
   // Collapsed state when provider is selected
   if (effectiveProvider && !isExpanded) {
@@ -166,7 +194,6 @@ export default function ShippingProviderSection({
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <h4 className="font-medium text-[#F5F0E8]">Shipping Provider</h4>
-                <span className="px-2 py-0.5 rounded text-xs bg-[rgba(245,240,232,0.05)] text-[#6B6660]">Optional</span>
               </div>
               <p className="text-sm text-[#5CB87A]">
                 {getProviderLabel(effectiveProvider)}
@@ -193,8 +220,7 @@ export default function ShippingProviderSection({
               <div>
                 <div className="flex items-center gap-2">
                   <h4 className="font-medium text-[#F5F0E8]">Shipping Provider</h4>
-                  <span className="px-2 py-0.5 rounded text-xs bg-[rgba(245,240,232,0.05)] text-[#6B6660]">Optional</span>
-                </div>
+                  </div>
                 <p className="text-sm text-[#6B6660]">Choose how you want to create shipping labels</p>
               </div>
             </div>
@@ -457,7 +483,10 @@ export default function ShippingProviderSection({
           {!effectiveProvider && (
             <div className="pt-2 text-center">
               <button
-                onClick={() => setIsSkipped(true)}
+                onClick={() => {
+                  setIsSkipped(true)
+                  onSkip?.()
+                }}
                 className="text-sm text-[#6B6660] hover:text-[#A8A39B] transition-colors"
               >
                 Skip for now - set up later in Settings

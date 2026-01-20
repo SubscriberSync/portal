@@ -55,11 +55,17 @@ export default function IntakeStep1Connect({
   const isKlaviyoConnected = klaviyoIntegration?.connected || false
   const isRechargeConnected = rechargeIntegration?.connected || false
 
-  // Calculate progress - Core integrations required (Klaviyo is optional)
+  // Track if shipping has been explicitly handled (selected or skipped)
+  const [shippingHandled, setShippingHandled] = useState(!!shippingProvider)
+
+  // Calculate progress - All items require explicit action (connect OR skip)
+  const klaviyoHandled = isKlaviyoConnected || klaviyoSkipped
   const steps = [
     { name: 'Shopify', done: isShopifyConnected },
     { name: 'Recharge', done: isRechargeConnected },
     { name: 'Installment Name', done: installmentSaved },
+    { name: 'Klaviyo', done: klaviyoHandled },
+    { name: 'Shipping', done: shippingHandled },
   ]
   const completedCount = steps.filter(s => s.done).length
   const allComplete = completedCount === steps.length
@@ -451,8 +457,8 @@ export default function IntakeStep1Connect({
             </div>
           </div>
 
-          {/* Klaviyo Connection - Optional */}
-          <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)] border-dashed">
+          {/* Klaviyo Connection - Required selection */}
+          <div className="p-4 rounded-xl bg-[#1A1A1A] border border-[rgba(245,240,232,0.04)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-[#2D2D2D] flex items-center justify-center">
@@ -461,10 +467,7 @@ export default function IntakeStep1Connect({
                   </svg>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-[#F5F0E8]">Klaviyo</h4>
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-[#6B6660]/20 text-[#A8A39B] font-medium">Optional</span>
-                  </div>
+                  <h4 className="font-medium text-[#F5F0E8]">Klaviyo</h4>
                   <p className="text-sm text-[#6B6660]">
                     {isKlaviyoConnected ? 'Connected - Syncing subscriber profiles' : 'Sync subscriber data to Klaviyo for email automation'}
                   </p>
@@ -478,7 +481,10 @@ export default function IntakeStep1Connect({
                 </div>
               ) : klaviyoSkipped ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-[#6B6660]">Skipped</span>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#6B6660]/10 border border-[#6B6660]/20">
+                    <Check className="w-4 h-4 text-[#6B6660]" />
+                    <span className="text-sm text-[#6B6660] font-medium">Skipped</span>
+                  </div>
                   <button
                     onClick={() => setKlaviyoSkipped(false)}
                     className="text-xs text-[#C9A962] hover:text-[#D4B872]"
@@ -509,11 +515,6 @@ export default function IntakeStep1Connect({
                 </div>
               )}
             </div>
-            {!isKlaviyoConnected && !klaviyoSkipped && (
-              <p className="mt-3 text-xs text-[#6B6660] pl-13">
-                You can skip this and connect Klaviyo later from Settings. The app works fully without it.
-              </p>
-            )}
           </div>
 
           {/* Installment Name */}
@@ -567,16 +568,20 @@ export default function IntakeStep1Connect({
             <AlertCircle className="w-4 h-4 text-[#6B6660] mt-0.5 flex-shrink-0" />
             <p className="text-xs text-[#6B6660]">
               Connect Shopify and Recharge to sync your subscriber data automatically.
-              Klaviyo is optional and can be connected later. Your credentials are encrypted and stored securely.
+              For Klaviyo and Shipping, you can connect now or skip to set up later. Your credentials are encrypted and stored securely.
             </p>
           </div>
 
-          {/* Shipping Provider Section - Optional */}
+          {/* Shipping Provider Section - Required selection */}
           <ShippingProviderSection
             clientSlug={clientSlug}
             currentProvider={shippingProvider || null}
             isShipStationConnected={isShipStationConnected}
-            onRefresh={onRefresh}
+            onRefresh={() => {
+              setShippingHandled(true)
+              onRefresh()
+            }}
+            onSkip={() => setShippingHandled(true)}
           />
         </div>
       )}
