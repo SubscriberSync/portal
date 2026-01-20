@@ -351,24 +351,38 @@ export default function IntakeStep1Connect({
                 <div className="flex flex-col gap-3 w-full max-w-md">
                   {/* Step-by-step instructions */}
                   <div className="bg-[#0D0D0D] rounded-lg p-3 space-y-2">
-                    <p className="text-xs font-medium text-[#A8A39B]">How to get your API token:</p>
-                    <ol className="text-xs text-[#6B6660] space-y-1.5 list-decimal list-inside">
+                    <p className="text-xs font-medium text-[#A8A39B]">How to get your API token (takes 30 seconds):</p>
+                    <ol className="text-xs text-[#6B6660] space-y-2 list-decimal list-inside">
                       <li>
-                        Open{' '}
+                        Open your{' '}
                         <a
-                          href="https://merchants.rechargeapps.com/settings/integrations/api"
+                          href="https://admin.shopify.com/apps/recharge"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-[#5C6BC0] hover:underline"
                         >
-                          Recharge API Settings
+                          Recharge app in Shopify
                         </a>
                       </li>
-                      <li>Click <span className="text-[#F5F0E8]">&quot;Create API token&quot;</span></li>
-                      <li>Name it <span className="text-[#F5F0E8]">&quot;SubscriberSync&quot;</span></li>
-                      <li>Enable <span className="text-[#F5F0E8]">Read access</span> for customers and subscriptions</li>
-                      <li>Copy the token and paste it below</li>
+                      <li>
+                        In the left sidebar, click <span className="text-[#F5F0E8]">Tools &amp; apps</span> <span className="text-[#A8A39B]">▼</span>
+                      </li>
+                      <li>
+                        Click <span className="text-[#F5F0E8]">API tokens</span>
+                      </li>
+                      <li>
+                        Under <span className="text-[#F5F0E8] font-medium">Admin tokens</span>, click <span className="text-[#F5F0E8]">Create new</span>
+                      </li>
+                      <li>
+                        Name it <span className="text-[#F5F0E8]">&quot;SubscriberSync&quot;</span> and enable <span className="text-[#F5F0E8]">Read access</span>
+                      </li>
+                      <li>
+                        Copy the token and paste it below
+                      </li>
                     </ol>
+                    <p className="text-xs text-[#6B6660] mt-2 pt-2 border-t border-[rgba(245,240,232,0.06)]">
+                      <span className="text-amber-500">Note:</span> Use an <span className="text-[#F5F0E8]">Admin token</span>, not a Storefront token.
+                    </p>
                   </div>
                   
                   <div className="flex items-center gap-2">
