@@ -369,7 +369,7 @@ export default function IntakeStep1Connect({
                         Name it <span className="text-[#F5F0E8]">&quot;SubscriberSync&quot;</span> and use <span className="text-[#F5F0E8]">your email</span> as the contact
                       </li>
                       <li>
-                        Check <span className="text-[#F5F0E8]">read_customers</span> and <span className="text-[#F5F0E8]">read_subscriptions</span>
+                        Check these permissions: <span className="text-[#F5F0E8]">read_customers</span>, <span className="text-[#F5F0E8]">read_subscriptions</span>, <span className="text-[#F5F0E8]">read_orders</span>, <span className="text-[#F5F0E8]">read_gift_products</span>, <span className="text-[#F5F0E8]">read_gift_purchases</span>, <span className="text-[#F5F0E8]">store_info</span>
                       </li>
                       <li>
                         Copy the token and paste it below
