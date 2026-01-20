@@ -42,7 +42,23 @@ export async function POST(request: NextRequest) {
     })
 
     if (!verifyResponse.ok) {
-      return NextResponse.json({ error: 'Invalid API key' }, { status: 400 })
+      const errorText = await verifyResponse.text()
+      console.error('[Recharge] API verification failed:', verifyResponse.status, errorText)
+      
+      // Provide more specific error messages
+      if (verifyResponse.status === 401) {
+        return NextResponse.json({ 
+          error: 'Invalid API key. Make sure you copied the full key and are using an Admin token.' 
+        }, { status: 400 })
+      }
+      if (verifyResponse.status === 403) {
+        return NextResponse.json({ 
+          error: 'API key missing required permissions. Please enable read_customers and read_subscriptions.' 
+        }, { status: 400 })
+      }
+      return NextResponse.json({ 
+        error: `Recharge API error: ${verifyResponse.status}` 
+      }, { status: 400 })
     }
 
     const shopData = await verifyResponse.json()
