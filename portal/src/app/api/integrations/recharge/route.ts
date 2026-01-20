@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API key required' }, { status: 400 })
     }
 
-    // Verify the API key works by fetching shop info
-    const verifyResponse = await fetch(`${RECHARGE_API_BASE}/shop`, {
+    // Verify the API key works by fetching token info
+    const verifyResponse = await fetch(`${RECHARGE_API_BASE}/token_information`, {
       headers: {
         'X-Recharge-Access-Token': apiKey,
         'X-Recharge-Version': '2021-11',
@@ -61,8 +61,9 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const shopData = await verifyResponse.json()
-    console.log('[Recharge] Connected to shop:', shopData.shop?.name)
+    const tokenData = await verifyResponse.json()
+    const tokenInfo = tokenData.token_information
+    console.log('[Recharge] Connected with token:', tokenInfo?.name, 'Scopes:', tokenInfo?.scopes)
 
     // Build webhook URL with org_id
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.subscribersync.com'
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         type: 'recharge',
         credentials_encrypted: {
           api_key: apiKey,
-          shop_name: shopData.shop?.name,
+          token_name: tokenInfo?.name,
         },
         connected: true,
         last_sync_at: new Date().toISOString(),
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      shop: shopData.shop?.name,
+      tokenName: tokenInfo?.name,
       webhooks: successCount,
       initialSync: syncResult,
     })
@@ -280,6 +281,6 @@ export async function GET() {
   return NextResponse.json({
     connected: data.connected,
     lastSync: data.last_sync_at,
-    shopName: (data.credentials_encrypted as { shop_name?: string })?.shop_name,
+    tokenName: (data.credentials_encrypted as { token_name?: string })?.token_name,
   })
 }
