@@ -39,6 +39,7 @@ export default function IntakeStep1Connect({
   const [rechargeApiKey, setRechargeApiKey] = useState('')
   const [showRechargeInput, setShowRechargeInput] = useState(false)
   const [rechargeError, setRechargeError] = useState('')
+  const [rechargeLoadingMessage, setRechargeLoadingMessage] = useState('')
   const [installmentName, setInstallmentName] = useState(initialInstallmentName || '')
   const [isSavingInstallment, setIsSavingInstallment] = useState(false)
   const [installmentSaved, setInstallmentSaved] = useState(!!initialInstallmentName)
@@ -98,6 +99,23 @@ export default function IntakeStep1Connect({
 
     setIsConnectingRecharge(true)
     setRechargeError('')
+    setRechargeLoadingMessage('Verifying API key...')
+
+    // Show progress messages while waiting
+    const progressMessages = [
+      'Verifying API key...',
+      'Setting up webhooks...',
+      'Importing customers...',
+      'Syncing subscriptions...',
+      'Calculating prepaid orders...',
+      'Almost done...',
+    ]
+    let messageIndex = 0
+    const progressInterval = setInterval(() => {
+      messageIndex = Math.min(messageIndex + 1, progressMessages.length - 1)
+      setRechargeLoadingMessage(progressMessages[messageIndex])
+    }, 15000)
+
     try {
       const response = await fetch('/api/integrations/recharge', {
         method: 'POST',
@@ -105,6 +123,7 @@ export default function IntakeStep1Connect({
         body: JSON.stringify({ apiKey: rechargeApiKey.trim() }),
       })
 
+      clearInterval(progressInterval)
       const data = await response.json()
 
       if (response.ok && data.success) {
@@ -115,10 +134,12 @@ export default function IntakeStep1Connect({
         setRechargeError(data.error || 'Failed to connect')
       }
     } catch (error) {
+      clearInterval(progressInterval)
       console.error('Error connecting Recharge:', error)
       setRechargeError('Connection failed')
     }
     setIsConnectingRecharge(false)
+    setRechargeLoadingMessage('')
   }
 
   // Connect Shopify (optional, for additional data)
@@ -372,6 +393,22 @@ export default function IntakeStep1Connect({
                   <Check className="w-4 h-4 text-[#5CB87A]" />
                   <span className="text-sm text-[#5CB87A] font-medium">Connected</span>
                 </div>
+              ) : isConnectingRecharge ? (
+                <div className="flex flex-col gap-3 w-full max-w-md">
+                  {/* Loading state */}
+                  <div className="bg-[#5C6BC0]/10 border border-[#5C6BC0]/20 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Loader2 className="w-5 h-5 text-[#5C6BC0] animate-spin" />
+                      <div>
+                        <p className="text-sm font-medium text-[#F5F0E8]">Connecting to Recharge...</p>
+                        <p className="text-xs text-[#A8A39B]">{rechargeLoadingMessage}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#6B6660] bg-[rgba(0,0,0,0.2)] rounded p-2">
+                      This may take 1-2 minutes depending on your subscriber count. Please don&apos;t close this page.
+                    </p>
+                  </div>
+                </div>
               ) : showRechargeInput ? (
                 <div className="flex flex-col gap-3 w-full max-w-md">
                   {/* Step-by-step instructions */}
@@ -404,7 +441,7 @@ export default function IntakeStep1Connect({
                       <span className="text-amber-500">Note:</span> You only need the <span className="text-[#F5F0E8]">API key</span> (no client secret). Use an <span className="text-[#F5F0E8]">Admin token</span>, not a Storefront token.
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <input
                       type="password"
@@ -416,14 +453,10 @@ export default function IntakeStep1Connect({
                     />
                     <button
                       onClick={handleConnectRecharge}
-                      disabled={isConnectingRecharge || !rechargeApiKey.trim()}
+                      disabled={!rechargeApiKey.trim()}
                       className="px-4 py-2 rounded-lg bg-[#5C6BC0] hover:bg-[#4a5ab0] text-white font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
                     >
-                      {isConnectingRecharge ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Connect'
-                      )}
+                      Connect
                     </button>
                   </div>
                   {rechargeError && (
