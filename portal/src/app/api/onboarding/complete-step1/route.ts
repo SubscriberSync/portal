@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { getOrganizationBySlug, updateOrganization, getIntegrations } from '@/lib/supabase/data'
+import { getOrganizationBySlug, updateOrganization, getIntegrations, getIntakeSubmissions } from '@/lib/supabase/data'
 import { handleApiError } from '@/lib/api-utils'
 
 /**
@@ -29,7 +29,10 @@ export async function POST() {
     const integrations = await getIntegrations(organization.id)
     const shopifyConnected = integrations.some(i => i.type === 'shopify' && i.connected)
     const rechargeConnected = integrations.some(i => i.type === 'recharge' && i.connected)
-    const hasInstallmentName = !!organization.installment_name
+    
+    // Check if installment name has been submitted
+    const submissions = await getIntakeSubmissions(organization.id)
+    const hasInstallmentName = submissions.some(s => s.item_type === 'Installment Name' && s.value_encrypted)
 
     if (!shopifyConnected || !rechargeConnected || !hasInstallmentName) {
       return NextResponse.json({
