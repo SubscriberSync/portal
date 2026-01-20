@@ -21,6 +21,12 @@ import {
   ArrowRight,
   HelpCircle,
   Undo2,
+  Pencil,
+  Trash2,
+  MoreVertical,
+  Sparkles,
+  ShoppingBag,
+  EyeOffIcon,
 } from 'lucide-react'
 
 interface Story {
@@ -56,6 +62,24 @@ interface ProductVariation {
   story: { id: string; name: string; slug: string } | null
   tier: { id: string; name: string } | null
   sample_order_numbers: number[] | null
+}
+
+interface AISuggestion {
+  id: string
+  category: 'subscription' | 'addon' | 'ignored'
+  confidence: number
+  reasoning: string
+  suggested_tier?: string
+}
+
+interface AIAnalysisResult {
+  suggestions: AISuggestion[]
+  summary: {
+    subscription: number
+    addon: number
+    ignored: number
+  }
+  tierGroups: Record<string, string[]>
 }
 
 interface IntakeStep3Props {
@@ -105,6 +129,21 @@ export default function IntakeStep3Products({
   // Form state for creating tier
   const [newTierName, setNewTierName] = useState('')
 
+  // State for editing tier
+  const [editingTier, setEditingTier] = useState<{ storyId: string; tierId: string; name: string } | null>(null)
+  const [tierMenuOpen, setTierMenuOpen] = useState<string | null>(null) // tier ID
+
+  // AI Assist state
+  const [isAIAvailable, setIsAIAvailable] = useState(false)
+  const [isAIAnalyzing, setIsAIAnalyzing] = useState(false)
+  const [showAIResults, setShowAIResults] = useState(false)
+  const [aiResults, setAIResults] = useState<AIAnalysisResult | null>(null)
+  const [aiSelectionsToApply, setAISelectionsToApply] = useState<{
+    subscription: Set<string>
+    addon: Set<string>
+    ignored: Set<string>
+  }>({ subscription: new Set(), addon: new Set(), ignored: new Set() })
+
   const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -127,6 +166,128 @@ export default function IntakeStep3Products({
       fetchProducts()
     }
   }, [isUnlocked, fetchProducts])
+
+  // Check if AI is available
+  useEffect(() => {
+    const checkAI = async () => {
+      try {
+        const response = await fetch('/api/migration/ai-categorize')
+        const data = await response.json()
+        setIsAIAvailable(data.available)
+      } catch {
+        setIsAIAvailable(false)
+      }
+    }
+    checkAI()
+  }, [])
+
+  // AI Analysis function
+  const handleAIAnalyze = async () => {
+    if (!isAIAvailable) return
+
+    try {
+      setIsAIAnalyzing(true)
+
+      // Get story and tier info for context
+      const storyName = stories.length > 0 ? stories[0].name : undefined
+      const tierNames = stories.length > 0 ? stories[0].tiers.map(t => t.name) : undefined
+
+      const response = await fetch('/api/migration/ai-categorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storyName, tierNames }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'AI analysis failed')
+      }
+
+      const results: AIAnalysisResult = await response.json()
+      setAIResults(results)
+
+      // Pre-select all suggestions by default
+      const subscriptionIds = new Set(results.suggestions.filter(s => s.category === 'subscription').map(s => s.id))
+      const addonIds = new Set(results.suggestions.filter(s => s.category === 'addon').map(s => s.id))
+      const ignoredIds = new Set(results.suggestions.filter(s => s.category === 'ignored').map(s => s.id))
+
+      setAISelectionsToApply({ subscription: subscriptionIds, addon: addonIds, ignored: ignoredIds })
+      setShowAIResults(true)
+    } catch (error) {
+      console.error('AI analysis error:', error)
+      alert(error instanceof Error ? error.message : 'AI analysis failed')
+    } finally {
+      setIsAIAnalyzing(false)
+    }
+  }
+
+  // Apply AI suggestions
+  const handleApplyAISuggestions = async () => {
+    if (!aiResults) return
+
+    try {
+      setIsLoading(true)
+
+      // Apply addon categorization
+      if (aiSelectionsToApply.addon.size > 0) {
+        await fetch('/api/migration/products', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            variationIds: Array.from(aiSelectionsToApply.addon),
+            variationType: 'addon',
+          }),
+        })
+      }
+
+      // Apply ignored categorization
+      if (aiSelectionsToApply.ignored.size > 0) {
+        await fetch('/api/migration/products', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            variationIds: Array.from(aiSelectionsToApply.ignored),
+            variationType: 'ignored',
+          }),
+        })
+      }
+
+      // Subscription products stay as-is for now (user will assign to tiers manually)
+      // But we could auto-assign to default tier if one exists
+
+      setShowAIResults(false)
+      setAIResults(null)
+      await fetchProducts()
+    } catch (error) {
+      console.error('Error applying AI suggestions:', error)
+      alert('Failed to apply some suggestions')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Toggle AI selection
+  const toggleAISelection = (id: string, category: 'subscription' | 'addon' | 'ignored') => {
+    setAISelectionsToApply(prev => {
+      const newSet = new Set(prev[category])
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return { ...prev, [category]: newSet }
+    })
+  }
+
+  // Toggle all in category
+  const toggleAllInCategory = (category: 'subscription' | 'addon' | 'ignored', select: boolean) => {
+    if (!aiResults) return
+    const ids = aiResults.suggestions.filter(s => s.category === category).map(s => s.id)
+    setAISelectionsToApply(prev => ({
+      ...prev,
+      [category]: select ? new Set(ids) : new Set(),
+    }))
+  }
 
   const handleScanProducts = async () => {
     try {
@@ -207,6 +368,73 @@ export default function IntakeStep3Products({
     } catch (error) {
       console.error('Error creating tier:', error)
       alert(error instanceof Error ? error.message : 'Failed to create tier')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleEditTier = async (storyId: string, tierId: string, newName: string) => {
+    if (!newName.trim()) return
+
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/migration/stories/${storyId}/tiers`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tierId,
+          name: newName.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to update tier')
+      }
+
+      setEditingTier(null)
+      await fetchProducts()
+    } catch (error) {
+      console.error('Error updating tier:', error)
+      alert(error instanceof Error ? error.message : 'Failed to update tier')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteTier = async (storyId: string, tierId: string, tierName: string) => {
+    // Check if any products are assigned to this tier
+    const assignedProducts = variations.filter(v => v.tier_id === tierId)
+
+    if (assignedProducts.length > 0) {
+      const confirmed = window.confirm(
+        `"${tierName}" has ${assignedProducts.length} product(s) assigned to it. ` +
+        `Deleting this tier will unassign those products. Continue?`
+      )
+      if (!confirmed) return
+    } else {
+      const confirmed = window.confirm(`Delete the "${tierName}" tier?`)
+      if (!confirmed) return
+    }
+
+    try {
+      setIsLoading(true)
+      const response = await fetch(`/api/migration/stories/${storyId}/tiers`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tierId }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete tier')
+      }
+
+      setTierMenuOpen(null)
+      await fetchProducts()
+    } catch (error) {
+      console.error('Error deleting tier:', error)
+      alert(error instanceof Error ? error.message : 'Failed to delete tier')
     } finally {
       setIsLoading(false)
     }
@@ -340,6 +568,7 @@ export default function IntakeStep3Products({
     v => !v.story_id && v.variation_type === 'subscription'
   )
   const assignedVariations = filteredVariations.filter(v => v.story_id)
+  const addonVariations = filteredVariations.filter(v => v.variation_type === 'addon')
   const ignoredVariations = filteredVariations.filter(v => v.variation_type === 'ignored')
 
   const isComplete = stats.unassigned === 0 && stats.assigned > 0
@@ -443,6 +672,42 @@ export default function IntakeStep3Products({
           {/* Products found */}
           {stats.total > 0 && (
             <>
+              {/* AI Assist Banner - Show prominently when AI is available and there are unassigned products */}
+              {isAIAvailable && stats.unassigned > 0 && (
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-purple-900 font-medium">AI can help categorize your products</p>
+                        <p className="text-xs text-purple-700 mt-0.5">
+                          Automatically identify subscription items, one-time purchases, and items to ignore
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleAIAnalyze}
+                      disabled={isAIAnalyzing}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                      {isAIAnalyzing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          AI Assist
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* How It Works - Instructional Guide */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex gap-3">
@@ -520,24 +785,99 @@ export default function IntakeStep3Products({
                         {/* Tiers */}
                         <div className="flex flex-wrap gap-2">
                           {story.tiers.map(tier => (
-                            <button
-                              key={tier.id}
-                              onClick={() => selectedVariations.size > 0 && handleAssignVariations(story.id, tier.id)}
-                              disabled={selectedVariations.size === 0}
-                              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                                selectedVariations.size > 0
-                                  ? 'bg-accent text-white hover:bg-accent-hover cursor-pointer shadow-sm animate-pulse-subtle'
-                                  : 'bg-background text-foreground-secondary cursor-default'
-                              }`}
-                            >
-                              {selectedVariations.size > 0 && (
-                                <Plus className="w-3 h-3 inline mr-1" />
+                            <div key={tier.id} className="relative group">
+                              {/* Editing mode */}
+                              {editingTier?.tierId === tier.id ? (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={editingTier.name}
+                                    onChange={e => setEditingTier({ ...editingTier, name: e.target.value })}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') handleEditTier(story.id, tier.id, editingTier.name)
+                                      if (e.key === 'Escape') setEditingTier(null)
+                                    }}
+                                    className="px-2 py-1 text-sm bg-background border border-accent rounded focus:outline-none w-24"
+                                    autoFocus
+                                  />
+                                  <button
+                                    onClick={() => handleEditTier(story.id, tier.id, editingTier.name)}
+                                    className="p-1 text-success hover:bg-success/10 rounded"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingTier(null)}
+                                    className="p-1 text-foreground-tertiary hover:bg-background-elevated rounded"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  {/* Normal tier button */}
+                                  <button
+                                    onClick={() => selectedVariations.size > 0 && handleAssignVariations(story.id, tier.id)}
+                                    disabled={selectedVariations.size === 0}
+                                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                                      selectedVariations.size > 0
+                                        ? 'bg-accent text-white hover:bg-accent-hover cursor-pointer shadow-sm animate-pulse-subtle'
+                                        : 'bg-background text-foreground-secondary cursor-default'
+                                    }`}
+                                  >
+                                    {selectedVariations.size > 0 && (
+                                      <Plus className="w-3 h-3 inline mr-1" />
+                                    )}
+                                    {tier.name}
+                                    {tier.is_default && selectedVariations.size === 0 && (
+                                      <span className="ml-1 text-xs opacity-60">(default)</span>
+                                    )}
+                                  </button>
+
+                                  {/* Edit/Delete menu - only show when not in selection mode */}
+                                  {selectedVariations.size === 0 && (
+                                    <div className="absolute -right-1 -top-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setTierMenuOpen(tierMenuOpen === tier.id ? null : tier.id)
+                                        }}
+                                        className="p-0.5 bg-background border border-border rounded-full shadow-sm hover:bg-background-elevated"
+                                      >
+                                        <MoreVertical className="w-3 h-3 text-foreground-tertiary" />
+                                      </button>
+
+                                      {/* Dropdown menu */}
+                                      {tierMenuOpen === tier.id && (
+                                        <div className="absolute right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-lg z-10 py-1 min-w-[100px]">
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setEditingTier({ storyId: story.id, tierId: tier.id, name: tier.name })
+                                              setTierMenuOpen(null)
+                                            }}
+                                            className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-background-elevated flex items-center gap-2"
+                                          >
+                                            <Pencil className="w-3 h-3" />
+                                            Edit
+                                          </button>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              handleDeleteTier(story.id, tier.id, tier.name)
+                                            }}
+                                            className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                            Delete
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
                               )}
-                              {tier.name}
-                              {tier.is_default && selectedVariations.size === 0 && (
-                                <span className="ml-1 text-xs opacity-60">(default)</span>
-                              )}
-                            </button>
+                            </div>
                           ))}
                         </div>
                         {selectedVariations.size > 0 && (
@@ -704,6 +1044,31 @@ export default function IntakeStep3Products({
                     </div>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {assignedVariations.map(v => (
+                        <VariationRow
+                          key={v.id}
+                          variation={v}
+                          isSelected={selectedVariations.has(v.id)}
+                          onToggle={() => toggleSelection(v.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* One-time Purchases */}
+                {addonVariations.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-sm font-medium text-blue-600 flex items-center gap-1">
+                        <Package className="w-4 h-4" />
+                        One-time Purchases ({addonVariations.length})
+                      </h5>
+                    </div>
+                    <p className="text-xs text-foreground-tertiary mb-2">
+                      These products are not part of a recurring subscription. They won't affect shipment tracking.
+                    </p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {addonVariations.map(v => (
                         <VariationRow
                           key={v.id}
                           variation={v}
@@ -908,6 +1273,266 @@ export default function IntakeStep3Products({
           </div>
         </div>
       )}
+
+      {/* AI Results Modal */}
+      {showAIResults && aiResults && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-xl border border-border w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-5 border-b border-border flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">AI Analysis Complete</h3>
+                    <p className="text-sm text-foreground-secondary">
+                      Review suggestions below, then apply
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAIResults(false)}
+                  className="text-foreground-tertiary hover:text-foreground"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="p-5 border-b border-border flex-shrink-0">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-green-700">{aiResults.summary.subscription}</div>
+                  <div className="text-xs text-green-600 font-medium">Subscription</div>
+                  <div className="text-xs text-green-500 mt-0.5">Assign to tiers</div>
+                </div>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-blue-700">{aiResults.summary.addon}</div>
+                  <div className="text-xs text-blue-600 font-medium">One-time</div>
+                  <div className="text-xs text-blue-500 mt-0.5">Won't track</div>
+                </div>
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-gray-600">{aiResults.summary.ignored}</div>
+                  <div className="text-xs text-gray-500 font-medium">Ignore</div>
+                  <div className="text-xs text-gray-400 mt-0.5">Test/internal</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {/* Subscription Products */}
+              {aiResults.summary.subscription > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-green-700 flex items-center gap-2">
+                      <Layers className="w-4 h-4" />
+                      Subscription Products ({aiResults.summary.subscription})
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleAllInCategory('subscription', aiSelectionsToApply.subscription.size === 0)}
+                        className="text-xs text-foreground-tertiary hover:text-foreground"
+                      >
+                        {aiSelectionsToApply.subscription.size === aiResults.summary.subscription ? 'Deselect all' : 'Select all'}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-foreground-tertiary mb-2">
+                    These will remain in "Needs Assignment" for you to assign to subscription tiers
+                  </p>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {aiResults.suggestions.filter(s => s.category === 'subscription').map(s => {
+                      const product = variations.find(v => v.id === s.id)
+                      if (!product) return null
+                      return (
+                        <AIResultRow
+                          key={s.id}
+                          product={product}
+                          suggestion={s}
+                          isSelected={aiSelectionsToApply.subscription.has(s.id)}
+                          onToggle={() => toggleAISelection(s.id, 'subscription')}
+                          categoryColor="green"
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* One-time Purchases */}
+              {aiResults.summary.addon > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-blue-700 flex items-center gap-2">
+                      <ShoppingBag className="w-4 h-4" />
+                      One-time Purchases ({aiResults.summary.addon})
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleAllInCategory('addon', aiSelectionsToApply.addon.size === 0)}
+                        className="text-xs text-foreground-tertiary hover:text-foreground"
+                      >
+                        {aiSelectionsToApply.addon.size === aiResults.summary.addon ? 'Deselect all' : 'Select all'}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-foreground-tertiary mb-2">
+                    Merchandise, add-ons, or single purchases - won't affect shipment tracking
+                  </p>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {aiResults.suggestions.filter(s => s.category === 'addon').map(s => {
+                      const product = variations.find(v => v.id === s.id)
+                      if (!product) return null
+                      return (
+                        <AIResultRow
+                          key={s.id}
+                          product={product}
+                          suggestion={s}
+                          isSelected={aiSelectionsToApply.addon.has(s.id)}
+                          onToggle={() => toggleAISelection(s.id, 'addon')}
+                          categoryColor="blue"
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Ignored Products */}
+              {aiResults.summary.ignored > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                      <EyeOffIcon className="w-4 h-4" />
+                      Ignore ({aiResults.summary.ignored})
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleAllInCategory('ignored', aiSelectionsToApply.ignored.size === 0)}
+                        className="text-xs text-foreground-tertiary hover:text-foreground"
+                      >
+                        {aiSelectionsToApply.ignored.size === aiResults.summary.ignored ? 'Deselect all' : 'Select all'}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-foreground-tertiary mb-2">
+                    Test orders, internal items, or discontinued products
+                  </p>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    {aiResults.suggestions.filter(s => s.category === 'ignored').map(s => {
+                      const product = variations.find(v => v.id === s.id)
+                      if (!product) return null
+                      return (
+                        <AIResultRow
+                          key={s.id}
+                          product={product}
+                          suggestion={s}
+                          isSelected={aiSelectionsToApply.ignored.has(s.id)}
+                          onToggle={() => toggleAISelection(s.id, 'ignored')}
+                          categoryColor="gray"
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-border flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-foreground-secondary">
+                  <span className="font-medium">
+                    {aiSelectionsToApply.addon.size + aiSelectionsToApply.ignored.size}
+                  </span>{' '}
+                  products will be categorized
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowAIResults(false)}
+                    className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background-elevated"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleApplyAISuggestions}
+                    disabled={isLoading || (aiSelectionsToApply.addon.size === 0 && aiSelectionsToApply.ignored.size === 0)}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    Apply Suggestions
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// AI Result row component
+function AIResultRow({
+  product,
+  suggestion,
+  isSelected,
+  onToggle,
+  categoryColor,
+}: {
+  product: ProductVariation
+  suggestion: AISuggestion
+  isSelected: boolean
+  onToggle: () => void
+  categoryColor: 'green' | 'blue' | 'gray'
+}) {
+  const colorClasses = {
+    green: 'border-green-300 bg-green-50',
+    blue: 'border-blue-300 bg-blue-50',
+    gray: 'border-gray-300 bg-gray-50',
+  }
+
+  return (
+    <div
+      onClick={onToggle}
+      className={`p-2.5 rounded-lg border cursor-pointer transition-colors ${
+        isSelected ? colorClasses[categoryColor] : 'border-border bg-background hover:bg-background-elevated'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
+            isSelected ? `border-${categoryColor}-500 bg-${categoryColor}-500` : 'border-foreground-tertiary'
+          }`}
+        >
+          {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">
+            {product.product_name}
+            {product.variant_title && (
+              <span className="text-foreground-secondary font-normal"> - {product.variant_title}</span>
+            )}
+          </p>
+          <p className="text-xs text-foreground-tertiary truncate">
+            {suggestion.reasoning}
+            {suggestion.confidence < 0.7 && (
+              <span className="ml-1 text-amber-600">(low confidence)</span>
+            )}
+          </p>
+        </div>
+        <div className="text-xs text-foreground-tertiary">
+          {product.order_count} orders
+        </div>
+      </div>
     </div>
   )
 }

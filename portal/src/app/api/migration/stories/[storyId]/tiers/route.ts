@@ -93,6 +93,84 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 }
 
 /**
+ * PATCH /api/migration/stories/[storyId]/tiers
+ *
+ * Update a tier's name or description
+ */
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const { orgId } = await auth()
+  const { storyId } = await params
+
+  if (!orgId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = createServiceClient()
+
+  try {
+    // Verify story belongs to org
+    const { data: story } = await supabase
+      .from('stories')
+      .select('id')
+      .eq('id', storyId)
+      .eq('organization_id', orgId)
+      .single()
+
+    if (!story) {
+      return NextResponse.json({ error: 'Story not found' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { tierId, name, description } = body as {
+      tierId: string
+      name?: string
+      description?: string
+    }
+
+    if (!tierId) {
+      return NextResponse.json({ error: 'tierId is required' }, { status: 400 })
+    }
+
+    // Build update object
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    }
+
+    if (name !== undefined) {
+      if (!name.trim()) {
+        return NextResponse.json({ error: 'name cannot be empty' }, { status: 400 })
+      }
+      updateData.name = name.trim()
+    }
+
+    if (description !== undefined) {
+      updateData.description = description
+    }
+
+    // Update the tier
+    const { data: tier, error } = await supabase
+      .from('story_tiers')
+      .update(updateData)
+      .eq('id', tierId)
+      .eq('story_id', storyId)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to update tier: ${error.message}`)
+    }
+
+    return NextResponse.json({ tier })
+  } catch (error) {
+    console.error('Error updating tier:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * DELETE /api/migration/stories/[storyId]/tiers
  *
  * Delete a tier from a story
@@ -108,8 +186,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const supabase = createServiceClient()
 
   try {
-    const { searchParams } = new URL(request.url)
-    const tierId = searchParams.get('tierId')
+    const body = await request.json()
+    const { tierId } = body as { tierId: string }
 
     if (!tierId) {
       return NextResponse.json({ error: 'tierId is required' }, { status: 400 })
@@ -126,6 +204,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!story) {
       return NextResponse.json({ error: 'Story not found' }, { status: 404 })
     }
+
+    // Unassign any products from this tier first
+    await supabase
+      .from('product_variations')
+      .update({ tier_id: null })
+      .eq('tier_id', tierId)
 
     // Delete the tier
     const { error } = await supabase
