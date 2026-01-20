@@ -3,16 +3,17 @@
 
 import { ShopifyShop } from './shopify'
 
+type ShopifyOAuthConfig = {
+  clientId: string
+  clientSecret: string
+  scopes: string
+  callbackPath: string
+  variant: 'public' | 'custom' | 'default'
+}
+
+const SHOPIFY_SCOPES = 'read_customers,read_orders'
+
 export const OAUTH_CONFIG = {
-  shopify: {
-    clientId: process.env.SHOPIFY_CLIENT_ID!,
-    clientSecret: process.env.SHOPIFY_CLIENT_SECRET!,
-    // Minimal scopes required for order/customer sync
-    // read_customers: Sync customer data from webhooks
-    // read_orders: Sync order data from webhooks  
-    scopes: 'read_customers,read_orders',
-    callbackPath: '/api/auth/shopify/callback',
-  },
   klaviyo: {
     clientId: process.env.KLAVIYO_CLIENT_ID!,
     clientSecret: process.env.KLAVIYO_CLIENT_SECRET!,
@@ -22,6 +23,65 @@ export const OAUTH_CONFIG = {
     tokenUrl: 'https://a.klaviyo.com/oauth/token',
     callbackPath: '/api/auth/klaviyo/callback',
   },
+}
+
+/**
+ * Select Shopify app credentials based on environment.
+ *
+ * Use this when you have both:
+ * - Public app credentials (for eventual App Store listing)
+ * - Custom app credentials (for immediate testing)
+ */
+export function getShopifyOAuthConfig(): ShopifyOAuthConfig {
+  const variant = process.env.SHOPIFY_APP_VARIANT as 'public' | 'custom' | undefined
+
+  const publicId = process.env.SHOPIFY_PUBLIC_CLIENT_ID
+  const publicSecret = process.env.SHOPIFY_PUBLIC_CLIENT_SECRET
+  const customId = process.env.SHOPIFY_CUSTOM_CLIENT_ID
+  const customSecret = process.env.SHOPIFY_CUSTOM_CLIENT_SECRET
+  const fallbackId = process.env.SHOPIFY_CLIENT_ID
+  const fallbackSecret = process.env.SHOPIFY_CLIENT_SECRET
+
+  let clientId = fallbackId || ''
+  let clientSecret = fallbackSecret || ''
+  let selected: ShopifyOAuthConfig['variant'] = 'default'
+
+  if (variant === 'public') {
+    clientId = publicId || fallbackId || ''
+    clientSecret = publicSecret || fallbackSecret || ''
+    selected = 'public'
+  } else if (variant === 'custom') {
+    clientId = customId || fallbackId || ''
+    clientSecret = customSecret || fallbackSecret || ''
+    selected = 'custom'
+  } else {
+    // Auto-detect if variant not set
+    if (publicId && publicSecret) {
+      clientId = publicId
+      clientSecret = publicSecret
+      selected = 'public'
+    } else if (customId && customSecret) {
+      clientId = customId
+      clientSecret = customSecret
+      selected = 'custom'
+    }
+  }
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Missing Shopify app credentials. Set SHOPIFY_PUBLIC_CLIENT_ID/SECRET or SHOPIFY_CUSTOM_CLIENT_ID/SECRET.')
+  }
+
+  return {
+    clientId,
+    clientSecret,
+    scopes: SHOPIFY_SCOPES,
+    callbackPath: '/api/auth/shopify/callback',
+    variant: selected,
+  }
+}
+
+export function getShopifyAppSecret(): string {
+  return getShopifyOAuthConfig().clientSecret
 }
 
 // Generate a random state for CSRF protection
@@ -53,9 +113,10 @@ function base64UrlEncode(buffer: Uint8Array): string {
 
 // Build Shopify OAuth URL
 export function buildShopifyAuthUrl(shop: string, state: string, redirectUri: string): string {
+  const shopifyConfig = getShopifyOAuthConfig()
   const params = new URLSearchParams({
-    client_id: OAUTH_CONFIG.shopify.clientId,
-    scope: OAUTH_CONFIG.shopify.scopes,
+    client_id: shopifyConfig.clientId,
+    scope: shopifyConfig.scopes,
     redirect_uri: redirectUri,
     state: state,
   })
@@ -88,14 +149,15 @@ export async function exchangeShopifyCode(
   code: string
 ): Promise<{ access_token: string; scope: string } | null> {
   try {
+    const shopifyConfig = getShopifyOAuthConfig()
     const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        client_id: OAUTH_CONFIG.shopify.clientId,
-        client_secret: OAUTH_CONFIG.shopify.clientSecret,
+        client_id: shopifyConfig.clientId,
+        client_secret: shopifyConfig.clientSecret,
         code: code,
       }),
     })

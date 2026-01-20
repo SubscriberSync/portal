@@ -39,6 +39,17 @@ DISCORD_ENCRYPTION_KEY=your-32-char-encryption-key
 # Shopify App credentials (from Shopify Partner Dashboard)
 SHOPIFY_CLIENT_ID=your-shopify-client-id
 SHOPIFY_CLIENT_SECRET=your-shopify-client-secret
+
+# Optional: Separate credentials for public + custom apps
+# Use these if you want to test on your own store now and go public later.
+SHOPIFY_PUBLIC_CLIENT_ID=your-public-app-client-id
+SHOPIFY_PUBLIC_CLIENT_SECRET=your-public-app-client-secret
+SHOPIFY_CUSTOM_CLIENT_ID=your-custom-app-client-id
+SHOPIFY_CUSTOM_CLIENT_SECRET=your-custom-app-client-secret
+
+# Optional: Force which app credentials to use
+# "public" | "custom" (if not set, the app auto-detects)
+SHOPIFY_APP_VARIANT=custom
 ```
 
 **Shopify App Store Setup:**

@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   exchangeShopifyCode,
+  getShopifyAppSecret,
   createClerkOrganization,
   createClerkInvitation,
   findClerkUserByEmail,
@@ -71,7 +72,12 @@ export async function GET(request: NextRequest) {
 
   // Validate HMAC if present
   if (hmac) {
-    const secret = process.env.SHOPIFY_CLIENT_SECRET
+    let secret = ''
+    try {
+      secret = getShopifyAppSecret()
+    } catch (error) {
+      console.error('[Shopify Callback] Missing Shopify app secret', error)
+    }
     if (secret && !validateCallbackHmac(searchParams, secret)) {
       console.error('[Shopify Callback] Invalid HMAC')
       return NextResponse.redirect(

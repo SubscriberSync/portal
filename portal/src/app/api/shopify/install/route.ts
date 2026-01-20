@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
-import { generateState, buildShopifyAuthUrl } from '@/lib/oauth'
+import { generateState, buildShopifyAuthUrl, getShopifyAppSecret } from '@/lib/oauth'
 
 /**
  * Shopify App Store Install Handler
@@ -94,9 +94,11 @@ export async function GET(request: NextRequest) {
   }
 
   // Validate HMAC signature
-  const shopifySecret = process.env.SHOPIFY_CLIENT_SECRET
-  if (!shopifySecret) {
-    console.error('[Shopify Install] Missing SHOPIFY_CLIENT_SECRET')
+  let shopifySecret = ''
+  try {
+    shopifySecret = getShopifyAppSecret()
+  } catch (error) {
+    console.error('[Shopify Install] Missing Shopify app secret', error)
     return NextResponse.redirect(
       new URL('/error?message=Server+configuration+error', request.url)
     )
@@ -148,7 +150,15 @@ export async function GET(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${request.headers.get('host')}`
   const redirectUri = `${baseUrl}/api/shopify/callback`
 
-  const authUrl = buildShopifyAuthUrl(shop, state, redirectUri)
+  let authUrl = ''
+  try {
+    authUrl = buildShopifyAuthUrl(shop, state, redirectUri)
+  } catch (error) {
+    console.error('[Shopify Install] Missing Shopify app credentials', error)
+    return NextResponse.redirect(
+      new URL('/error?message=Server+configuration+error', request.url)
+    )
+  }
 
   console.log('[Shopify Install] Redirecting to Shopify OAuth for shop:', shop)
 

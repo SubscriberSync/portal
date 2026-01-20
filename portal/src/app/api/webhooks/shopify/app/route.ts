@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getShopifyAppSecret } from '@/lib/oauth'
 import { handleApiError } from '@/lib/api-utils'
 import crypto from 'crypto'
 
@@ -108,7 +109,12 @@ export async function POST(request: NextRequest) {
 
   // Fall back to app-level secret
   if (!verified && hmacHeader) {
-    const appSecret = process.env.SHOPIFY_CLIENT_SECRET
+    let appSecret = ''
+    try {
+      appSecret = getShopifyAppSecret()
+    } catch (error) {
+      console.error('[Shopify App Webhook] Missing Shopify app secret', error)
+    }
     if (appSecret) {
       verified = verifyWebhookHmac(body, hmacHeader, appSecret)
     }
