@@ -4,6 +4,7 @@ import {
   getOrganizationBySlug,
   getIntakeSubmissions,
   getDiscordConfig,
+  getIntegrations,
 } from '@/lib/supabase/data'
 import { handleApiError } from '@/lib/api-utils'
 
@@ -34,9 +35,10 @@ export async function GET(
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
-    const [submissions, discordConfig] = await Promise.all([
+    const [submissions, discordConfig, integrations] = await Promise.all([
       getIntakeSubmissions(organization.id),
       getDiscordConfig(organization.id),
+      getIntegrations(organization.id),
     ])
 
     // Transform submissions to expected format
@@ -66,9 +68,17 @@ export async function GET(
       step2Complete: organization.step2_complete,
     }
 
+    // Transform integrations to expected format
+    const transformedIntegrations = integrations.map(i => ({
+      type: i.type,
+      connected: i.connected,
+      lastSync: i.last_sync_at,
+    }))
+
     return NextResponse.json({
       submissions: transformedSubmissions,
       onboardingData,
+      integrations: transformedIntegrations,
     })
   } catch (error) {
     return handleApiError(error, 'Intake Fetch')

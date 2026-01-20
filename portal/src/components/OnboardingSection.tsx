@@ -45,9 +45,12 @@ export default function OnboardingSection({
       })
       if (response.ok) {
         const data = await response.json()
-        console.log('[OnboardingSection] Refreshed submissions:', data.submissions)
+        console.log('[OnboardingSection] Refreshed data:', data.submissions, data.integrations)
         setSubmissions(data.submissions)
         setOnboardingData(data.onboardingData)
+        if (data.integrations) {
+          setIntegrations(data.integrations)
+        }
       }
     } catch (error) {
       console.error('Error refreshing data:', error)
