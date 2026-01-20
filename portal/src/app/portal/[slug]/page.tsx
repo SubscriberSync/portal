@@ -8,14 +8,13 @@ import {
   getIntegrations,
   upsertOrganization
 } from '@/lib/supabase/data'
-import { createServiceClient } from '@/lib/supabase/service'
 import OnboardingSection from '@/components/OnboardingSection'
 import DiscordPromptBanner from '@/components/DiscordPromptBanner'
 import CriticalAlerts from '@/components/CriticalAlerts'
 import PackReadyCounter from '@/components/PackReadyCounter'
 import StatsGrid from '@/components/StatsGrid'
 import Forecasting from '@/components/Forecasting'
-import MigrationCenter from '@/components/MigrationCenter'
+import StoryMigrationCenter from '@/components/StoryMigrationCenter'
 import { ClientIntegrations } from '@/lib/types'
 import { IntakeSubmission as SupabaseIntakeSubmission, DiscordConfig } from '@/lib/supabase/data'
 
@@ -119,40 +118,11 @@ export default async function PortalPage({ params }: PortalPageProps) {
   }
 
   // Fetch all data in parallel
-  const supabase = createServiceClient()
-  
-  const [submissions, discordConfig, integrations, migrationData] = await Promise.all([
+  const [submissions, discordConfig, integrations] = await Promise.all([
     getIntakeSubmissions(organization.id),
     getDiscordConfig(organization.id),
     getIntegrations(organization.id),
-    // Fetch migration-related data
-    Promise.all([
-      supabase.from('sku_aliases').select('*').eq('organization_id', organization.id),
-      supabase.from('migration_runs').select('*').eq('organization_id', organization.id).order('created_at', { ascending: false }).limit(1),
-      supabase.from('audit_logs').select('status').eq('organization_id', organization.id),
-      supabase.from('subscribers').select('id', { count: 'exact', head: true }).eq('organization_id', organization.id).is('migration_status', null),
-    ]),
   ])
-
-  // Process migration data
-  const [skuAliasesResult, migrationRunResult, auditLogsResult, pendingSubscribersResult] = migrationData
-  const skuAliases = skuAliasesResult.data || []
-  const latestRun = migrationRunResult.data?.[0] || null
-  const auditLogs = auditLogsResult.data || []
-  const pendingSubscribers = pendingSubscribersResult.count || 0
-
-  // Calculate audit stats
-  const auditStats = {
-    total: auditLogs.length,
-    clean: auditLogs.filter(l => l.status === 'clean').length,
-    flagged: auditLogs.filter(l => l.status === 'flagged').length,
-    resolved: auditLogs.filter(l => l.status === 'resolved').length,
-    unmapped: 0, // Will be calculated from unmapped_items table if needed
-  }
-
-  // Get installment name for migration center
-  const installmentSubmission = submissions.find(s => s.item_type === 'Installment Name')
-  const installmentName = installmentSubmission?.value_encrypted || 'Box'
 
   // Transform data for components
   const transformedSubmissions = transformSubmissions(submissions)
@@ -223,32 +193,9 @@ export default async function PortalPage({ params }: PortalPageProps) {
 
         {/* Migration Center - Show after Step 1 complete but before migration is done */}
         {needsMigration && (
-          <MigrationCenter
+          <StoryMigrationCenter
             organizationId={organization.id}
             clientSlug={slug}
-            skuAliases={skuAliases.map(a => ({
-              id: a.id,
-              shopify_sku: a.shopify_sku,
-              product_sequence_id: a.product_sequence_id,
-              product_name: a.product_name,
-            }))}
-            latestRun={latestRun ? {
-              id: latestRun.id,
-              status: latestRun.status,
-              total_subscribers: latestRun.total_subscribers || 0,
-              processed_subscribers: latestRun.processed_subscribers || 0,
-              clean_count: latestRun.clean_count || 0,
-              flagged_count: latestRun.flagged_count || 0,
-              unmapped_count: latestRun.unmapped_count || 0,
-              skipped_count: latestRun.skipped_count || 0,
-              started_at: latestRun.started_at,
-              completed_at: latestRun.completed_at,
-              paused_at: latestRun.paused_at,
-            } : null}
-            auditStats={auditStats}
-            pendingSubscribers={pendingSubscribers}
-            isAdmin={false}
-            installmentName={installmentName}
           />
         )}
 

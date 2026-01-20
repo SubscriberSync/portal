@@ -133,9 +133,12 @@ export async function POST(request: NextRequest) {
     for (const v of variations) {
       // Key by product name + variant + sku
       const key = `${v.product_name}|||${v.variant_title || ''}|||${v.sku || ''}`
+      // Supabase returns relations as arrays, so we need to extract the first item
+      const tierArray = v.tier as Array<{ name: string }> | null
+      const tierName = Array.isArray(tierArray) && tierArray.length > 0 ? tierArray[0].name : null
       variationMap.set(key, {
         ...v,
-        tierName: (v.tier as { name: string } | null)?.name || null,
+        tierName,
       })
     }
 

@@ -59,11 +59,12 @@ CREATE TABLE IF NOT EXISTS product_variations (
   sample_properties JSONB,
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-  -- Unique by the combination of identifiers (handle missing values)
-  UNIQUE(organization_id, product_name, COALESCE(variant_title, ''), COALESCE(sku, ''))
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Unique index for product variations (handles NULL values with COALESCE)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_product_variations_unique
+  ON product_variations(organization_id, product_name, COALESCE(variant_title, ''), COALESCE(sku, ''));
 
 -- 4. Customer story progress - THE source of truth for where each customer is
 CREATE TABLE IF NOT EXISTS customer_story_progress (
