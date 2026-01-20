@@ -72,9 +72,11 @@ export async function POST(request: NextRequest) {
     const webhookUrl = `${appUrl}/api/webhooks/recharge?org_id=${orgId}`
 
     // Register webhooks for each topic
+    console.log(`[Recharge] Registering webhooks for ${WEBHOOK_TOPICS.length} topics to: ${webhookUrl}`)
     const webhookResults = await Promise.all(
       WEBHOOK_TOPICS.map(async (topic) => {
         try {
+          console.log(`[Recharge] Registering webhook for topic: ${topic}`)
           const response = await fetch(`${RECHARGE_API_BASE}/webhooks`, {
             method: 'POST',
             headers: {
@@ -89,16 +91,20 @@ export async function POST(request: NextRequest) {
           })
 
           if (response.ok) {
+            console.log(`[Recharge] ✓ Successfully registered webhook for ${topic}`)
             return { topic, success: true }
           } else {
             // Webhook might already exist
             const error = await response.text()
+            console.log(`[Recharge] Webhook registration failed for ${topic}: ${response.status} - ${error}`)
             if (error.includes('already exists')) {
+              console.log(`[Recharge] ✓ Webhook for ${topic} already exists`)
               return { topic, success: true, existed: true }
             }
             return { topic, success: false, error }
           }
         } catch (err) {
+          console.error(`[Recharge] Exception registering webhook for ${topic}:`, err)
           return { topic, success: false, error: String(err) }
         }
       })
@@ -106,6 +112,7 @@ export async function POST(request: NextRequest) {
 
     const successCount = webhookResults.filter((r) => r.success).length
     console.log(`[Recharge] Registered ${successCount}/${WEBHOOK_TOPICS.length} webhooks`)
+    console.log(`[Recharge] Failed webhooks:`, webhookResults.filter(r => !r.success).map(r => ({ topic: r.topic, error: r.error })))
 
     // Store integration in Supabase
     const supabase = createServiceClient()
@@ -153,10 +160,18 @@ async function initialSync(
     // Fetch ALL customers with pagination
     // Note: Recharge's /customers endpoint doesn't support status filtering - it returns all customers by default
     let nextCursor: string | null = null
+    let pageCount = 0
+    const startTime = Date.now()
+
+    console.log(`[Recharge] Starting customer sync for org ${orgId}`)
+
     do {
+      pageCount++
       const url = new URL(`${RECHARGE_API_BASE}/customers`)
       url.searchParams.set('limit', '250')
       if (nextCursor) url.searchParams.set('cursor', nextCursor)
+
+      console.log(`[Recharge] Fetching page ${pageCount} with URL: ${url.toString().replace(apiKey, '[REDACTED]')}`)
 
       const response = await fetch(url.toString(), {
         headers: {
@@ -166,57 +181,102 @@ async function initialSync(
       })
 
       if (!response.ok) {
-        console.log(`[Recharge] Failed to fetch customers:`, response.status)
+        const errorText = await response.text()
+        console.error(`[Recharge] Failed to fetch customers page ${pageCount}:`, response.status, errorText)
         break
       }
 
       const data = await response.json()
       const customers = data.customers || []
 
-      console.log(`[Recharge] Fetched ${customers.length} customers (page with cursor: ${nextCursor || 'initial'})`)
+      console.log(`[Recharge] Page ${pageCount}: Fetched ${customers.length} customers (cursor: ${nextCursor || 'initial'})`)
+      console.log(`[Recharge] Response has next_cursor: ${!!data.next_cursor}, previous_cursor: ${!!data.previous_cursor}`)
+
+      if (customers.length === 0) {
+        console.log(`[Recharge] No customers returned on page ${pageCount}, stopping pagination`)
+        break
+      }
+
+      // Log first customer as sample
+      if (customers.length > 0) {
+        console.log(`[Recharge] Sample customer: ID ${customers[0].id}, Email: ${customers[0].email}, Status: ${customers[0].status || 'no status field'}`)
+      }
 
       // Upsert customers to subscribers table
       // Note: We set all imported customers as 'Active' initially.
       // Webhooks will update status based on actual Recharge customer lifecycle events.
+      let pageUpserts = 0
       for (const customer of customers) {
-        await supabase.from('subscribers').upsert(
-          {
-            organization_id: orgId,
-            email: customer.email.toLowerCase(),
-            first_name: customer.first_name,
-            last_name: customer.last_name,
-            phone: customer.phone || null,
-            address1: customer.billing_address1 || null,
-            address2: customer.billing_address2 || null,
-            city: customer.billing_city || null,
-            state: customer.billing_province || null,
-            zip: customer.billing_zip || null,
-            country: customer.billing_country || 'US',
-            recharge_customer_id: customer.id.toString(),
-            shopify_customer_id: customer.shopify_customer_id?.toString() || null,
-            subscribed_at: customer.created_at,
-            status: 'Active', // Set as Active initially - webhooks handle status changes
-            migration_status: 'pending',
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'organization_id,email',
+        try {
+          const { error } = await supabase.from('subscribers').upsert(
+            {
+              organization_id: orgId,
+              email: customer.email.toLowerCase(),
+              first_name: customer.first_name,
+              last_name: customer.last_name,
+              phone: customer.phone || null,
+              address1: customer.billing_address1 || null,
+              address2: customer.billing_address2 || null,
+              city: customer.billing_city || null,
+              state: customer.billing_province || null,
+              zip: customer.billing_zip || null,
+              country: customer.billing_country || 'US',
+              recharge_customer_id: customer.id.toString(),
+              shopify_customer_id: customer.shopify_customer_id?.toString() || null,
+              subscribed_at: customer.created_at,
+              status: 'Active', // Set as Active initially - webhooks handle status changes
+              migration_status: 'pending',
+              updated_at: new Date().toISOString(),
+            },
+            {
+              onConflict: 'organization_id,email',
+            }
+          )
+
+          if (error) {
+            console.error(`[Recharge] Failed to upsert customer ${customer.id}:`, error)
+          } else {
+            pageUpserts++
           }
-        )
-        customerCount++
+        } catch (err) {
+          console.error(`[Recharge] Exception upserting customer ${customer.id}:`, err)
+        }
       }
+
+      console.log(`[Recharge] Page ${pageCount}: Successfully upserted ${pageUpserts}/${customers.length} customers`)
+      customerCount += pageUpserts
 
       // Check for next page
       nextCursor = data.next_cursor || null
+
+      // Safety check - don't fetch more than 100 pages (25,000 customers)
+      if (pageCount >= 100) {
+        console.warn(`[Recharge] Hit safety limit of 100 pages, stopping pagination`)
+        break
+      }
+
+      // Small delay between pages to be respectful to the API
+      if (nextCursor) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
     } while (nextCursor)
+
+    const duration = Date.now() - startTime
+    console.log(`[Recharge] Customer sync completed: ${customerCount} customers across ${pageCount} pages in ${duration}ms`)
 
     // Fetch ALL subscriptions (not just ACTIVE) to include cancelled/expired with remaining shipments
     // We need to fetch each status separately since Recharge doesn't support multiple statuses
     const statuses = ['ACTIVE', 'CANCELLED', 'EXPIRED']
+    console.log(`[Recharge] Starting subscription sync for statuses: ${statuses.join(', ')}`)
 
     for (const status of statuses) {
+      console.log(`[Recharge] Fetching ${status} subscriptions`)
       let subCursor: string | null = null
+      let subPageCount = 0
+
       do {
+        subPageCount++
         const url = new URL(`${RECHARGE_API_BASE}/subscriptions`)
         url.searchParams.set('limit', '250')
         url.searchParams.set('status', status)
@@ -229,64 +289,101 @@ async function initialSync(
           },
         })
 
-        if (!response.ok) break
+        if (!response.ok) {
+          console.error(`[Recharge] Failed to fetch ${status} subscriptions page ${subPageCount}:`, response.status)
+          break
+        }
 
         const data = await response.json()
         const subscriptions = data.subscriptions || []
 
-        // Update subscriber records with subscription data
-        for (const sub of subscriptions) {
-          const frequency = mapFrequency(sub.order_interval_unit, sub.order_interval_frequency)
+        console.log(`[Recharge] ${status} subscriptions page ${subPageCount}: ${subscriptions.length} subscriptions`)
 
-          // Determine if this is a prepaid subscription and calculate remaining shipments
-          const isPrepaid = detectPrepaidSubscription(sub)
-          const prepaidTotal = isPrepaid ? calculatePrepaidTotal(sub) : null
-
-          // Estimate orders delivered based on subscription creation date and order interval
-          // This avoids making individual API calls per subscription (which is slow)
-          // The charge/success webhook will update counts accurately going forward
-          const ordersDelivered = isPrepaid ? estimateOrdersDelivered(sub) : null
-          const ordersRemaining = prepaidTotal && ordersDelivered !== null
-            ? Math.max(0, prepaidTotal - ordersDelivered)
-            : null
-
-          // Determine effective status:
-          // - ACTIVE subscriptions are always Active
-          // - CANCELLED subscriptions are Cancelled (user chose to cancel)
-          // - EXPIRED subscriptions with orders remaining are Active (prepaid still delivering)
-          // - EXPIRED subscriptions with no orders remaining are Expired
-          let effectiveStatus: 'Active' | 'Paused' | 'Cancelled' | 'Expired' = 'Active'
-          if (sub.status === 'CANCELLED') {
-            // True cancellation - user cancelled
-            effectiveStatus = 'Cancelled'
-          } else if (sub.status === 'EXPIRED') {
-            // Expired could mean prepaid finished OR prepaid still has remaining
-            effectiveStatus = (ordersRemaining && ordersRemaining > 0) ? 'Active' : 'Expired'
-          }
-
-          await supabase
-            .from('subscribers')
-            .update({
-              status: effectiveStatus,
-              sku: sub.sku || sub.product_title,
-              frequency: frequency,
-              is_prepaid: isPrepaid,
-              prepaid_total: prepaidTotal,
-              orders_remaining: ordersRemaining,
-              recharge_subscription_id: sub.id.toString(),
-              cancelled_at: sub.cancelled_at ? new Date(sub.cancelled_at).toISOString() : null,
-              cancel_reason: sub.cancellation_reason || null,
-              next_charge_date: sub.next_charge_scheduled_at || null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('organization_id', orgId)
-            .eq('recharge_customer_id', sub.customer_id.toString())
-
-          subscriptionCount++
+        if (subscriptions.length === 0) {
+          console.log(`[Recharge] No more ${status} subscriptions, moving to next status`)
+          break
         }
 
+        // Update subscriber records with subscription data
+        let subUpdates = 0
+        for (const sub of subscriptions) {
+          try {
+            const frequency = mapFrequency(sub.order_interval_unit, sub.order_interval_frequency)
+
+            // Determine if this is a prepaid subscription and calculate remaining shipments
+            const isPrepaid = detectPrepaidSubscription(sub)
+            const prepaidTotal = isPrepaid ? calculatePrepaidTotal(sub) : null
+
+            // Estimate orders delivered based on subscription creation date and order interval
+            // This avoids making individual API calls per subscription (which is slow)
+            // The charge/success webhook will update counts accurately going forward
+            const ordersDelivered = isPrepaid ? estimateOrdersDelivered(sub) : null
+            const ordersRemaining = prepaidTotal && ordersDelivered !== null
+              ? Math.max(0, prepaidTotal - ordersDelivered)
+              : null
+
+            // Determine effective status:
+            // - ACTIVE subscriptions are always Active
+            // - CANCELLED subscriptions are Cancelled (user chose to cancel)
+            // - EXPIRED subscriptions with orders remaining are Active (prepaid still delivering)
+            // - EXPIRED subscriptions with no orders remaining are Expired
+            let effectiveStatus: 'Active' | 'Paused' | 'Cancelled' | 'Expired' = 'Active'
+            if (sub.status === 'CANCELLED') {
+              // True cancellation - user cancelled
+              effectiveStatus = 'Cancelled'
+            } else if (sub.status === 'EXPIRED') {
+              // Expired could mean prepaid finished OR prepaid still has remaining
+              effectiveStatus = (ordersRemaining && ordersRemaining > 0) ? 'Active' : 'Expired'
+            }
+
+            const { error } = await supabase
+              .from('subscribers')
+              .update({
+                status: effectiveStatus,
+                sku: sub.sku || sub.product_title,
+                frequency: frequency,
+                is_prepaid: isPrepaid,
+                prepaid_total: prepaidTotal,
+                orders_remaining: ordersRemaining,
+                recharge_subscription_id: sub.id.toString(),
+                cancelled_at: sub.cancelled_at ? new Date(sub.cancelled_at).toISOString() : null,
+                cancel_reason: sub.cancellation_reason || null,
+                next_charge_date: sub.next_charge_scheduled_at || null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('organization_id', orgId)
+              .eq('recharge_customer_id', sub.customer_id.toString())
+
+            if (error) {
+              console.error(`[Recharge] Failed to update subscription ${sub.id}:`, error)
+            } else {
+              subUpdates++
+            }
+
+            subscriptionCount++
+          } catch (err) {
+            console.error(`[Recharge] Exception processing subscription ${sub.id}:`, err)
+          }
+        }
+
+        console.log(`[Recharge] ${status} page ${subPageCount}: Updated ${subUpdates}/${subscriptions.length} subscribers`)
+
         subCursor = data.next_cursor || null
+
+        // Safety check for subscriptions too
+        if (subPageCount >= 100) {
+          console.warn(`[Recharge] Hit safety limit for ${status} subscriptions, stopping`)
+          break
+        }
+
+        // Small delay between pages
+        if (subCursor) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+
       } while (subCursor)
+
+      console.log(`[Recharge] Completed ${status} subscriptions: ${subPageCount} pages`)
     }
 
     console.log(`[Recharge] Initial sync: ${customerCount} customers, ${subscriptionCount} subscriptions`)
@@ -398,7 +495,7 @@ function mapFrequency(unit: string, frequency: number): 'Monthly' | 'Quarterly' 
 }
 
 // GET /api/integrations/recharge
-// Check connection status
+// Check connection status and diagnostic info
 export async function GET() {
   const { orgId } = await auth()
 
@@ -419,11 +516,124 @@ export async function GET() {
     return NextResponse.json({ connected: false })
   }
 
+  // Get some diagnostic counts
+  const { count: subscriberCount } = await supabase
+    .from('subscribers')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+
+  const { count: withRechargeIdCount } = await supabase
+    .from('subscribers')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .not('recharge_customer_id', 'is', null)
+
   return NextResponse.json({
     connected: data.connected,
     lastSync: data.last_sync_at,
     tokenName: (data.credentials_encrypted as { token_name?: string })?.token_name,
+    diagnostics: {
+      totalSubscribers: subscriberCount || 0,
+      withRechargeId: withRechargeIdCount || 0,
+    },
   })
+}
+
+// POST /api/integrations/recharge/test
+// Test endpoint to check Recharge API directly
+export async function PATCH(request: NextRequest) {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const supabase = createServiceClient()
+
+  // Get existing credentials
+  const { data: integration } = await supabase
+    .from('integrations')
+    .select('credentials_encrypted')
+    .eq('organization_id', orgId)
+    .eq('type', 'recharge')
+    .eq('connected', true)
+    .single()
+
+  if (!integration?.credentials_encrypted) {
+    return NextResponse.json({ error: 'Recharge not connected' }, { status: 400 })
+  }
+
+  const apiKey = integration.credentials_encrypted.api_key as string
+
+  try {
+    // Test customer API
+    console.log('[Recharge Test] Testing customer API...')
+    const customerUrl = `${RECHARGE_API_BASE}/customers?limit=5`
+    const customerResponse = await fetch(customerUrl, {
+      headers: {
+        'X-Recharge-Access-Token': apiKey,
+        'X-Recharge-Version': '2021-11',
+      },
+    })
+
+    if (!customerResponse.ok) {
+      return NextResponse.json({
+        error: `Customer API failed: ${customerResponse.status}`,
+        response: await customerResponse.text()
+      }, { status: 400 })
+    }
+
+    const customerData = await customerResponse.json()
+    const customers = customerData.customers || []
+
+    // Test subscription API
+    console.log('[Recharge Test] Testing subscription API...')
+    const subUrl = `${RECHARGE_API_BASE}/subscriptions?limit=5`
+    const subResponse = await fetch(subUrl, {
+      headers: {
+        'X-Recharge-Access-Token': apiKey,
+        'X-Recharge-Version': '2021-11',
+      },
+    })
+
+    if (!subResponse.ok) {
+      return NextResponse.json({
+        error: `Subscription API failed: ${subResponse.status}`,
+        response: await subResponse.text()
+      }, { status: 400 })
+    }
+
+    const subData = await subResponse.json()
+    const subscriptions = subData.subscriptions || []
+
+    return NextResponse.json({
+      success: true,
+      testResults: {
+        customers: {
+          count: customers.length,
+          hasNextCursor: !!customerData.next_cursor,
+          sample: customers.slice(0, 2).map((c: any) => ({
+            id: c.id,
+            email: c.email,
+            status: c.status || 'no status field',
+            created_at: c.created_at
+          }))
+        },
+        subscriptions: {
+          count: subscriptions.length,
+          hasNextCursor: !!subData.next_cursor,
+          sample: subscriptions.slice(0, 2).map((s: any) => ({
+            id: s.id,
+            customer_id: s.customer_id,
+            status: s.status,
+            created_at: s.created_at
+          }))
+        }
+      }
+    })
+  } catch (error) {
+    return handleApiError(error, 'Recharge Test', 'Test failed')
+  }
 }
 
 // PUT /api/integrations/recharge
@@ -463,11 +673,24 @@ export async function PUT() {
       .eq('organization_id', orgId)
       .eq('type', 'recharge')
 
-    return NextResponse.json({
-      success: true,
-      ...syncResult,
-    })
-  } catch (error) {
+  return NextResponse.json({
+    success: true,
+    ...syncResult,
+    diagnostics: {
+      totalSubscribersAfterSync: await supabase
+        .from('subscribers')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .then(({ count }) => count || 0),
+      withRechargeIdAfterSync: await supabase
+        .from('subscribers')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .not('recharge_customer_id', 'is', null)
+        .then(({ count }) => count || 0),
+    },
+  })
+} catch (error) {
     return handleApiError(error, 'Recharge Resync', 'Resync failed')
   }
 }

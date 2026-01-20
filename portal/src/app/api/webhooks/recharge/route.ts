@@ -246,6 +246,8 @@ async function handleCustomerEvent(
   topic: RechargeWebhookTopic,
   customer: RechargeCustomer
 ) {
+  console.log(`[Recharge Webhook] Processing ${topic} for customer ${customer.id} (${customer.email})`)
+
   // Upsert customer data
   const subscriberData: Record<string, unknown> = {
     organization_id: orgId,
@@ -266,8 +268,10 @@ async function handleCustomerEvent(
 
   // Handle customer status changes based on event type
   if (topic === 'customer/activated') {
+    console.log(`[Recharge Webhook] Activating customer ${customer.id}`)
     subscriberData.status = 'Active'
   } else if (topic === 'customer/deactivated') {
+    console.log(`[Recharge Webhook] Deactivating customer ${customer.id}`)
     // When a customer is deactivated, they likely have no active subscriptions
     // Check if they have prepaid remaining orders, otherwise mark as Cancelled
     const { data: existingSubscriber } = await supabase
@@ -279,8 +283,10 @@ async function handleCustomerEvent(
 
     if (existingSubscriber?.is_prepaid && existingSubscriber.orders_remaining && existingSubscriber.orders_remaining > 0) {
       subscriberData.status = 'Expired' // Prepaid still has remaining orders
+      console.log(`[Recharge Webhook] Customer has prepaid remaining, setting to Expired`)
     } else {
       subscriberData.status = 'Cancelled' // No active subscriptions
+      console.log(`[Recharge Webhook] No prepaid remaining, setting to Cancelled`)
     }
   }
 
