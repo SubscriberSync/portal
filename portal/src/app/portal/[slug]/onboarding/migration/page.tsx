@@ -64,7 +64,7 @@ export default async function MigrationPage({ params }: MigrationPageProps) {
     .single()
 
   // Get audit stats if there's a run
-  let auditStats = { total: 0, clean: 0, flagged: 0, resolved: 0 }
+  let auditStats = { total: 0, clean: 0, flagged: 0, resolved: 0, unmapped: 0 }
   if (latestRun) {
     const { count: total } = await supabase
       .from('audit_logs')
@@ -89,11 +89,18 @@ export default async function MigrationPage({ params }: MigrationPageProps) {
       .eq('migration_run_id', latestRun.id)
       .eq('status', 'resolved')
 
+    const { count: unmapped } = await supabase
+      .from('unmapped_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organization.id)
+      .eq('resolved', false)
+
     auditStats = {
       total: total || 0,
       clean: clean || 0,
       flagged: flagged || 0,
       resolved: resolved || 0,
+      unmapped: unmapped || 0,
     }
   }
 

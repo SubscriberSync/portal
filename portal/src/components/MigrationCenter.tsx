@@ -53,11 +53,11 @@ interface MigrationRun {
   processed_subscribers: number
   clean_count: number
   flagged_count: number
-  unmapped_count: number
-  skipped_count: number
+  unmapped_count?: number
+  skipped_count?: number
   started_at: string | null
   completed_at: string | null
-  paused_at: string | null
+  paused_at?: string | null
 }
 
 interface AuditStats {
