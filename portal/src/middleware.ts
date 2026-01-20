@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/',
   '/terms',
   '/privacy',
+  '/case-study(.*)',
 
   // Auth pages
   '/sign-in(.*)',
