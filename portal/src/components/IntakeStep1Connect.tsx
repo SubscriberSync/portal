@@ -366,7 +366,10 @@ export default function IntakeStep1Connect({
                         Under <span className="text-[#F5F0E8] font-medium">Admin tokens</span>, click <span className="text-[#F5F0E8]">Create new</span>
                       </li>
                       <li>
-                        Name it <span className="text-[#F5F0E8]">&quot;SubscriberSync&quot;</span> and enable <span className="text-[#F5F0E8]">Read access</span>
+                        Name it <span className="text-[#F5F0E8]">&quot;SubscriberSync&quot;</span> and use <span className="text-[#F5F0E8]">your email</span> as the contact
+                      </li>
+                      <li>
+                        Check <span className="text-[#F5F0E8]">read_customers</span> and <span className="text-[#F5F0E8]">read_subscriptions</span>
                       </li>
                       <li>
                         Copy the token and paste it below
