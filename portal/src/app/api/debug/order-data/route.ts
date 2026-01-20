@@ -68,19 +68,19 @@ export async function GET(request: NextRequest) {
     const maxPages = 50 // Up to ~12,500 orders
 
     while (currentUrl && pageCount < maxPages) {
-      const response = await fetch(currentUrl, {
+      const orderResponse: Response = await fetch(currentUrl, {
         headers: {
           'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json',
         },
       })
 
-      if (!response.ok) {
-        diagnostics.shopifyError = `${response.status}: ${await response.text()}`
+      if (!orderResponse.ok) {
+        diagnostics.shopifyError = `${orderResponse.status}: ${await orderResponse.text()}`
         break
       }
 
-      const data = await response.json()
+      const data = await orderResponse.json()
 
       for (const order of data.orders || []) {
         for (const item of order.line_items || []) {
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Check for pagination
-      const linkHeader = response.headers.get('Link')
+      const linkHeader = orderResponse.headers.get('Link')
       if (linkHeader && linkHeader.includes('rel="next"')) {
         const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
         currentUrl = match ? match[1] : null
