@@ -208,7 +208,7 @@ export default function MigrationCenter({
   // Mapping state
   const [pendingMappings, setPendingMappings] = useState<Map<string, number>>(new Map())
   const [showPatternForm, setShowPatternForm] = useState(false)
-  const [newPattern, setNewPattern] = useState({ pattern: '', type: 'contains' as const, sequence: 0 })
+  const [newPattern, setNewPattern] = useState<{ pattern: string; type: 'contains' | 'regex' | 'starts_with' | 'ends_with'; sequence: number }>({ pattern: '', type: 'contains', sequence: 0 })
 
   // Check AI availability on mount
   useEffect(() => {
@@ -822,7 +822,7 @@ export default function MigrationCenter({
                   <label className="block text-sm text-[#a1a1aa] mb-1">Match Type</label>
                   <select
                     value={newPattern.type}
-                    onChange={e => setNewPattern(p => ({ ...p, type: e.target.value as 'contains' }))}
+                    onChange={e => setNewPattern(p => ({ ...p, type: e.target.value as 'contains' | 'regex' | 'starts_with' | 'ends_with' }))}
                     className="w-full px-3 py-2 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-white text-sm"
                   >
                     <option value="contains">Contains</option>
