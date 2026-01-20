@@ -76,10 +76,10 @@ export async function POST() {
       console.error('Error deleting product patterns:', patternsError)
     }
 
-    // 6. Reset subscriber migration status
+    // 6. Reset subscriber migration status to 'pending' so they get picked up by audit
     const { error: subscribersError } = await supabase
       .from('subscribers')
-      .update({ migration_status: null })
+      .update({ migration_status: 'pending' })
       .eq('organization_id', organization.id)
 
     if (subscribersError) {
@@ -127,7 +127,7 @@ export async function DELETE() {
     await supabase.from('migration_runs').delete().eq('organization_id', organization.id)
     await supabase.from('sku_aliases').delete().eq('organization_id', organization.id)
     await supabase.from('product_patterns').delete().eq('organization_id', organization.id)
-    await supabase.from('subscribers').update({ migration_status: null }).eq('organization_id', organization.id)
+    await supabase.from('subscribers').update({ migration_status: 'pending' }).eq('organization_id', organization.id)
     await updateOrganization(organization.id, { migration_complete: false })
 
     return NextResponse.json({

@@ -185,6 +185,7 @@ async function initialSync(
             recharge_customer_id: customer.id.toString(),
             shopify_customer_id: customer.shopify_customer_id?.toString() || null,
             subscribed_at: customer.created_at,
+            migration_status: 'pending',
             updated_at: new Date().toISOString(),
           },
           {
