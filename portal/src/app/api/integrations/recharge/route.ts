@@ -14,6 +14,8 @@ const WEBHOOK_TOPICS = [
   'subscription/skipped',
   'customer/created',
   'customer/updated',
+  'customer/activated',
+  'customer/deactivated',
   'charge/success',
 ]
 
@@ -148,72 +150,65 @@ async function initialSync(
   let subscriptionCount = 0
 
   try {
-    // Fetch ALL customers with pagination (both ACTIVE and INACTIVE)
-    // Recharge's /customers endpoint filters by status, so we need to fetch both
-    const customerStatuses = ['ACTIVE', 'INACTIVE']
+    // Fetch ALL customers with pagination
+    // Note: Recharge's /customers endpoint doesn't support status filtering - it returns all customers by default
+    let nextCursor: string | null = null
+    do {
+      const url = new URL(`${RECHARGE_API_BASE}/customers`)
+      url.searchParams.set('limit', '250')
+      if (nextCursor) url.searchParams.set('cursor', nextCursor)
 
-    for (const customerStatus of customerStatuses) {
-      let nextCursor: string | null = null
-      do {
-        const url = new URL(`${RECHARGE_API_BASE}/customers`)
-        url.searchParams.set('limit', '250')
-        url.searchParams.set('status', customerStatus)
-        if (nextCursor) url.searchParams.set('cursor', nextCursor)
+      const response = await fetch(url.toString(), {
+        headers: {
+          'X-Recharge-Access-Token': apiKey,
+          'X-Recharge-Version': '2021-11',
+        },
+      })
 
-        const response = await fetch(url.toString(), {
-          headers: {
-            'X-Recharge-Access-Token': apiKey,
-            'X-Recharge-Version': '2021-11',
+      if (!response.ok) {
+        console.log(`[Recharge] Failed to fetch customers:`, response.status)
+        break
+      }
+
+      const data = await response.json()
+      const customers = data.customers || []
+
+      console.log(`[Recharge] Fetched ${customers.length} customers (page with cursor: ${nextCursor || 'initial'})`)
+
+      // Upsert customers to subscribers table
+      // Note: We set all imported customers as 'Active' initially.
+      // Webhooks will update status based on actual Recharge customer lifecycle events.
+      for (const customer of customers) {
+        await supabase.from('subscribers').upsert(
+          {
+            organization_id: orgId,
+            email: customer.email.toLowerCase(),
+            first_name: customer.first_name,
+            last_name: customer.last_name,
+            phone: customer.phone || null,
+            address1: customer.billing_address1 || null,
+            address2: customer.billing_address2 || null,
+            city: customer.billing_city || null,
+            state: customer.billing_province || null,
+            zip: customer.billing_zip || null,
+            country: customer.billing_country || 'US',
+            recharge_customer_id: customer.id.toString(),
+            shopify_customer_id: customer.shopify_customer_id?.toString() || null,
+            subscribed_at: customer.created_at,
+            status: 'Active', // Set as Active initially - webhooks handle status changes
+            migration_status: 'pending',
+            updated_at: new Date().toISOString(),
           },
-        })
+          {
+            onConflict: 'organization_id,email',
+          }
+        )
+        customerCount++
+      }
 
-        if (!response.ok) {
-          console.log(`[Recharge] Failed to fetch ${customerStatus} customers:`, response.status)
-          break
-        }
-
-        const data = await response.json()
-        const customers = data.customers || []
-
-        console.log(`[Recharge] Fetched ${customers.length} ${customerStatus} customers`)
-
-        // Upsert customers to subscribers table
-        for (const customer of customers) {
-          // Determine subscriber status from Recharge customer status
-          const subscriberStatus: 'Active' | 'Cancelled' | 'Expired' =
-            customerStatus === 'INACTIVE' ? 'Cancelled' : 'Active'
-
-          await supabase.from('subscribers').upsert(
-            {
-              organization_id: orgId,
-              email: customer.email.toLowerCase(),
-              first_name: customer.first_name,
-              last_name: customer.last_name,
-              phone: customer.phone || null,
-              address1: customer.billing_address1 || null,
-              address2: customer.billing_address2 || null,
-              city: customer.billing_city || null,
-              state: customer.billing_province || null,
-              zip: customer.billing_zip || null,
-              country: customer.billing_country || 'US',
-              recharge_customer_id: customer.id.toString(),
-              shopify_customer_id: customer.shopify_customer_id?.toString() || null,
-              subscribed_at: customer.created_at,
-              status: subscriberStatus,
-              migration_status: 'pending',
-              updated_at: new Date().toISOString(),
-            },
-            {
-              onConflict: 'organization_id,email',
-            }
-          )
-          customerCount++
-        }
-
-        // Check for next page
-        nextCursor = data.next_cursor || null
-      } while (nextCursor)
-    }
+      // Check for next page
+      nextCursor = data.next_cursor || null
+    } while (nextCursor)
 
     // Fetch ALL subscriptions (not just ACTIVE) to include cancelled/expired with remaining shipments
     // We need to fetch each status separately since Recharge doesn't support multiple statuses

@@ -14,6 +14,8 @@ type RechargeWebhookTopic =
   | 'subscription/unskipped'
   | 'customer/created'
   | 'customer/updated'
+  | 'customer/activated'
+  | 'customer/deactivated'
   | 'charge/created'
   | 'charge/success'
   | 'charge/failed'
@@ -151,7 +153,7 @@ export async function POST(request: NextRequest) {
     if (topic.startsWith('subscription/')) {
       await handleSubscriptionEvent(supabase, orgId, topic, payload.subscription!)
     } else if (topic.startsWith('customer/')) {
-      await handleCustomerEvent(supabase, orgId, payload.customer!)
+      await handleCustomerEvent(supabase, orgId, topic, payload.customer!)
     } else if (topic.startsWith('charge/')) {
       await handleChargeEvent(supabase, orgId, payload.charge!)
     }
@@ -241,10 +243,11 @@ async function handleSubscriptionEvent(
 async function handleCustomerEvent(
   supabase: ReturnType<typeof createServiceClient>,
   orgId: string,
+  topic: RechargeWebhookTopic,
   customer: RechargeCustomer
 ) {
   // Upsert customer data
-  const subscriberData = {
+  const subscriberData: Record<string, unknown> = {
     organization_id: orgId,
     email: customer.email.toLowerCase(),
     first_name: customer.first_name,
@@ -259,6 +262,26 @@ async function handleCustomerEvent(
     recharge_customer_id: customer.id.toString(),
     shopify_customer_id: customer.shopify_customer_id?.toString() || null,
     updated_at: new Date().toISOString(),
+  }
+
+  // Handle customer status changes based on event type
+  if (topic === 'customer/activated') {
+    subscriberData.status = 'Active'
+  } else if (topic === 'customer/deactivated') {
+    // When a customer is deactivated, they likely have no active subscriptions
+    // Check if they have prepaid remaining orders, otherwise mark as Cancelled
+    const { data: existingSubscriber } = await supabase
+      .from('subscribers')
+      .select('is_prepaid, orders_remaining')
+      .eq('organization_id', orgId)
+      .eq('email', customer.email.toLowerCase())
+      .single()
+
+    if (existingSubscriber?.is_prepaid && existingSubscriber.orders_remaining && existingSubscriber.orders_remaining > 0) {
+      subscriberData.status = 'Expired' // Prepaid still has remaining orders
+    } else {
+      subscriberData.status = 'Cancelled' // No active subscriptions
+    }
   }
 
   const { data: existing } = await supabase
@@ -278,7 +301,7 @@ async function handleCustomerEvent(
       .from('subscribers')
       .insert({
         ...subscriberData,
-        status: 'Active',
+        status: subscriberData.status || 'Active',
         box_number: 1,
         subscribed_at: customer.created_at,
       })
