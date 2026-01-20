@@ -683,17 +683,57 @@ export default function MigrationCenter({
       {/* Step 1: SKU Mapping */}
       {step === 'mapping' && (
         <div className="space-y-6">
+          {/* Welcome / Explanation Card */}
+          <div className="rounded-xl bg-gradient-to-r from-[#e07a42]/10 to-[#e07a42]/5 border border-[#e07a42]/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-3">
+              Welcome to the Migration Center
+            </h2>
+            <p className="text-[#a1a1aa] mb-4">
+              This tool scans your Shopify order history to figure out which {installmentName.toLowerCase()} each subscriber 
+              should receive next. Here&apos;s how it works:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#e07a42]/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[#e07a42] font-bold text-sm">1</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Map Your Products</h4>
+                  <p className="text-xs text-[#71717a]">Tell us which SKUs or product names correspond to which {installmentName.toLowerCase()} number</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#e07a42]/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[#e07a42] font-bold text-sm">2</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Scan History</h4>
+                  <p className="text-xs text-[#71717a]">We&apos;ll check every subscriber&apos;s order history to see what they&apos;ve received</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#e07a42]/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[#e07a42] font-bold text-sm">3</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-medium text-sm">Review &amp; Fix</h4>
+                  <p className="text-xs text-[#71717a]">Review any issues (duplicates, gaps) and set the correct next {installmentName.toLowerCase()}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* SKU List */}
           <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-white">Map Your SKUs</h2>
+                <h2 className="text-lg font-semibold text-white">Step 1: Map Your Products</h2>
                 <p className="text-sm text-[#71717a]">
-                  Tell us which SKUs correspond to which {installmentName.toLowerCase()} numbers
+                  We found products in your Shopify orders. Tell us which {installmentName.toLowerCase()} number each one represents.
                 </p>
               </div>
               <div className="flex gap-2">
-                {aiAvailable && (
+                {aiAvailable && detectedSkus.length > 0 && (
                   <button
                     onClick={requestAiPatternSuggestions}
                     disabled={aiLoading}
@@ -709,7 +749,7 @@ export default function MigrationCenter({
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] text-[#a1a1aa] text-sm transition-colors"
                 >
                   <RefreshCw className={`w-4 h-4 ${loadingSkus ? 'animate-spin' : ''}`} />
-                  Refresh
+                  {detectedSkus.length === 0 ? 'Scan Shopify' : 'Refresh'}
                 </button>
               </div>
             </div>
@@ -718,6 +758,7 @@ export default function MigrationCenter({
             {suggestedPatterns.length > 0 && (
               <div className="mb-4 p-4 rounded-lg bg-[#5865F2]/5 border border-[#5865F2]/20">
                 <h4 className="text-sm font-medium text-[#5865F2] mb-2">AI Detected Patterns</h4>
+                <p className="text-xs text-[#71717a] mb-3">We found naming patterns in your products. Click &quot;Add Pattern&quot; to automatically map matching products.</p>
                 <div className="space-y-2">
                   {suggestedPatterns.map((pattern, i) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded bg-[rgba(255,255,255,0.02)]">
@@ -745,12 +786,42 @@ export default function MigrationCenter({
             )}
 
             {loadingSkus ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[#e07a42]" />
-                <span className="ml-3 text-[#71717a]">Scanning Shopify orders...</span>
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-[#e07a42] mb-4" />
+                <span className="text-white font-medium">Scanning your Shopify orders...</span>
+                <span className="text-sm text-[#71717a] mt-1">This may take a moment for large stores</span>
+              </div>
+            ) : detectedSkus.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-full bg-[#e07a42]/10 flex items-center justify-center mb-4">
+                  <Search className="w-8 h-8 text-[#e07a42]" />
+                </div>
+                <h3 className="text-lg font-medium text-white mb-2">Ready to Scan Your Products</h3>
+                <p className="text-sm text-[#71717a] max-w-md mb-6">
+                  Click the button below to scan your Shopify orders and find all the products 
+                  you&apos;ve shipped. We&apos;ll show you each unique SKU so you can tell us which 
+                  {installmentName.toLowerCase()} number it represents.
+                </p>
+                <button
+                  onClick={detectSkus}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#e07a42] hover:bg-[#d06932] text-white font-medium transition-colors"
+                >
+                  <Search className="w-5 h-5" />
+                  Scan Shopify Orders
+                </button>
+                <p className="text-xs text-[#52525b] mt-4">
+                  We&apos;ll look at the last 3 years of orders to find all your subscription products
+                </p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <>
+                <div className="mb-4 p-3 rounded-lg bg-[#5CB87A]/10 border border-[#5CB87A]/20">
+                  <p className="text-sm text-[#5CB87A]">
+                    <strong>Found {detectedSkus.length} products!</strong> Use the dropdowns on the right to assign each product to a {installmentName.toLowerCase()} number. 
+                    For example, if &quot;Episode 1 Box&quot; is your first {installmentName.toLowerCase()}, select &quot;{installmentName} 1&quot;.
+                  </p>
+                </div>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {detectedSkus.map(sku => (
                   <div
                     key={sku.sku}
@@ -793,7 +864,8 @@ export default function MigrationCenter({
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              </>
             )}
           </div>
 
