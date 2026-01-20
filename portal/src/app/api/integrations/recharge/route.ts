@@ -206,8 +206,24 @@ async function initialSync(
       // Note: We set all imported customers as 'Active' initially.
       // Webhooks will update status based on actual Recharge customer lifecycle events.
       let pageUpserts = 0
+      let pageDuplicates = 0
       for (const customer of customers) {
         try {
+          // Check if this email already exists with a different recharge_customer_id
+          const { data: existing } = await supabase
+            .from('subscribers')
+            .select('recharge_customer_id')
+            .eq('organization_id', orgId)
+            .eq('email', customer.email.toLowerCase())
+            .single()
+
+          let isDuplicate = false
+          if (existing && existing.recharge_customer_id !== customer.id.toString()) {
+            console.log(`[Recharge] Email ${customer.email} already exists with different Recharge ID: ${existing.recharge_customer_id} vs ${customer.id}`)
+            isDuplicate = true
+            pageDuplicates++
+          }
+
           const { error } = await supabase.from('subscribers').upsert(
             {
               organization_id: orgId,
@@ -237,11 +253,16 @@ async function initialSync(
             console.error(`[Recharge] Failed to upsert customer ${customer.id}:`, error)
           } else {
             pageUpserts++
+            if (isDuplicate) {
+              console.log(`[Recharge] Updated existing subscriber for duplicate email ${customer.email} with new Recharge ID ${customer.id}`)
+            }
           }
         } catch (err) {
           console.error(`[Recharge] Exception upserting customer ${customer.id}:`, err)
         }
       }
+
+      console.log(`[Recharge] Page ${pageCount}: Successfully upserted ${pageUpserts}/${customers.length} customers (${pageDuplicates} were email duplicates)`)
 
       console.log(`[Recharge] Page ${pageCount}: Successfully upserted ${pageUpserts}/${customers.length} customers`)
       customerCount += pageUpserts
@@ -387,6 +408,31 @@ async function initialSync(
     }
 
     console.log(`[Recharge] Initial sync: ${customerCount} customers, ${subscriptionCount} subscriptions`)
+
+    // Debug: Check actual database counts after sync
+    const { count: actualCustomerCount } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .not('recharge_customer_id', 'is', null)
+
+    const { count: totalSubscriberCount } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+
+    console.log(`[Recharge] Database verification: ${actualCustomerCount} subscribers with recharge_customer_id, ${totalSubscriberCount} total subscribers`)
+
+    // Show sample of what got imported
+    const { data: sampleSubscribers } = await supabase
+      .from('subscribers')
+      .select('email, recharge_customer_id, status, created_at')
+      .eq('organization_id', orgId)
+      .not('recharge_customer_id', 'is', null)
+      .limit(5)
+
+    console.log(`[Recharge] Sample imported subscribers:`, sampleSubscribers)
+
   } catch (error) {
     console.error('[Recharge] Initial sync error:', error instanceof Error ? error.message : error)
   }
@@ -528,6 +574,16 @@ export async function GET() {
     .eq('organization_id', orgId)
     .not('recharge_customer_id', 'is', null)
 
+  // Also check for recent imports
+  const { count: recentRechargeImports } = await supabase
+    .from('subscribers')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .not('recharge_customer_id', 'is', null)
+    .gte('updated_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
+
+  console.log(`[Recharge GET] Diagnostics for org ${orgId}: total=${subscriberCount}, withRechargeId=${withRechargeIdCount}, recentImports=${recentRechargeImports}`)
+
   return NextResponse.json({
     connected: data.connected,
     lastSync: data.last_sync_at,
@@ -535,6 +591,7 @@ export async function GET() {
     diagnostics: {
       totalSubscribers: subscriberCount || 0,
       withRechargeId: withRechargeIdCount || 0,
+      recentRechargeImports: recentRechargeImports || 0,
     },
   })
 }
