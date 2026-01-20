@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride'
 import {
   useReactTable,
   getCoreRowModel,
@@ -34,6 +35,7 @@ import {
   ArrowDown,
   MoveRight,
   RotateCcw,
+  HelpCircle,
 } from 'lucide-react'
 
 interface Story {
@@ -159,6 +161,75 @@ export default function IntakeStep3Products({
     addon: Set<string>
     ignored: Set<string>
   }>({ subscription: new Set(), addon: new Set(), ignored: new Set() })
+
+  // Guided tour state
+  const [runTour, setRunTour] = useState(false)
+  const [tourSteps] = useState<Step[]>([
+    {
+      target: '[data-tour="welcome"]',
+      content: 'Welcome! This is where you map your Shopify products to your subscription. Let\'s walk through how it works.',
+      placement: 'center',
+      disableBeacon: true,
+    },
+    {
+      target: '[data-tour="subscriptions"]',
+      content: 'First, create a subscription to group your products. This represents your subscription box or membership program.',
+      placement: 'bottom',
+    },
+    {
+      target: '[data-tour="create-subscription"]',
+      content: 'Click here to create your first subscription. You can name it and set up pricing tiers (like Basic, Premium, VIP).',
+      placement: 'bottom',
+    },
+    {
+      target: '[data-tour="tiers"]',
+      content: 'Tiers let you organize different subscription levels. After selecting products in the table, click a tier button to assign them.',
+      placement: 'bottom',
+    },
+    {
+      target: '[data-tour="tabs"]',
+      content: 'Products are organized into tabs: Unassigned (needs mapping), Assigned (mapped to subscription), One-time (single purchases), and Ignored.',
+      placement: 'bottom',
+    },
+    {
+      target: '[data-tour="product-table"]',
+      content: 'This table shows all products found in your Shopify orders. Use the checkboxes to select products, then assign them to a tier above.',
+      placement: 'top',
+    },
+    {
+      target: '[data-tour="ai-assist"]',
+      content: 'Use AI to automatically categorize products! It analyzes product names to suggest which are subscriptions, one-time purchases, or should be ignored.',
+      placement: 'bottom',
+    },
+  ])
+
+  // Check if user has seen the tour
+  useEffect(() => {
+    const tourKey = `product-mapping-tour-${clientSlug}`
+    const hasSeenTour = localStorage.getItem(tourKey)
+    if (!hasSeenTour && stats.total > 0 && isExpanded) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => setRunTour(true), 500)
+      return () => clearTimeout(timer)
+    }
+  }, [clientSlug, stats.total, isExpanded])
+
+  const handleTourCallback = (data: CallBackProps) => {
+    const { status } = data
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED]
+
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false)
+      const tourKey = `product-mapping-tour-${clientSlug}`
+      localStorage.setItem(tourKey, 'true')
+    }
+  }
+
+  const restartTour = () => {
+    const tourKey = `product-mapping-tour-${clientSlug}`
+    localStorage.removeItem(tourKey)
+    setRunTour(true)
+  }
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -828,6 +899,43 @@ export default function IntakeStep3Products({
 
   return (
     <div className={`rounded-2xl border overflow-hidden ${isComplete ? 'bg-success/5 border-success/20' : 'bg-background-secondary border-border'}`}>
+      {/* Guided Tour */}
+      <Joyride
+        steps={tourSteps}
+        run={runTour}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleTourCallback}
+        styles={{
+          options: {
+            primaryColor: '#e07a42',
+            zIndex: 10000,
+          },
+          tooltip: {
+            borderRadius: 12,
+            padding: 20,
+          },
+          buttonNext: {
+            borderRadius: 8,
+            padding: '8px 16px',
+          },
+          buttonBack: {
+            marginRight: 8,
+          },
+          buttonSkip: {
+            color: '#71717a',
+          },
+        }}
+        locale={{
+          back: 'Back',
+          close: 'Close',
+          last: 'Got it!',
+          next: 'Next',
+          skip: 'Skip tour',
+        }}
+      />
+
       {/* Header */}
       <div
         className="p-5 border-b border-border cursor-pointer hover:bg-background-elevated transition-colors"
@@ -854,6 +962,18 @@ export default function IntakeStep3Products({
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {stats.total > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  restartTour()
+                }}
+                className="p-1.5 text-foreground-tertiary hover:text-foreground hover:bg-background-elevated rounded-lg transition-colors"
+                title="Show walkthrough"
+              >
+                <HelpCircle className="w-4 h-4" />
+              </button>
+            )}
             {stats.unassigned > 0 && (
               <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
                 {stats.unassigned} unassigned
@@ -901,14 +1021,18 @@ export default function IntakeStep3Products({
           {/* Products found */}
           {stats.total > 0 && (
             <>
+              {/* Tour welcome target (invisible) */}
+              <div data-tour="welcome" className="sr-only">Welcome</div>
+
               {/* Subscriptions Section */}
-              <div className="p-4 bg-background-elevated rounded-xl border border-border">
+              <div data-tour="subscriptions" className="p-4 bg-background-elevated rounded-xl border border-border">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-foreground flex items-center gap-2">
                     <Layers className="w-4 h-4" />
                     Your Subscriptions
                   </h4>
                   <button
+                    data-tour="create-subscription"
                     onClick={() => setShowCreateStory(true)}
                     className="px-3 py-1.5 text-sm text-accent hover:text-accent-hover flex items-center gap-1"
                   >
@@ -964,7 +1088,7 @@ export default function IntakeStep3Products({
                         </div>
 
                         {/* Tiers */}
-                        <div className="flex flex-wrap gap-2">
+                        <div data-tour="tiers" className="flex flex-wrap gap-2">
                           {story.tiers.map(tier => (
                             <div key={tier.id} className="relative group">
                               {editingTier?.tierId === tier.id ? (
@@ -1092,7 +1216,7 @@ export default function IntakeStep3Products({
               </div>
 
               {/* AI Assist + Actions Bar */}
-              <div className="flex items-center justify-between gap-4">
+              <div data-tour="ai-assist" className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   {isAIAvailable && tabCounts.unassigned > 0 && (
                     <button
@@ -1157,7 +1281,7 @@ export default function IntakeStep3Products({
               </div>
 
               {/* Tabs */}
-              <div className="border-b border-border">
+              <div data-tour="tabs" className="border-b border-border">
                 <div className="flex gap-1">
                   {[
                     { id: 'unassigned' as const, label: 'Unassigned', count: tabCounts.unassigned, color: 'amber' },
@@ -1200,7 +1324,7 @@ export default function IntakeStep3Products({
               </div>
 
               {/* Data Table */}
-              <div className="border border-border rounded-lg overflow-hidden">
+              <div data-tour="product-table" className="border border-border rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-background-elevated border-b border-border">
