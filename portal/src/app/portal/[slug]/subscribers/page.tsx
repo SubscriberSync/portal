@@ -1,19 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Card, Badge } from '@tremor/react';
-import { Users, UserCheck, UserX, Pause, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Card, Badge, Select, SelectItem, BarChart } from '@tremor/react';
+import {
+  Users,
+  UserCheck,
+  UserX,
+  Pause,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  BarChart3,
+  Clock,
+  Loader2,
+} from 'lucide-react';
 import { SubscriberSearch } from '@/components/backstage/SubscriberSearch';
 
-interface SubscriberStats {
+interface SubscriberMetrics {
   total: number;
   active: number;
   paused: number;
   cancelled: number;
-  atRisk: number;
-  newThisMonth: number;
-  churnedThisMonth: number;
+  expired: number;
+  at_risk: number;
+  new_this_month: number;
+  churned_this_month: number;
+  by_episode: { episode: number; count: number }[];
+  by_tenure: { months: number; count: number }[];
+  products: string[];
 }
 
 interface RecentActivity {
@@ -24,26 +39,33 @@ interface RecentActivity {
   timestamp: string;
 }
 
+type ViewMode = 'episode' | 'tenure';
+
 export default function SubscribersPage() {
   const router = useRouter();
   const params = useParams();
   const clientSlug = params.slug as string;
 
-  const [stats, setStats] = useState<SubscriberStats | null>(null);
+  const [metrics, setMetrics] = useState<SubscriberMetrics | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedSku, setSelectedSku] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('episode');
 
+  // Fetch metrics when SKU filter changes
   useEffect(() => {
     async function fetchData() {
+      setIsLoading(true);
       try {
-        const [statsRes, activityRes] = await Promise.all([
-          fetch('/api/subscribers/stats'),
+        const skuParam = selectedSku === 'all' ? '' : `?sku=${encodeURIComponent(selectedSku)}`;
+        const [metricsRes, activityRes] = await Promise.all([
+          fetch(`/api/subscribers/metrics${skuParam}`),
           fetch('/api/subscribers/activity'),
         ]);
 
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStats(statsData);
+        if (metricsRes.ok) {
+          const metricsData = await metricsRes.json();
+          setMetrics(metricsData);
         }
 
         if (activityRes.ok) {
@@ -58,41 +80,86 @@ export default function SubscribersPage() {
     }
 
     fetchData();
-  }, [clientSlug]);
+  }, [selectedSku]);
+
+  // Determine if this is a sequential product (has multiple episodes)
+  const isSequentialProduct = useMemo(() => {
+    if (!metrics?.by_episode || metrics.by_episode.length === 0) return false;
+    const maxEpisode = Math.max(...metrics.by_episode.map(e => e.episode));
+    return maxEpisode > 1;
+  }, [metrics]);
+
+  // Auto-select view mode based on product type
+  useEffect(() => {
+    if (metrics) {
+      setViewMode(isSequentialProduct ? 'episode' : 'tenure');
+    }
+  }, [isSequentialProduct, metrics]);
+
+  // Transform data for chart
+  const chartData = useMemo(() => {
+    if (!metrics) return [];
+
+    if (viewMode === 'episode') {
+      return metrics.by_episode.map(e => ({
+        name: `Ep ${e.episode}`,
+        Subscribers: e.count,
+      }));
+    } else {
+      return metrics.by_tenure.map(t => ({
+        name: `${t.months}mo`,
+        Subscribers: t.count,
+      }));
+    }
+  }, [metrics, viewMode]);
 
   const handleSelect = (subscriberId: string) => {
     router.push(`/portal/${clientSlug}/subscribers/${subscriberId}`);
   };
 
-  const netChange = stats ? stats.newThisMonth - stats.churnedThisMonth : 0;
+  const netChange = metrics ? metrics.new_this_month - metrics.churned_this_month : 0;
 
   return (
     <main className="min-h-screen p-8">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Subscribers</h1>
-          <p className="text-foreground-secondary">
-            Search and view subscriber details
-          </p>
+        {/* Header with Product Filter */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Subscribers</h1>
+            <p className="text-foreground-secondary">
+              Your subscriber metrics hub
+            </p>
+          </div>
+
+          {/* Product Filter */}
+          {metrics && metrics.products.length > 0 && (
+            <Select
+              value={selectedSku}
+              onValueChange={setSelectedSku}
+              className="w-48"
+            >
+              <SelectItem value="all">All Products</SelectItem>
+              {metrics.products.map((product) => (
+                <SelectItem key={product} value={product}>
+                  {product}
+                </SelectItem>
+              ))}
+            </Select>
+          )}
         </div>
 
-        {/* Search bar - prominent placement */}
-        <div>
-          <SubscriberSearch clientSlug={clientSlug} onSelect={handleSelect} />
-        </div>
-
-        {/* Stats Grid */}
+        {/* Stats Cards Row */}
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[...Array(5)].map((_, i) => (
               <Card key={i} className="bg-background-surface border-border ring-0">
                 <div className="h-4 bg-background-elevated rounded w-1/2 mb-3 animate-pulse" />
                 <div className="h-8 bg-background-elevated rounded w-1/3 animate-pulse" />
               </Card>
             ))}
           </div>
-        ) : stats ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        ) : metrics ? (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card className="bg-background-surface border-border ring-0">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -100,7 +167,7 @@ export default function SubscribersPage() {
                 </div>
                 <span className="text-sm text-foreground-secondary">Total</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{stats.total.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{metrics.total.toLocaleString()}</p>
             </Card>
             <Card className="bg-background-surface border-border ring-0">
               <div className="flex items-center gap-3 mb-2">
@@ -109,7 +176,7 @@ export default function SubscribersPage() {
                 </div>
                 <span className="text-sm text-foreground-secondary">Active</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{stats.active.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{metrics.active.toLocaleString()}</p>
             </Card>
             <Card className="bg-background-surface border-border ring-0">
               <div className="flex items-center gap-3 mb-2">
@@ -118,24 +185,126 @@ export default function SubscribersPage() {
                 </div>
                 <span className="text-sm text-foreground-secondary">Paused</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{stats.paused.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{metrics.paused.toLocaleString()}</p>
+            </Card>
+            <Card className="bg-background-surface border-border ring-0">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-orange-400" />
+                </div>
+                <span className="text-sm text-foreground-secondary">At Risk</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{metrics.at_risk.toLocaleString()}</p>
             </Card>
             <Card className="bg-background-surface border-border ring-0">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  <UserX className="w-5 h-5 text-red-400" />
                 </div>
-                <span className="text-sm text-foreground-secondary">At Risk</span>
+                <span className="text-sm text-foreground-secondary">Churned</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{stats.atRisk.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-foreground">{metrics.churned_this_month.toLocaleString()}</p>
+              <p className="text-xs text-foreground-tertiary">this month</p>
             </Card>
           </div>
         ) : null}
 
-        {/* Two column layout */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Monthly Summary */}
-          {stats && (
+        {/* Two Column Analytics Section */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Distribution Chart (2/3 width) */}
+          <Card className="lg:col-span-2 bg-background-surface border-border ring-0">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  {viewMode === 'episode' ? (
+                    <BarChart3 className="w-5 h-5 text-accent" />
+                  ) : (
+                    <Clock className="w-5 h-5 text-accent" />
+                  )}
+                </div>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {viewMode === 'episode' ? 'Episode Distribution' : 'Subscriber Tenure'}
+                </h2>
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('episode')}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    viewMode === 'episode'
+                      ? 'bg-accent text-white'
+                      : 'text-foreground-secondary hover:bg-background-elevated'
+                  }`}
+                >
+                  Episode
+                </button>
+                <button
+                  onClick={() => setViewMode('tenure')}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                    viewMode === 'tenure'
+                      ? 'bg-accent text-white'
+                      : 'text-foreground-secondary hover:bg-background-elevated'
+                  }`}
+                >
+                  Tenure
+                </button>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                  <span className="text-sm text-foreground-muted">Loading metrics...</span>
+                </div>
+              </div>
+            ) : chartData.length > 0 ? (
+              <BarChart
+                className="h-[300px]"
+                data={chartData}
+                index="name"
+                categories={['Subscribers']}
+                colors={['orange']}
+                showLegend={false}
+                showGridLines={false}
+                yAxisWidth={40}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center">
+                <span className="text-foreground-muted">
+                  {viewMode === 'episode'
+                    ? 'No episode data available'
+                    : 'No tenure data available'}
+                </span>
+              </div>
+            )}
+
+            {/* Distribution Summary */}
+            {chartData.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm text-foreground-secondary">
+                  {viewMode === 'episode' ? (
+                    <>
+                      Showing active subscribers across {chartData.length} episodes.
+                      {metrics && metrics.active > 0 && (
+                        <span className="text-foreground ml-1">
+                          Avg {Math.round(metrics.active / chartData.length)} per episode.
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      Subscriber retention across tenure milestones (1, 3, 6, 12, 18, 24+ months).
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+          </Card>
+
+          {/* This Month Summary (1/3 width) */}
+          {metrics && (
             <Card className="bg-background-surface border-border ring-0">
               <h2 className="text-lg font-semibold text-foreground mb-4">This Month</h2>
               <div className="space-y-4">
@@ -146,7 +315,7 @@ export default function SubscribersPage() {
                     </div>
                     <span className="text-foreground-secondary">New Subscribers</span>
                   </div>
-                  <Badge color="emerald" size="lg">+{stats.newThisMonth}</Badge>
+                  <Badge color="emerald" size="lg">+{metrics.new_this_month}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -155,22 +324,52 @@ export default function SubscribersPage() {
                     </div>
                     <span className="text-foreground-secondary">Churned</span>
                   </div>
-                  <Badge color="red" size="lg">-{stats.churnedThisMonth}</Badge>
+                  <Badge color="red" size="lg">-{metrics.churned_this_month}</Badge>
                 </div>
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center justify-between">
                     <span className="text-foreground-secondary">Net Change</span>
-                    <Badge 
-                      color={netChange >= 0 ? 'emerald' : 'red'} 
+                    <Badge
+                      color={netChange >= 0 ? 'emerald' : 'red'}
                       size="lg"
                     >
                       {netChange >= 0 ? '+' : ''}{netChange}
                     </Badge>
                   </div>
                 </div>
+
+                {/* Retention Rate */}
+                {metrics.active > 0 && metrics.total > 0 && (
+                  <div className="pt-4 border-t border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-foreground-secondary">Active Rate</span>
+                      <span className="text-lg font-semibold text-foreground">
+                        {Math.round((metrics.active / metrics.total) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-background-elevated rounded-full h-2">
+                      <div
+                        className="bg-green-500 h-2 rounded-full transition-all"
+                        style={{ width: `${(metrics.active / metrics.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           )}
+        </div>
+
+        {/* Search and Activity Section */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Search Section */}
+          <Card className="bg-background-surface border-border ring-0">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Find Subscriber</h2>
+            <SubscriberSearch clientSlug={clientSlug} onSelect={handleSelect} />
+            <p className="text-sm text-foreground-tertiary mt-3">
+              Search by name or email address
+            </p>
+          </Card>
 
           {/* Recent Activity */}
           <Card className="bg-background-surface border-border ring-0">
@@ -211,13 +410,6 @@ export default function SubscribersPage() {
               <p className="text-foreground-secondary">No recent activity</p>
             )}
           </Card>
-        </div>
-
-        {/* Help text */}
-        <div className="text-center">
-          <p className="text-sm text-foreground-tertiary">
-            Use the search bar to find any subscriber by name or email address
-          </p>
         </div>
       </div>
     </main>

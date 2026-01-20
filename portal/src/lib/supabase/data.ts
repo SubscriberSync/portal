@@ -553,6 +553,71 @@ export async function getSubscriberStats(organizationId: string): Promise<Subscr
   }
 }
 
+// ===================
+// Subscriber Metrics (for Metrics Hub)
+// ===================
+
+export interface SubscriberMetrics {
+  total: number
+  active: number
+  paused: number
+  cancelled: number
+  expired: number
+  at_risk: number
+  new_this_month: number
+  churned_this_month: number
+  by_episode: { episode: number; count: number }[]
+  by_tenure: { months: number; count: number }[]
+  products: string[]
+}
+
+export async function getSubscriberMetrics(
+  organizationId: string,
+  sku?: string
+): Promise<SubscriberMetrics> {
+  const supabase = createServiceClient()
+
+  const { data, error } = await supabase.rpc('get_subscriber_metrics', {
+    p_org_id: organizationId,
+    p_sku: sku || null,
+  })
+
+  if (error) {
+    console.error('[getSubscriberMetrics] Error:', error)
+    // Return default empty metrics
+    return {
+      total: 0,
+      active: 0,
+      paused: 0,
+      cancelled: 0,
+      expired: 0,
+      at_risk: 0,
+      new_this_month: 0,
+      churned_this_month: 0,
+      by_episode: [],
+      by_tenure: [],
+      products: [],
+    }
+  }
+
+  // The RPC returns JSON directly, so we can cast it
+  const metrics = data as SubscriberMetrics
+
+  return {
+    total: metrics?.total || 0,
+    active: metrics?.active || 0,
+    paused: metrics?.paused || 0,
+    cancelled: metrics?.cancelled || 0,
+    expired: metrics?.expired || 0,
+    at_risk: metrics?.at_risk || 0,
+    new_this_month: metrics?.new_this_month || 0,
+    churned_this_month: metrics?.churned_this_month || 0,
+    by_episode: metrics?.by_episode || [],
+    by_tenure: metrics?.by_tenure || [],
+    products: metrics?.products || [],
+  }
+}
+
 export async function getSubscriberWithShipments(subscriberId: string): Promise<{
   subscriber: Subscriber
   shipments: Shipment[]
