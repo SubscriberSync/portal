@@ -14,6 +14,36 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { extractSequenceFromName } from '@/lib/ai-assist'
 
+// Recharge API credentials
+export interface RechargeCredentials {
+  apiKey: string
+}
+
+// Recharge charge from API
+export interface RechargeChargeRecord {
+  id: number
+  customer_id: number
+  subscription_id: number
+  status: 'SUCCESS' | 'QUEUED' | 'ERROR' | 'REFUNDED' | 'SKIPPED' | 'PARTIALLY_REFUNDED'
+  scheduled_at: string
+  processed_at: string | null
+  created_at: string
+  total_price: string
+  line_items: Array<{
+    subscription_id: number
+    title: string
+    sku: string | null
+    quantity: number
+    purchase_item_id: number
+  }>
+}
+
+// Audit mode - how to determine episode/box number
+export type AuditMode =
+  | 'sku_mapping'      // Use SKU → sequence mapping (different SKU per episode)
+  | 'charge_count'     // Count Recharge charges (same SKU, recurring)
+  | 'hybrid'           // Try SKU first, fall back to charge count
+
 // Types
 export interface SkuAlias {
   id: string
@@ -226,6 +256,143 @@ export async function fetchUniqueSKUs(
   }
 
   return skuMap
+}
+
+/**
+ * Fetch all charges for a customer from Recharge
+ * Returns charges sorted by processed_at date (oldest first)
+ */
+export async function fetchCustomerCharges(
+  credentials: RechargeCredentials,
+  rechargeCustomerId: string,
+  subscriptionSku?: string // Optional: filter to specific SKU
+): Promise<RechargeChargeRecord[]> {
+  const allCharges: RechargeChargeRecord[] = []
+
+  const params = new URLSearchParams({
+    customer_id: rechargeCustomerId,
+    limit: '250',
+    sort_by: 'scheduled_at-asc',
+  })
+
+  let nextCursor: string | null = null
+
+  do {
+    const url = new URL('https://api.rechargeapps.com/charges')
+    url.search = params.toString()
+    if (nextCursor) {
+      url.searchParams.set('cursor', nextCursor)
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'X-Recharge-Access-Token': credentials.apiKey,
+        'X-Recharge-Version': '2021-11',
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Recharge API error: ${response.status} - ${errorText}`)
+    }
+
+    const data = await response.json()
+    allCharges.push(...(data.charges || []))
+
+    nextCursor = data.next_cursor || null
+
+    // Respect rate limits
+    await new Promise(resolve => setTimeout(resolve, 200))
+  } while (nextCursor)
+
+  // Filter to successful charges and optionally by SKU
+  let filteredCharges = allCharges.filter(c => c.status === 'SUCCESS')
+
+  if (subscriptionSku) {
+    filteredCharges = filteredCharges.filter(c =>
+      c.line_items.some(item =>
+        item.sku?.toLowerCase() === subscriptionSku.toLowerCase()
+      )
+    )
+  }
+
+  // Sort by processed date (oldest first)
+  return filteredCharges.sort((a, b) => {
+    const dateA = a.processed_at || a.scheduled_at
+    const dateB = b.processed_at || b.scheduled_at
+    return new Date(dateA).getTime() - new Date(dateB).getTime()
+  })
+}
+
+/**
+ * Analyze charge history to determine box sequence
+ * For same-SKU subscriptions where Recharge charge count = episode number
+ */
+export function analyzeChargeHistory(
+  charges: RechargeChargeRecord[],
+  subscriptionSku?: string,
+  customerEmail?: string,
+  rechargeCustomerId?: string
+): AuditResult {
+  const sequenceEvents: SequenceEvent[] = []
+  const flagReasons: string[] = []
+
+  if (charges.length === 0) {
+    return {
+      status: 'flagged',
+      flagReasons: ['no_history'],
+      detectedSequences: [],
+      sequenceEvents: [],
+      proposedNextBox: 1,
+      rawOrders: [],
+      unmappedItems: [],
+      confidenceScore: 0,
+    }
+  }
+
+  // Each successful charge = one episode/box in sequence
+  charges.forEach((charge, index) => {
+    const sequence = index + 1 // First charge = Episode 1
+    const lineItem = charge.line_items[0] // Primary subscription item
+
+    sequenceEvents.push({
+      sequence,
+      date: charge.processed_at || charge.scheduled_at,
+      orderId: charge.id.toString(),
+      orderNumber: charge.id,
+      sku: lineItem?.sku || subscriptionSku || '',
+      productName: lineItem?.title || 'Subscription Box',
+    })
+  })
+
+  // Extract sequences
+  const detectedSequences = sequenceEvents.map(e => e.sequence)
+  const maxSeq = Math.max(...detectedSequences)
+  const proposedNextBox = maxSeq + 1
+
+  // For charge-based tracking, we don't expect gaps (each charge = sequential box)
+  // But check for duplicate charges on same day (could indicate issue)
+  const dateSet = new Set<string>()
+  for (const event of sequenceEvents) {
+    const dateKey = event.date.split('T')[0] // Just the date part
+    if (dateSet.has(dateKey)) {
+      // Multiple charges same day - could be valid (multiple subs) or an issue
+      // Don't flag, but note for confidence
+    }
+    dateSet.add(dateKey)
+  }
+
+  return {
+    status: 'clean', // Charge-based is usually clean (sequential by definition)
+    flagReasons,
+    detectedSequences,
+    sequenceEvents,
+    proposedNextBox,
+    rawOrders: [], // No Shopify orders in charge-based mode
+    unmappedItems: [],
+    confidenceScore: 1.0, // High confidence - charges are definitive
+  }
 }
 
 /**
@@ -517,6 +684,10 @@ function isLikelyNonSubscriptionItem(productName: string): boolean {
 
 /**
  * Run a full audit for a single subscriber (enhanced with patterns)
+ * Supports multiple audit modes:
+ * - sku_mapping: Use SKU → sequence mapping (different SKU per episode)
+ * - charge_count: Count Recharge charges (same SKU, recurring)
+ * - hybrid: Try SKU mapping first, fall back to charge count if no mappings
  */
 export async function auditSubscriber(
   organizationId: string,
@@ -525,12 +696,57 @@ export async function auditSubscriber(
   patterns: ProductPattern[],
   subscriberId: string,
   shopifyCustomerId?: string,
-  email?: string
+  email?: string,
+  options?: {
+    auditMode?: AuditMode
+    rechargeCredentials?: RechargeCredentials
+    rechargeCustomerId?: string
+    subscriptionSku?: string // The recurring SKU to track charges for
+  }
 ): Promise<AuditResult & { subscriberId: string }> {
-  // Fetch orders from Shopify
-  const orders = await fetchCustomerOrders(credentials, shopifyCustomerId, email)
+  const auditMode = options?.auditMode || 'sku_mapping'
 
-  // Analyze the history with multi-layer matching
+  // Charge count mode - use Recharge charge history
+  if (auditMode === 'charge_count' && options?.rechargeCredentials && options?.rechargeCustomerId) {
+    const charges = await fetchCustomerCharges(
+      options.rechargeCredentials,
+      options.rechargeCustomerId,
+      options.subscriptionSku
+    )
+    const result = analyzeChargeHistory(charges, options.subscriptionSku, email, options.rechargeCustomerId)
+    return { ...result, subscriberId }
+  }
+
+  // Hybrid mode - try SKU mapping first
+  if (auditMode === 'hybrid') {
+    // First try SKU mapping via Shopify orders
+    const orders = await fetchCustomerOrders(credentials, shopifyCustomerId, email)
+    const skuResult = analyzeOrderHistory(orders, skuMap, patterns, email, shopifyCustomerId)
+
+    // If we got clean results with SKU mapping, use them
+    if (skuResult.status === 'clean' && skuResult.detectedSequences.length > 0) {
+      return { ...skuResult, subscriberId }
+    }
+
+    // Fall back to charge count if no SKU mapping results and we have Recharge creds
+    if (options?.rechargeCredentials && options?.rechargeCustomerId) {
+      const charges = await fetchCustomerCharges(
+        options.rechargeCredentials,
+        options.rechargeCustomerId,
+        options.subscriptionSku
+      )
+      if (charges.length > 0) {
+        const chargeResult = analyzeChargeHistory(charges, options.subscriptionSku, email, options.rechargeCustomerId)
+        return { ...chargeResult, subscriberId }
+      }
+    }
+
+    // Return SKU result even if flagged
+    return { ...skuResult, subscriberId }
+  }
+
+  // Default: SKU mapping mode via Shopify orders
+  const orders = await fetchCustomerOrders(credentials, shopifyCustomerId, email)
   const result = analyzeOrderHistory(orders, skuMap, patterns, email, shopifyCustomerId)
 
   return {
