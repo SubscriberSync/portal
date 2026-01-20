@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, ChevronDown, ChevronUp, Lock, MessageCircle, Users, Loader2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronUp, Lock, MessageCircle, Users, Loader2, Shield, Zap, ExternalLink } from 'lucide-react'
 import {
   ClientOnboardingData,
   DiscordChannel,
@@ -27,6 +27,89 @@ interface IntakeStep2Props {
     markComplete?: boolean
   }) => Promise<boolean>
   onRefresh: () => void
+}
+
+const DISCORD_LINKS = {
+  register: 'https://discord.com/register',
+  download: 'https://discord.com/download',
+  createServer: 'https://support.discord.com/hc/en-us/articles/204849977-How-do-I-create-a-server',
+}
+
+function NewToDiscordSection() {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  return (
+    <div className="pt-4 border-t border-border">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm text-foreground-tertiary hover:text-foreground-secondary transition-colors"
+      >
+        <span>New to Discord?</span>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="mt-4 space-y-2">
+          <p className="text-xs text-foreground-tertiary mb-3">
+            Discord is a free platform used by thousands of subscription businesses to build engaged communities. 
+            Here&apos;s how to get started:
+          </p>
+
+          <a
+            href={DISCORD_LINKS.register}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 rounded-lg bg-background-elevated hover:bg-border transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Users className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Create a Discord account</p>
+              <p className="text-xs text-foreground-tertiary">Free to sign up</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-foreground-tertiary group-hover:text-foreground-secondary" />
+          </a>
+
+          <a
+            href={DISCORD_LINKS.download}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 rounded-lg bg-background-elevated hover:bg-border transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Download Discord app</p>
+              <p className="text-xs text-foreground-tertiary">Desktop, mobile, or browser</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-foreground-tertiary group-hover:text-foreground-secondary" />
+          </a>
+
+          <a
+            href={DISCORD_LINKS.createServer}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 rounded-lg bg-background-elevated hover:bg-border transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">How to create a server</p>
+              <p className="text-xs text-foreground-tertiary">Step-by-step guide from Discord</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-foreground-tertiary group-hover:text-foreground-secondary" />
+          </a>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function IntakeStep2({
@@ -207,11 +290,47 @@ export default function IntakeStep2({
           </div>
         </div>
 
-        <div className="p-5">
-          <p className="text-sm text-foreground-secondary mb-6">
-            Want a subscriber-only Discord server where members unlock channels based on their episode progress? We'll set it up and connect it to your subscription data.
-          </p>
+        <div className="p-5 space-y-5">
+          {/* Value Proposition */}
+          <div>
+            <p className="text-sm text-foreground-secondary mb-4">
+              Turn your subscribers into an engaged community with a Discord server that automatically manages access based on subscription status.
+            </p>
+            
+            {/* Benefits */}
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-background-elevated">
+                <Shield className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-foreground">Exclusive Access</p>
+                  <p className="text-xs text-foreground-tertiary">Subscriber-only channels</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-background-elevated">
+                <Zap className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-foreground">Auto-Managed</p>
+                  <p className="text-xs text-foreground-tertiary">Roles sync automatically</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-background-elevated">
+                <Users className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-foreground">Build Community</p>
+                  <p className="text-xs text-foreground-tertiary">Engage with members</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-background-elevated">
+                <MessageCircle className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-foreground">Direct Connection</p>
+                  <p className="text-xs text-foreground-tertiary">Real-time discussions</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
             <button
               onClick={() => handleDecision('Yes Setup')}
@@ -236,6 +355,9 @@ export default function IntakeStep2({
               Skip for now
             </button>
           </div>
+
+          {/* New to Discord Section */}
+          <NewToDiscordSection />
         </div>
       </div>
     )

@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Loader2
 } from 'lucide-react'
+import DiscordGettingStarted from '@/components/DiscordGettingStarted'
 
 interface DiscordGuild {
   id: string
@@ -289,26 +290,37 @@ export default function DiscordPage() {
       <div className="space-y-8 max-w-4xl">
         {!connected ? (
           /* Not Connected State */
-          <section className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#5865F2]/10 flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="w-8 h-8 text-[#5865F2]" />
+          <section className="space-y-6">
+            {/* Main Connect Card */}
+            <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#5865F2]/10 flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="w-8 h-8 text-[#5865F2]" />
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">Connect Your Discord Server</h2>
+              <p className="text-[#71717a] mb-6 max-w-md mx-auto">
+                Add the MemberLink bot to your Discord server to automatically manage subscriber access and roles.
+              </p>
+              <button
+                onClick={handleConnect}
+                disabled={connecting}
+                className="px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
+              >
+                {connecting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <MessageSquare className="w-5 h-5" />
+                )}
+                {connecting ? 'Connecting...' : 'Connect Discord'}
+              </button>
+
+              {/* New to Discord? - Compact version */}
+              <DiscordGettingStarted variant="compact" />
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Connect Your Discord Server</h2>
-            <p className="text-[#71717a] mb-6 max-w-md mx-auto">
-              Add the MemberLink bot to your Discord server to automatically manage subscriber access and roles.
-            </p>
-            <button
-              onClick={handleConnect}
-              disabled={connecting}
-              className="px-6 py-3 bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
-            >
-              {connecting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <MessageSquare className="w-5 h-5" />
-              )}
-              {connecting ? 'Connecting...' : 'Connect Discord'}
-            </button>
+
+            {/* Expanded Getting Started Section */}
+            <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-6">
+              <DiscordGettingStarted variant="expanded" />
+            </div>
           </section>
         ) : (
           <>
