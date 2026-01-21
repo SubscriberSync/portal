@@ -348,17 +348,21 @@ async function handleChargeEvent(
       const hasBeenAudited = subscriber.migration_status === 'audited' || subscriber.migration_status === 'resolved'
 
       let newBoxNumber = subscriber.box_number || 1
+      let shouldIncrement = false
 
-      // For audited subscribers with same-SKU subscriptions, don't increment box_number
-      // The forensic audit system will handle episode counting based on order quantity
-      if (!hasBeenAudited || !currentChargeSku) {
-        // Not audited yet, or no SKU - use old logic (increment)
-        newBoxNumber = (subscriber.box_number || 0) + 1
+      if (!hasBeenAudited) {
+        // Not audited yet - use old logic (increment on each charge)
+        shouldIncrement = true
       } else {
-        // Check if this charge has a different SKU than what we expect for current box
-        // For now, assume same-SKU subscriptions don't increment box_number
-        // This will be corrected by re-running the forensic audit after each charge
-        // TODO: Implement more sophisticated SKU change detection
+        // Subscriber has been audited - check if this is a different-SKU subscription
+        // For same-SKU subscriptions, don't increment - let forensic audit handle it
+        // For different-SKU subscriptions, increment normally
+        // For now, assume all audited subscriptions are same-SKU until we detect different SKU
+        shouldIncrement = false // Don't increment - forensic audit will handle
+      }
+
+      if (shouldIncrement) {
+        newBoxNumber = (subscriber.box_number || 0) + 1
       }
 
       const updateData: Record<string, unknown> = {
