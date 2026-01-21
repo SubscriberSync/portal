@@ -1,6 +1,25 @@
 -- SQL queries to find episode counting discrepancies
 -- Run these queries against your Supabase database
 
+-- DEBUG: Check subscriber migration status distribution
+SELECT
+    migration_status,
+    COUNT(*) as count,
+    COUNT(CASE WHEN shopify_customer_id IS NOT NULL THEN 1 END) as with_shopify_id,
+    COUNT(CASE WHEN email IS NOT NULL THEN 1 END) as with_email
+FROM subscribers
+GROUP BY migration_status
+ORDER BY count DESC;
+
+-- DEBUG: Find subscribers that can't be audited (missing data)
+SELECT
+    COUNT(*) as total_subscribers,
+    COUNT(CASE WHEN migration_status = 'pending' THEN 1 END) as pending_audit,
+    COUNT(CASE WHEN shopify_customer_id IS NULL THEN 1 END) as missing_shopify_id,
+    COUNT(CASE WHEN email IS NULL OR email = '' THEN 1 END) as missing_email,
+    COUNT(CASE WHEN migration_status = 'pending' AND shopify_customer_id IS NOT NULL AND email IS NOT NULL THEN 1 END) as auditable
+FROM subscribers;
+
 -- DEBUG: Check what audit results actually say vs current box_number
 SELECT
     s.email,

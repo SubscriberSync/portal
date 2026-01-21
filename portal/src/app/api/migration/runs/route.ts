@@ -67,12 +67,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Count subscribers to audit (pending migration status)
+    // Count subscribers to audit (pending migration status OR null status)
     const { count: subscriberCount, error: countError } = await supabase
       .from('subscribers')
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', organization.id)
-      .eq('migration_status', 'pending')
+      .or('migration_status.is.null,migration_status.eq.pending')
 
     if (countError) {
       throw new Error(countError.message)
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       .from('subscribers')
       .select('id')
       .eq('organization_id', organization.id)
-      .eq('migration_status', 'pending')
+      .or('migration_status.is.null,migration_status.eq.pending')
       .order('created_at', { ascending: true })
 
     return NextResponse.json({
