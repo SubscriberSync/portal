@@ -11,7 +11,8 @@ type ShopifyOAuthConfig = {
   variant: 'public' | 'custom' | 'default'
 }
 
-const SHOPIFY_SCOPES = 'read_customers,read_orders'
+// read_all_orders grants access to ALL historical orders (not just after app install)
+const SHOPIFY_SCOPES = 'read_customers,read_all_orders'
 
 export const OAUTH_CONFIG = {
   klaviyo: {
