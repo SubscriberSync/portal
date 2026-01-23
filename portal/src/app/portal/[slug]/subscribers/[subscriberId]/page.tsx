@@ -207,6 +207,8 @@ export default function SubscriberDetailPage() {
           lastName: subscriber.lastName,
           email: subscriber.email,
           phone: subscriber.address?.phone,
+          preferredName: subscriber.preferredName,
+          usePreferredNameForShipping: subscriber.usePreferredNameForShipping,
           address: subscriber.address,
           status: subscriber.status,
           boxNumber: subscriber.boxNumber,
@@ -366,6 +368,16 @@ function SubscriberHeader({ subscriber }: { subscriber: SubscriberDetail }) {
               )}
             </div>
             <p className="text-foreground-secondary">{subscriber.email}</p>
+            {subscriber.preferredName && (
+              <p className="text-sm text-foreground-tertiary mt-1">
+                Preferred name: <span className="font-medium text-foreground-secondary">{subscriber.preferredName}</span>
+                {subscriber.usePreferredNameForShipping && (
+                  <span className="ml-2 px-2 py-0.5 bg-blue-500/10 text-blue-600 text-xs rounded">
+                    Used for shipping
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
 
@@ -719,6 +731,18 @@ function SubscriberInfo({ subscriber }: { subscriber: SubscriberDetail }) {
           <div className="flex items-center gap-3">
             <span className="w-4 h-4 text-center text-foreground-tertiary text-xs font-bold">SZ</span>
             <span className="text-foreground-secondary text-sm">Shirt: {subscriber.shirtSize}</span>
+          </div>
+        )}
+
+        {subscriber.preferredName && (
+          <div className="flex items-center gap-3">
+            <User className="w-4 h-4 text-foreground-tertiary" />
+            <span className="text-foreground-secondary text-sm">
+              Preferred: {subscriber.preferredName}
+              {subscriber.usePreferredNameForShipping && (
+                <span className="ml-2 text-blue-600 text-xs">(used for shipping)</span>
+              )}
+            </span>
           </div>
         )}
 

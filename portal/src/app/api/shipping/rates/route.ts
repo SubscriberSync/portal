@@ -14,6 +14,14 @@ interface ShipmentRates {
   error?: string
 }
 
+// Get the shipping name (uses preferred name if flag is set)
+function getShippingName(sub: any): string {
+  const firstName = sub.use_preferred_name_for_shipping && sub.preferred_name 
+    ? sub.preferred_name 
+    : (sub.first_name || '')
+  return `${firstName} ${sub.last_name || ''}`.trim() || 'Customer'
+}
+
 // POST /api/shipping/rates
 // Get shipping rates for selected shipments
 export async function POST(request: NextRequest) {
@@ -118,7 +126,7 @@ export async function POST(request: NextRequest) {
         shipmentRates.push({
           shipmentId: shipment.id,
           orderNumber: shipment.order_number,
-          subscriberName: `${sub.first_name || ''} ${sub.last_name || ''}`.trim(),
+          subscriberName: getShippingName(sub),
           weight: shipment.weight_oz || 16,
           rates: [],
           error: 'Missing address fields',
@@ -128,7 +136,7 @@ export async function POST(request: NextRequest) {
 
       try {
         const shipTo = toV2Address(
-          `${sub.first_name || ''} ${sub.last_name || ''}`.trim() || 'Customer',
+          getShippingName(sub),
           {
             address1: sub.address1,
             address2: sub.address2,
@@ -164,7 +172,7 @@ export async function POST(request: NextRequest) {
         shipmentRates.push({
           shipmentId: shipment.id,
           orderNumber: shipment.order_number,
-          subscriberName: `${sub.first_name || ''} ${sub.last_name || ''}`.trim(),
+          subscriberName: getShippingName(sub),
           weight: shipment.weight_oz || 16,
           rates: validRates,
         })
@@ -173,7 +181,7 @@ export async function POST(request: NextRequest) {
         shipmentRates.push({
           shipmentId: shipment.id,
           orderNumber: shipment.order_number,
-          subscriberName: `${shipment.subscriber?.first_name || ''} ${shipment.subscriber?.last_name || ''}`.trim(),
+          subscriberName: shipment.subscriber ? getShippingName(shipment.subscriber) : '',
           weight: shipment.weight_oz || 16,
           rates: [],
           error: getErrorMessage(error, 'Failed to get rates'),

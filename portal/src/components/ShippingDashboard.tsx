@@ -1051,9 +1051,21 @@ export default function ShippingDashboard({
                           )}
                         </div>
                         <div>
-                          <p className="text-foreground">
-                            {shipment.subscriber?.first_name} {shipment.subscriber?.last_name}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-foreground">
+                              {shipment.subscriber?.use_preferred_name_for_shipping && shipment.subscriber?.preferred_name
+                                ? shipment.subscriber.preferred_name
+                                : shipment.subscriber?.first_name} {shipment.subscriber?.last_name}
+                            </p>
+                            {shipment.subscriber?.use_preferred_name_for_shipping && shipment.subscriber?.preferred_name && (
+                              <span 
+                                className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 text-xs rounded"
+                                title={`Shipping as "${shipment.subscriber.preferred_name}" instead of "${shipment.subscriber.first_name}"`}
+                              >
+                                Preferred
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-foreground-secondary">{shipment.subscriber?.email}</p>
                         </div>
                         <div>

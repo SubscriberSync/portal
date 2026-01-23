@@ -16,6 +16,14 @@ interface LabelResult {
   shippingCost?: number
 }
 
+// Get the shipping name (uses preferred name if flag is set)
+function getShippingName(sub: any): string {
+  const firstName = sub.use_preferred_name_for_shipping && sub.preferred_name 
+    ? sub.preferred_name 
+    : (sub.first_name || '')
+  return `${firstName} ${sub.last_name || ''}`.trim() || 'Customer'
+}
+
 // POST /api/shipping/buy-labels
 // Purchase shipping labels for selected shipments
 export async function POST(request: NextRequest) {
@@ -159,7 +167,7 @@ export async function POST(request: NextRequest) {
         }
 
         const shipTo = toV2Address(
-          `${sub.first_name || ''} ${sub.last_name || ''}`.trim() || 'Customer',
+          getShippingName(sub),
           {
             address1: sub.address1,
             address2: sub.address2,

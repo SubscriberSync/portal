@@ -57,6 +57,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       lastName: subscriber.last_name || '',
       email: subscriber.email,
       phone: subscriber.phone || '',
+      preferredName: subscriber.preferred_name || '',
+      usePreferredNameForShipping: subscriber.use_preferred_name_for_shipping || false,
       // Address
       address: {
         address1: subscriber.address1 || '',
@@ -155,6 +157,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.lastName !== undefined) updateData.last_name = body.lastName
     if (body.email !== undefined) updateData.email = body.email
     if (body.phone !== undefined) updateData.phone = body.phone
+    if (body.preferredName !== undefined) updateData.preferred_name = body.preferredName
+    if (body.usePreferredNameForShipping !== undefined) updateData.use_preferred_name_for_shipping = body.usePreferredNameForShipping
 
     // Address (can be sent as nested object or flat)
     if (body.address) {

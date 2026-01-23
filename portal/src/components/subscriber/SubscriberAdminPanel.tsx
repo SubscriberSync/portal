@@ -22,6 +22,8 @@ interface SubscriberData {
   lastName?: string
   email: string
   phone?: string
+  preferredName?: string
+  usePreferredNameForShipping?: boolean
   address?: {
     address1?: string
     address2?: string
@@ -226,6 +228,42 @@ export default function SubscriberAdminPanel({
                   onChange={(e) => updateField('phone', e.target.value)}
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
                 />
+              </div>
+
+              <div className="pt-4 border-t border-border">
+                <div>
+                  <label className="block text-sm font-medium text-foreground-secondary mb-1">
+                    Preferred Name
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.preferredName || ''}
+                    onChange={(e) => updateField('preferredName', e.target.value)}
+                    placeholder="Optional - different first name for shipping"
+                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-accent"
+                  />
+                  <p className="text-xs text-foreground-tertiary mt-1">
+                    If set, this name can be used instead of the first name on shipping labels
+                  </p>
+                </div>
+
+                <div className="mt-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.usePreferredNameForShipping || false}
+                      onChange={(e) => updateField('usePreferredNameForShipping', e.target.checked)}
+                      disabled={!formData.preferredName}
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <span className="text-sm text-foreground">
+                      Use preferred name for shipping labels
+                    </span>
+                  </label>
+                  <p className="text-xs text-foreground-tertiary mt-1 ml-7">
+                    When checked, shipping labels (PirateShip, ShipStation) will use the preferred name
+                  </p>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-border">

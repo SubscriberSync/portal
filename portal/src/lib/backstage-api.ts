@@ -44,6 +44,8 @@ export interface SubscriberDetail {
   firstName: string;
   lastName: string;
   email: string;
+  preferredName?: string;
+  usePreferredNameForShipping?: boolean;
   discordUsername?: string;
   status: 'Active' | 'Paused' | 'Cancelled' | 'Expired';
   boxNumber: number;

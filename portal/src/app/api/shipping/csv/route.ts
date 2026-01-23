@@ -16,6 +16,14 @@ function escapeCSV(value: string | null | undefined): string {
   return value
 }
 
+// Get the shipping name (uses preferred name if flag is set)
+function getShippingName(sub: any): string {
+  const firstName = sub.use_preferred_name_for_shipping && sub.preferred_name 
+    ? sub.preferred_name 
+    : (sub.first_name || '')
+  return `${firstName} ${sub.last_name || ''}`.trim() || 'Customer'
+}
+
 // POST /api/shipping/csv
 // Export selected shipments as CSV (for PirateShip import)
 export async function POST(request: NextRequest) {
@@ -75,7 +83,7 @@ export async function POST(request: NextRequest) {
 
       rows = shipments.map((shipment) => {
         const sub = shipment.subscriber
-        const name = sub ? `${sub.first_name || ''} ${sub.last_name || ''}`.trim() : ''
+        const name = sub ? getShippingName(sub) : ''
         return [
           escapeCSV(shipment.order_number || shipment.id.slice(0, 8)),
           escapeCSV(name),
@@ -113,7 +121,7 @@ export async function POST(request: NextRequest) {
 
       rows = shipments.map((shipment) => {
         const sub = shipment.subscriber
-        const name = sub ? `${sub.first_name || ''} ${sub.last_name || ''}`.trim() : ''
+        const name = sub ? getShippingName(sub) : ''
         return [
           escapeCSV(shipment.order_number || shipment.id.slice(0, 8)),
           escapeCSV(name),
@@ -196,7 +204,7 @@ export async function GET() {
 
     const rows = shipments.map((shipment) => {
       const sub = shipment.subscriber
-      const name = sub ? `${sub.first_name || ''} ${sub.last_name || ''}`.trim() : ''
+      const name = sub ? getShippingName(sub) : ''
       return [
         escapeCSV(shipment.order_number || shipment.id.slice(0, 8)),
         escapeCSV(name),
