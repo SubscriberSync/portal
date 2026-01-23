@@ -94,7 +94,11 @@ export default function SubscriberDetailPage() {
   };
 
   // Handle merge
-  const handleMerge = async (sourceId: string, targetId: string, options: Record<string, unknown>) => {
+  const handleMerge = async (sourceId: string, targetId: string, options: {
+    keepSourceAddress: boolean;
+    mergeShipments: boolean;
+    mergeEpisodeHistory: boolean;
+  }) => {
     const response = await fetch('/api/subscribers/merge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
