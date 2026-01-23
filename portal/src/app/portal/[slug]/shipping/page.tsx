@@ -87,7 +87,7 @@ export default async function ShippingPage({ params }: ShippingPageProps) {
     <main className="min-h-screen p-8">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Shipping Dashboard</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Orders Dashboard</h1>
         <p className="text-[#71717a]">
           {shippingProvider === 'pirateship' && 'Sort orders, merge shipments, and export to CSV for PirateShip'}
           {shippingProvider === '3pl' && 'Sort orders, merge shipments, and export to CSV for your fulfillment partner'}

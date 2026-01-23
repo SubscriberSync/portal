@@ -28,7 +28,7 @@ interface PortalSidebarProps {
 const navItems = [
   { name: 'Dashboard', href: '', icon: Home },
   { name: 'Subscribers', href: '/subscribers', icon: Users },
-  { name: 'Shipping', href: '/shipping', icon: Truck },
+  { name: 'Orders', href: '/shipping', icon: Truck },
   { name: 'Shipments', href: '/shipments', icon: Package },
   { name: 'Unknown SKUs', href: '/unknown-skus', icon: AlertCircle },
   { name: 'Products', href: '/products', icon: Boxes },

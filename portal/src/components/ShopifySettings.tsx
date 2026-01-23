@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ExternalLink, Check, Loader2, AlertCircle } from 'lucide-react'
+import { ExternalLink, Check, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 
 interface ShopifySettingsProps {
   connected: boolean
@@ -16,7 +16,18 @@ export default function ShopifySettings({
   const [showForm, setShowForm] = useState(!initialConnected)
   const [shopifyStore, setShopifyStore] = useState('')
   const [loading, setLoading] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [syncResult, setSyncResult] = useState<{
+    success: boolean
+    stats?: {
+      totalOrders: number
+      created: number
+      updated: number
+      skipped: number
+      errors: number
+    }
+  } | null>(null)
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,6 +57,30 @@ export default function ShopifySettings({
     }
   }
 
+  const handleSyncOrders = async () => {
+    setSyncing(true)
+    setError(null)
+    setSyncResult(null)
+
+    try {
+      const response = await fetch('/api/sync/shopify-orders', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to sync orders')
+      }
+
+      setSyncResult(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sync failed')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   return (
     <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
       {/* Header */}
@@ -67,12 +102,31 @@ export default function ShopifySettings({
         </div>
         <div className="flex items-center gap-2">
           {connected && !showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="text-xs text-[#95BF47] hover:text-[#7ea33d] transition-colors"
-            >
-              Reconnect
-            </button>
+            <>
+              <button
+                onClick={handleSyncOrders}
+                disabled={syncing}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#95BF47]/10 text-[#95BF47] hover:bg-[#95BF47]/20 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {syncing ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-3 h-3" />
+                    Sync Orders
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowForm(true)}
+                className="text-xs text-[#95BF47] hover:text-[#7ea33d] transition-colors"
+              >
+                Reconnect
+              </button>
+            </>
           )}
           <span className={`px-2 py-1 rounded-md text-xs font-medium ${
             connected
@@ -83,6 +137,37 @@ export default function ShopifySettings({
           </span>
         </div>
       </div>
+
+      {/* Sync Result */}
+      {syncResult && !showForm && (
+        <div className="border-t border-[rgba(255,255,255,0.06)] p-4">
+          <div className="flex items-start gap-3 text-sm bg-[#5CB87A]/10 rounded-lg p-3">
+            <Check className="w-4 h-4 text-[#5CB87A] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-[#5CB87A] font-medium mb-1">Orders synced successfully!</p>
+              {syncResult.stats && (
+                <div className="text-xs text-[#a1a1aa] space-y-0.5">
+                  <p>Total orders: {syncResult.stats.totalOrders}</p>
+                  <p>Created: {syncResult.stats.created}, Updated: {syncResult.stats.updated}, Skipped: {syncResult.stats.skipped}</p>
+                  {syncResult.stats.errors > 0 && (
+                    <p className="text-[#ef4444]">Errors: {syncResult.stats.errors}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message (for both connection and sync) */}
+      {error && !showForm && (
+        <div className="border-t border-[rgba(255,255,255,0.06)] p-4">
+          <div className="flex items-center gap-2 text-sm text-[#ef4444] bg-[#ef4444]/10 rounded-lg p-3">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {error}
+          </div>
+        </div>
+      )}
 
       {/* Connection Form */}
       {showForm && (
