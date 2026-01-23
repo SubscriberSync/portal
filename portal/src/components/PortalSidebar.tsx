@@ -30,7 +30,6 @@ const navItems = [
   { name: 'Subscribers', href: '/subscribers', icon: Users },
   { name: 'Orders', href: '/shipping', icon: Truck },
   { name: 'Shipments', href: '/shipments', icon: Package },
-  { name: 'Unknown SKUs', href: '/unknown-skus', icon: AlertCircle },
   { name: 'Products', href: '/products', icon: Boxes },
   { name: 'Activity Log', href: '/activity', icon: Activity },
 ]

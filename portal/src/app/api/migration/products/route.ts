@@ -69,6 +69,10 @@ export async function GET(request: NextRequest) {
  * PATCH /api/migration/products
  *
  * Update product variation assignments (assign to story/tier, mark as ignored, etc.)
+ * 
+ * Note: When a product_variation is assigned to a story (story_id is set) and 
+ * variation_type is 'subscription', a database trigger automatically syncs it to 
+ * the products table. See migration 021_sync_products_from_variations.sql
  */
 export async function PATCH(request: NextRequest) {
   const { orgId } = await auth()
