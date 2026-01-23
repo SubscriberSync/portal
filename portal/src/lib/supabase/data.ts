@@ -86,12 +86,37 @@ export interface Subscriber {
   box_number: number
   shirt_size: string | null
   recharge_customer_id: string | null
+  recharge_subscription_id: string | null
   shopify_customer_id: string | null
   at_risk: boolean
   tags: string[]
+  discord_user_id: string | null
   discord_username: string | null
-  // Subscription timing (for predictive merging)
+  // Subscription details
+  frequency: string | null
+  sku: string | null
+  // Flags
+  is_vip: boolean
+  is_influencer: boolean
+  is_problem: boolean
+  is_gift: boolean
+  is_at_risk: boolean
+  // Prepaid
+  is_prepaid: boolean
+  prepaid_total: number | null
+  orders_remaining: number | null
+  // Tracking
+  skip_count: number
+  delay_count: number
+  current_product_sequence: number | null
+  migration_status: string | null
+  acquisition_source: string | null
+  cancel_reason: string | null
+  // Dates
+  subscribed_at: string | null
   next_charge_date: string | null
+  cancelled_at: string | null
+  deleted_at: string | null
   created_at: string
   updated_at: string
 }
