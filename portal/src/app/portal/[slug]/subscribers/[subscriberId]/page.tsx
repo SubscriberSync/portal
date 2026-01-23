@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Package,
@@ -17,6 +17,9 @@ import {
   ExternalLink,
   Loader2,
   Save,
+  Edit2,
+  GitMerge,
+  Trash2,
 } from 'lucide-react';
 import {
   getSubscriberDetail,
@@ -25,15 +28,23 @@ import {
   type SubscriberAddress,
   type ShipmentEvent,
 } from '@/lib/backstage-api';
+import { SubscriberAdminPanel, SubscriberMergeModal, DeleteConfirmModal } from '@/components/subscriber';
 
 export default function SubscriberDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const clientSlug = params.slug as string;
   const subscriberId = params.subscriberId as string;
 
   const [subscriber, setSubscriber] = useState<SubscriberDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Admin modals
+  const [editPanelOpen, setEditPanelOpen] = useState(false);
+  const [mergeModalOpen, setMergeModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [allSubscribers, setAllSubscribers] = useState<Array<{ id: string; email: string; first_name?: string; last_name?: string; status?: string; box_number?: number }>>([]);
 
   useEffect(() => {
     async function fetchSubscriber() {
@@ -50,6 +61,76 @@ export default function SubscriberDetailPage() {
 
     fetchSubscriber();
   }, [clientSlug, subscriberId]);
+
+  // Fetch all subscribers for merge modal
+  const fetchAllSubscribers = async () => {
+    try {
+      const response = await fetch('/api/subscribers/search?limit=1000');
+      if (response.ok) {
+        const data = await response.json();
+        setAllSubscribers(data.subscribers || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch subscribers:', err);
+    }
+  };
+
+  // Handle full admin save
+  const handleAdminSave = async (data: Record<string, unknown>) => {
+    const response = await fetch(`/api/subscribers/${subscriberId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to save');
+    }
+
+    // Refresh data
+    const newData = await getSubscriberDetail(clientSlug, subscriberId);
+    setSubscriber(newData);
+  };
+
+  // Handle merge
+  const handleMerge = async (sourceId: string, targetId: string, options: Record<string, unknown>) => {
+    const response = await fetch('/api/subscribers/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceId, targetId, options }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Merge failed');
+    }
+
+    // Redirect to the target subscriber
+    router.push(`/portal/${clientSlug}/subscribers/${targetId}`);
+  };
+
+  // Handle delete
+  const handleDelete = async () => {
+    const response = await fetch(`/api/subscribers/${subscriberId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Delete failed');
+    }
+
+    // Redirect to subscribers list
+    router.push(`/portal/${clientSlug}/subscribers`);
+  };
+
+  // Fetch deletion impact
+  const fetchDeletionImpact = async () => {
+    const response = await fetch(`/api/subscribers/${subscriberId}/impact`);
+    if (!response.ok) return null;
+    return response.json();
+  };
 
   if (isLoading) {
     return (
@@ -79,7 +160,15 @@ export default function SubscriberDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header clientSlug={clientSlug} />
+      <Header 
+        clientSlug={clientSlug} 
+        onEdit={() => setEditPanelOpen(true)}
+        onMerge={() => {
+          fetchAllSubscribers();
+          setMergeModalOpen(true);
+        }}
+        onDelete={() => setDeleteModalOpen(true)}
+      />
 
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Subscriber Header */}
@@ -105,11 +194,82 @@ export default function SubscriberDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Admin Edit Panel */}
+      <SubscriberAdminPanel
+        subscriber={subscriber ? {
+          id: subscriber.id,
+          firstName: subscriber.firstName,
+          lastName: subscriber.lastName,
+          email: subscriber.email,
+          phone: subscriber.address?.phone,
+          address: subscriber.address,
+          status: subscriber.status,
+          boxNumber: subscriber.boxNumber,
+          shirtSize: subscriber.shirtSize,
+          tags: subscriber.tags,
+          isAtRisk: subscriber.atRisk,
+          shopifyCustomerId: subscriber.shopifyCustomerId,
+          rechargeCustomerId: subscriber.rechargeCustomerId,
+          subscribedAt: subscriber.subscribedAt,
+          discordUsername: subscriber.discordUsername,
+        } : null}
+        isOpen={editPanelOpen}
+        onClose={() => setEditPanelOpen(false)}
+        onSave={handleAdminSave}
+        onDelete={() => {
+          setEditPanelOpen(false);
+          setDeleteModalOpen(true);
+        }}
+        onMerge={() => {
+          setEditPanelOpen(false);
+          fetchAllSubscribers();
+          setMergeModalOpen(true);
+        }}
+        context="subscribers"
+      />
+
+      {/* Merge Modal */}
+      <SubscriberMergeModal
+        isOpen={mergeModalOpen}
+        onClose={() => setMergeModalOpen(false)}
+        initialSubscriber={subscriber ? {
+          id: subscriber.id,
+          email: subscriber.email,
+          first_name: subscriber.firstName,
+          last_name: subscriber.lastName,
+          status: subscriber.status,
+          box_number: subscriber.boxNumber,
+        } : undefined}
+        subscribers={allSubscribers}
+        onMerge={handleMerge}
+      />
+
+      {/* Delete Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        subscriberId={subscriberId}
+        subscriberEmail={subscriber?.email || ''}
+        subscriberName={`${subscriber?.firstName || ''} ${subscriber?.lastName || ''}`.trim()}
+        fetchImpact={fetchDeletionImpact}
+      />
     </div>
   );
 }
 
-function Header({ clientSlug }: { clientSlug: string }) {
+function Header({ 
+  clientSlug,
+  onEdit,
+  onMerge,
+  onDelete,
+}: { 
+  clientSlug: string;
+  onEdit?: () => void;
+  onMerge?: () => void;
+  onDelete?: () => void;
+}) {
   return (
     <div className="bg-white border-b border-border px-6 py-4">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -119,6 +279,35 @@ function Header({ clientSlug }: { clientSlug: string }) {
         >
           &larr; Back to Search
         </Link>
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <button
+              onClick={onEdit}
+              className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-background-elevated flex items-center gap-2"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
+          )}
+          {onMerge && (
+            <button
+              onClick={onMerge}
+              className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 flex items-center gap-2"
+            >
+              <GitMerge className="w-4 h-4" />
+              Merge
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

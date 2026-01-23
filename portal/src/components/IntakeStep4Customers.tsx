@@ -17,7 +17,11 @@ import {
   X,
   Edit2,
   History,
+  GitMerge,
+  Trash2,
 } from 'lucide-react'
+import { SubscriberMergeModal } from '@/components/subscriber'
+import { DeleteConfirmModal } from '@/components/subscriber'
 
 interface Story {
   id: string
@@ -97,6 +101,12 @@ export default function IntakeStep4Customers({
   const [editMode, setEditMode] = useState(false)
   const [editEpisode, setEditEpisode] = useState(0)
   const [editNote, setEditNote] = useState('')
+  
+  // Merge and Delete modals
+  const [mergeModalOpen, setMergeModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [customerToMerge, setCustomerToMerge] = useState<Customer | null>(null)
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null)
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -178,6 +188,56 @@ export default function IntakeStep4Customers({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Handle merge
+  const handleMerge = async (sourceId: string, targetId: string, options: {
+    keepSourceAddress: boolean
+    mergeShipments: boolean
+    mergeEpisodeHistory: boolean
+  }) => {
+    const response = await fetch('/api/subscribers/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sourceId, targetId, options }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Merge failed')
+    }
+
+    setMergeModalOpen(false)
+    setCustomerToMerge(null)
+    await fetchCustomers()
+  }
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!customerToDelete) return
+
+    // Find the subscriber_id from customer_story_progress
+    const response = await fetch(`/api/subscribers/${customerToDelete.id}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Delete failed')
+    }
+
+    setDeleteModalOpen(false)
+    setCustomerToDelete(null)
+    await fetchCustomers()
+  }
+
+  // Fetch deletion impact
+  const fetchDeletionImpact = async () => {
+    if (!customerToDelete) return null
+    
+    const response = await fetch(`/api/subscribers/${customerToDelete.id}/impact`)
+    if (!response.ok) return null
+    return response.json()
   }
 
   const formatDate = (dateStr: string) => {
@@ -430,6 +490,29 @@ export default function IntakeStep4Customers({
                             {customer.status}
                           </span>
                         </div>
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => {
+                              setCustomerToMerge(customer)
+                              setMergeModalOpen(true)
+                            }}
+                            title="Merge"
+                            className="p-1.5 text-foreground-tertiary hover:text-blue-600 hover:bg-blue-50 rounded"
+                          >
+                            <GitMerge className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCustomerToDelete(customer)
+                              setDeleteModalOpen(true)
+                            }}
+                            title="Delete"
+                            className="p-1.5 text-foreground-tertiary hover:text-red-600 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                         <ChevronRight className="w-5 h-5 text-foreground-tertiary flex-shrink-0" />
                       </div>
                     </div>
@@ -666,6 +749,51 @@ export default function IntakeStep4Customers({
           </div>
         </div>
       )}
+
+      {/* Merge Modal */}
+      <SubscriberMergeModal
+        isOpen={mergeModalOpen}
+        onClose={() => {
+          setMergeModalOpen(false)
+          setCustomerToMerge(null)
+        }}
+        initialSubscriber={customerToMerge ? {
+          id: customerToMerge.id,
+          email: customerToMerge.customer_email,
+          first_name: customerToMerge.customer_name?.split(' ')[0],
+          last_name: customerToMerge.customer_name?.split(' ').slice(1).join(' '),
+          status: customerToMerge.status,
+          current_episode: customerToMerge.current_episode,
+          needs_review: customerToMerge.needs_review,
+          tier_name: customerToMerge.tier?.name,
+        } : undefined}
+        subscribers={customers.map(c => ({
+          id: c.id,
+          email: c.customer_email,
+          first_name: c.customer_name?.split(' ')[0],
+          last_name: c.customer_name?.split(' ').slice(1).join(' '),
+          status: c.status,
+          current_episode: c.current_episode,
+          needs_review: c.needs_review,
+          tier_name: c.tier?.name,
+        }))}
+        onMerge={handleMerge}
+        isLoading={isLoading}
+      />
+
+      {/* Delete Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false)
+          setCustomerToDelete(null)
+        }}
+        onConfirm={handleDelete}
+        subscriberId={customerToDelete?.id || ''}
+        subscriberEmail={customerToDelete?.customer_email || ''}
+        subscriberName={customerToDelete?.customer_name || ''}
+        fetchImpact={fetchDeletionImpact}
+      />
     </div>
   )
 }
