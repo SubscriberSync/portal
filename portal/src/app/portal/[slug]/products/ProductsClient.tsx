@@ -45,6 +45,8 @@ interface ProductVariation {
   variant_title: string | null
   sku: string | null
   order_count: number
+  story_id: string | null
+  tier_id: string | null
   story: Story | null
   tier: Tier | null
   variation_type: 'subscription' | 'addon' | 'ignored'
