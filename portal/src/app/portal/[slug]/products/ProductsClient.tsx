@@ -1,7 +1,32 @@
 'use client'
 
-import { useState } from 'react'
-import { Boxes, Package, AlertCircle } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+  getExpandedRowModel,
+  flexRender,
+  createColumnHelper,
+  SortingState,
+  ColumnFiltersState,
+  ExpandedState,
+} from '@tanstack/react-table'
+import {
+  Boxes,
+  Package,
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  Filter,
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
+} from 'lucide-react'
 
 interface Story {
   id: string
@@ -43,7 +68,29 @@ interface ProductsClientProps {
   existingAliases: ExistingAlias[]
 }
 
+// Hierarchical structure for table
+interface ProductRow {
+  id: string
+  groupName: string
+  type: 'subscription' | 'onetime' | 'sku-detail'
+  storyId?: string
+  tierId?: string
+  storyName?: string
+  tierName?: string
+  subscription?: string
+  sku?: string | null
+  productName?: string
+  variantTitle?: string | null
+  orderCount: number
+  productCount?: number
+  subRows?: ProductRow[]
+  // Original variation for actions
+  variation?: ProductVariation
+}
+
 type TabType = 'products' | 'sku-mapper'
+
+const columnHelper = createColumnHelper<ProductRow>()
 
 export default function ProductsClient({
   clientSlug,
@@ -55,16 +102,89 @@ export default function ProductsClient({
   const [unknownSkus, setUnknownSkus] = useState(initialUnknownSkus)
   const [aliases, setAliases] = useState(initialAliases)
 
-  // Group products by story
-  const assignedProducts = productVariations.filter(p => p.story && p.variation_type === 'subscription')
-  const productsByStory = assignedProducts.reduce((acc, product) => {
-    const storyName = product.story?.name || 'Unknown'
-    if (!acc[storyName]) {
-      acc[storyName] = []
-    }
-    acc[storyName].push(product)
-    return acc
-  }, {} as Record<string, ProductVariation[]>)
+  // Transform data into hierarchical structure
+  const tableData = useMemo(() => {
+    const rows: ProductRow[] = []
+
+    // Group subscription products by story + tier
+    const subscriptionGroups = new Map<string, ProductVariation[]>()
+    
+    productVariations
+      .filter(v => v.story_id && v.variation_type === 'subscription')
+      .forEach(variation => {
+        const key = `${variation.story?.id || 'unknown'}-${variation.tier?.id || 'no-tier'}`
+        if (!subscriptionGroups.has(key)) {
+          subscriptionGroups.set(key, [])
+        }
+        subscriptionGroups.get(key)!.push(variation)
+      })
+
+    // Create parent rows for each subscription group
+    subscriptionGroups.forEach((variations, key) => {
+      const first = variations[0]
+      const totalOrders = variations.reduce((sum, v) => sum + v.order_count, 0)
+      
+      const groupName = first.tier
+        ? `${first.story?.name} - ${first.tier.name}`
+        : first.story?.name || 'Unknown Subscription'
+
+      rows.push({
+        id: `group-${key}`,
+        groupName,
+        type: 'subscription',
+        storyId: first.story?.id,
+        tierId: first.tier?.id,
+        storyName: first.story?.name,
+        tierName: first.tier?.name,
+        subscription: groupName,
+        orderCount: totalOrders,
+        productCount: variations.length,
+        subRows: variations.map(v => ({
+          id: v.id,
+          groupName: v.product_name,
+          productName: v.product_name,
+          variantTitle: v.variant_title,
+          sku: v.sku,
+          type: 'sku-detail' as const,
+          storyName: first.story?.name,
+          tierName: first.tier?.name,
+          subscription: groupName,
+          orderCount: v.order_count,
+          variation: v,
+        })),
+      })
+    })
+
+    // Add one-time products as top-level rows
+    productVariations
+      .filter(v => v.variation_type === 'addon')
+      .forEach(variation => {
+        rows.push({
+          id: variation.id,
+          groupName: variation.product_name,
+          productName: variation.product_name,
+          variantTitle: variation.variant_title,
+          sku: variation.sku,
+          type: 'onetime',
+          subscription: 'One-Time Purchase',
+          orderCount: variation.order_count,
+          variation,
+        })
+      })
+
+    return rows
+  }, [productVariations])
+
+  // Count products for tab badges
+  const productCounts = useMemo(() => {
+    const subscriptionCount = productVariations.filter(
+      v => v.story_id && v.variation_type === 'subscription'
+    ).length
+    const onetimeCount = productVariations.filter(
+      v => v.variation_type === 'addon'
+    ).length
+    return subscriptionCount + onetimeCount
+  }, [productVariations])
 
   return (
     <main className="min-h-screen p-8">
@@ -93,7 +213,7 @@ export default function ProductsClient({
                   ? 'bg-[#e07a42]/10 text-[#e07a42]'
                   : 'bg-[rgba(255,255,255,0.05)] text-[#71717a]'
               }`}>
-                {assignedProducts.length}
+                {productCounts}
               </span>
             </div>
           </button>
@@ -124,68 +244,11 @@ export default function ProductsClient({
 
       {/* Tab Content */}
       {activeTab === 'products' ? (
-        <div>
-          {assignedProducts.length > 0 ? (
-            <div className="space-y-8">
-              {Object.entries(productsByStory).map(([storyName, products]) => (
-                <div key={storyName}>
-                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <span className="px-2 py-1 rounded text-xs bg-[#e07a42]/10 text-[#e07a42] border border-[#e07a42]/20">
-                      {storyName}
-                    </span>
-                    <span className="text-[#71717a] font-normal">({products.length})</span>
-                  </h2>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {products.map((product) => (
-                      <div
-                        key={product.id}
-                        className="p-4 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-[#e07a42]/10 flex items-center justify-center">
-                            <Package className="w-5 h-5 text-[#e07a42]" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-white truncate">{product.product_name}</h3>
-                            {product.variant_title && (
-                              <p className="text-sm text-[#71717a] truncate">{product.variant_title}</p>
-                            )}
-                            {product.sku && (
-                              <p className="text-xs text-[#71717a] font-mono">SKU: {product.sku}</p>
-                            )}
-                            {product.tier && (
-                              <p className="text-xs text-[#5CB87A] mt-1">Tier: {product.tier.name}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Order count */}
-                        <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.06)]">
-                          <p className="text-xs text-[#71717a]">Orders</p>
-                          <p className="text-lg font-semibold text-white">{product.order_count || 0}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#e07a42]/10 flex items-center justify-center mx-auto mb-4">
-                <Boxes className="w-8 h-8 text-[#e07a42]" />
-              </div>
-              <h3 className="text-lg font-medium text-white mb-2">No Products Assigned</h3>
-              <p className="text-[#71717a] mb-6">
-                Complete the onboarding process to scan and assign products to your subscription stories.
-              </p>
-            </div>
-          )}
-        </div>
+        <ProductsTable data={tableData} />
       ) : (
         <SKUMapperTab
           clientSlug={clientSlug}
+          productVariations={productVariations}
           unknownSkus={unknownSkus}
           aliases={aliases}
           setUnknownSkus={setUnknownSkus}
@@ -196,15 +259,348 @@ export default function ProductsClient({
   )
 }
 
-// SKU Mapper Tab Component (extracted from UnknownSkusClient)
+// Products Table Component
+function ProductsTable({ data }: { data: ProductRow[] }) {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [expanded, setExpanded] = useState<ExpandedState>({})
+
+  // Get unique subscriptions for filter dropdown
+  const uniqueSubscriptions = useMemo(() => {
+    const subs = new Set<string>()
+    data.forEach(row => {
+      if (row.subscription) {
+        subs.add(row.subscription)
+      }
+    })
+    return Array.from(subs).sort()
+  }, [data])
+
+  const columns = useMemo(() => [
+    columnHelper.display({
+      id: 'expander',
+      header: () => null,
+      cell: ({ row }) => (
+        row.getCanExpand() ? (
+          <button
+            onClick={row.getToggleExpandedHandler()}
+            className="p-1 hover:bg-[rgba(255,255,255,0.05)] rounded transition-colors"
+          >
+            {row.getIsExpanded() ? (
+              <ChevronDown className="w-4 h-4 text-[#71717a]" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-[#71717a]" />
+            )}
+          </button>
+        ) : null
+      ),
+      size: 40,
+    }),
+    columnHelper.accessor('groupName', {
+      header: ({ column }) => (
+        <button
+          className="flex items-center gap-1 hover:text-white transition-colors"
+          onClick={() => column.toggleSorting()}
+        >
+          Product / Group
+          {column.getIsSorted() === 'asc' ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : column.getIsSorted() === 'desc' ? (
+            <ArrowDown className="w-3 h-3" />
+          ) : (
+            <ArrowUpDown className="w-3 h-3 opacity-50" />
+          )}
+        </button>
+      ),
+      cell: ({ row }) => {
+        const isGroupRow = row.original.type === 'subscription'
+        const isSkuDetail = row.original.type === 'sku-detail'
+        
+        return (
+          <div style={{ paddingLeft: `${row.depth * 2}rem` }} className="min-w-0">
+            {isGroupRow && (
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#e07a42] flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-semibold text-white truncate">{row.original.groupName}</p>
+                  <p className="text-xs text-[#71717a]">
+                    {row.original.productCount} SKU{row.original.productCount !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+            )}
+            {isSkuDetail && (
+              <div className="min-w-0">
+                <p className="text-sm text-white truncate">{row.original.productName}</p>
+                {row.original.variantTitle && (
+                  <p className="text-xs text-[#71717a] truncate">{row.original.variantTitle}</p>
+                )}
+              </div>
+            )}
+            {row.original.type === 'onetime' && (
+              <div className="flex items-center gap-2 min-w-0">
+                <Package className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm text-white truncate">{row.original.productName}</p>
+                  {row.original.variantTitle && (
+                    <p className="text-xs text-[#71717a] truncate">{row.original.variantTitle}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      },
+    }),
+    columnHelper.accessor('sku', {
+      header: 'SKU',
+      cell: ({ getValue, row }) => {
+        const sku = getValue()
+        // Only show SKU for detail rows and one-time products
+        if (row.original.type === 'subscription') return null
+        
+        return sku ? (
+          <span className="font-mono text-xs bg-[rgba(255,255,255,0.05)] px-2 py-1 rounded">
+            {sku}
+          </span>
+        ) : (
+          <span className="text-[#52525b] text-xs">—</span>
+        )
+      },
+      size: 150,
+    }),
+    columnHelper.accessor('type', {
+      header: 'Type',
+      cell: ({ row }) => {
+        if (row.original.type === 'subscription') {
+          return (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#e07a42]/10 text-[#e07a42]">
+              Subscription
+            </span>
+          )
+        }
+        if (row.original.type === 'onetime') {
+          return (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400">
+              One-Time
+            </span>
+          )
+        }
+        return null
+      },
+      size: 120,
+      filterFn: (row, id, value) => {
+        if (!value || value === 'all') return true
+        return row.original.type === value
+      },
+    }),
+    columnHelper.accessor('subscription', {
+      header: 'Subscription',
+      cell: ({ getValue, row }) => {
+        const sub = getValue()
+        if (row.original.type === 'subscription') return null
+        return sub ? (
+          <span className="text-xs text-[#a1a1aa]">{sub}</span>
+        ) : null
+      },
+      filterFn: (row, id, value) => {
+        if (!value || value === 'all') return true
+        return row.original.subscription === value
+      },
+    }),
+    columnHelper.accessor('orderCount', {
+      header: ({ column }) => (
+        <button
+          className="flex items-center gap-1 hover:text-white transition-colors"
+          onClick={() => column.toggleSorting()}
+        >
+          Orders
+          {column.getIsSorted() === 'asc' ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : column.getIsSorted() === 'desc' ? (
+            <ArrowDown className="w-3 h-3" />
+          ) : (
+            <ArrowUpDown className="w-3 h-3 opacity-50" />
+          )}
+        </button>
+      ),
+      cell: ({ getValue }) => (
+        <span className="text-white font-semibold">{getValue()}</span>
+      ),
+      size: 100,
+    }),
+  ], [])
+
+  const table = useReactTable({
+    data,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+      globalFilter,
+      expanded,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    onExpandedChange: setExpanded,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getSubRows: row => row.subRows,
+  })
+
+  const typeFilter = columnFilters.find(f => f.id === 'type')?.value as string | undefined
+  const subscriptionFilter = columnFilters.find(f => f.id === 'subscription')?.value as string | undefined
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#71717a]" />
+          <input
+            type="text"
+            value={globalFilter ?? ''}
+            onChange={e => setGlobalFilter(e.target.value)}
+            placeholder="Search products, SKUs..."
+            className="w-full pl-9 pr-3 py-2 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-white placeholder-[#71717a] focus:outline-none focus:border-[#e07a42] transition-colors"
+          />
+        </div>
+
+        {/* Type Filter */}
+        <div className="relative">
+          <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#71717a] pointer-events-none" />
+          <select
+            value={typeFilter || 'all'}
+            onChange={e => {
+              const value = e.target.value
+              table.getColumn('type')?.setFilterValue(value === 'all' ? undefined : value)
+            }}
+            className="pl-9 pr-8 py-2 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-white focus:outline-none focus:border-[#e07a42] transition-colors appearance-none cursor-pointer"
+          >
+            <option value="all">All Types</option>
+            <option value="subscription">Subscription</option>
+            <option value="onetime">One-Time</option>
+          </select>
+        </div>
+
+        {/* Subscription Filter */}
+        <div className="relative">
+          <Filter className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#71717a] pointer-events-none" />
+          <select
+            value={subscriptionFilter || 'all'}
+            onChange={e => {
+              const value = e.target.value
+              table.getColumn('subscription')?.setFilterValue(value === 'all' ? undefined : value)
+            }}
+            className="pl-9 pr-8 py-2 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-white focus:outline-none focus:border-[#e07a42] transition-colors appearance-none cursor-pointer min-w-[180px]"
+          >
+            <option value="all">All Subscriptions</option>
+            {uniqueSubscriptions.map(sub => (
+              <option key={sub} value={sub}>{sub}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Clear Filters */}
+        {(globalFilter || typeFilter || subscriptionFilter) && (
+          <button
+            onClick={() => {
+              setGlobalFilter('')
+              setColumnFilters([])
+            }}
+            className="px-3 py-2 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded-lg text-sm text-[#71717a] hover:text-white hover:border-[rgba(255,255,255,0.1)] transition-colors flex items-center gap-2"
+          >
+            <X className="w-4 h-4" />
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+        {table.getRowModel().rows.length === 0 ? (
+          <div className="p-12 text-center">
+            <Boxes className="w-12 h-12 text-[#71717a] mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-white mb-2">No Products Found</h3>
+            <p className="text-[#71717a]">
+              {globalFilter || typeFilter || subscriptionFilter
+                ? 'Try adjusting your filters'
+                : 'Complete the onboarding process to scan and assign products'}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[rgba(255,255,255,0.02)] border-b border-[rgba(255,255,255,0.06)]">
+                  {table.getHeaderGroups().map(headerGroup => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map(header => (
+                        <th
+                          key={header.id}
+                          className="px-4 py-3 text-left text-xs font-semibold text-[#71717a] uppercase tracking-wider"
+                          style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
+                  {table.getRowModel().rows.map(row => (
+                    <tr
+                      key={row.id}
+                      className="hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+                    >
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id} className="px-4 py-3">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Footer */}
+            <div className="px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[rgba(255,255,255,0.06)] text-xs text-[#71717a] flex items-center justify-between">
+              <span>
+                Showing {table.getRowModel().rows.length} of {table.getCoreRowModel().rows.length} products
+              </span>
+              <button
+                onClick={() => table.toggleAllRowsExpanded()}
+                className="text-[#e07a42] hover:text-[#c86a35] transition-colors font-medium"
+              >
+                {table.getIsAllRowsExpanded() ? 'Collapse All' : 'Expand All'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// SKU Mapper Tab Component
 function SKUMapperTab({
   clientSlug,
+  productVariations,
   unknownSkus,
   aliases,
   setUnknownSkus,
   setAliases,
 }: {
   clientSlug: string
+  productVariations: ProductVariation[]
   unknownSkus: UnknownSku[]
   aliases: ExistingAlias[]
   setUnknownSkus: (skus: UnknownSku[]) => void
@@ -215,6 +611,19 @@ function SKUMapperTab({
   const [nameInput, setNameInput] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [showIgnored, setShowIgnored] = useState(false)
+
+  // Filter to get truly unmapped products
+  const unmappedProducts = useMemo(() => {
+    return productVariations.filter(
+      v => !v.story_id && v.variation_type === 'subscription'
+    )
+  }, [productVariations])
+
+  // Get ignored products
+  const ignoredProducts = useMemo(() => {
+    return productVariations.filter(v => v.variation_type === 'ignored')
+  }, [productVariations])
 
   const handleOpenMapper = (sku: string, count: number) => {
     setMappingModal({ sku, count })
@@ -262,7 +671,6 @@ function SKUMapperTab({
         throw new Error(data.error || 'Failed to save mapping')
       }
 
-      // Update local state
       setAliases([...aliases, { sku: mappingModal.sku, sequence, name: nameInput.trim() || null }])
       setUnknownSkus(unknownSkus.filter(u => u.sku !== mappingModal.sku))
       handleCloseMapper()
@@ -287,10 +695,31 @@ function SKUMapperTab({
         throw new Error('Failed to delete mapping')
       }
 
-      // Update local state
       setAliases(aliases.filter(a => a.sku !== sku))
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete mapping')
+    }
+  }
+
+  const handleRestoreIgnored = async (variationId: string) => {
+    try {
+      const response = await fetch('/api/migration/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          variationIds: [variationId],
+          variationType: 'subscription',
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to restore product')
+      }
+
+      // Refresh page to update data
+      window.location.reload()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to restore product')
     }
   }
 
@@ -301,27 +730,81 @@ function SKUMapperTab({
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-[#e07a42] mt-0.5" />
           <div>
-            <p className="text-white font-medium">Why map SKUs?</p>
+            <p className="text-white font-medium">About SKU Mapping</p>
             <p className="text-sm text-[#71717a] mt-1">
-              SKU mapping tells the system which box number each product represents. This is essential for the Forensic Audit to correctly determine a subscriber&apos;s box history.
+              This section shows products that haven&apos;t been assigned to subscriptions or marked as one-time purchases.
+              SKU aliases help map product names to box numbers for the Forensic Audit.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Unknown SKUs Section */}
+      {/* Unmapped Products Section */}
       <div>
         <h2 className="text-xl font-semibold text-white mb-4">
-          Unmapped SKUs
-          {unknownSkus.length > 0 && (
+          Unmapped Products
+          {unmappedProducts.length > 0 && (
             <span className="ml-2 text-sm font-normal text-[#e07a42]">
-              ({unknownSkus.length} need mapping)
+              ({unmappedProducts.length} need assignment)
             </span>
           )}
         </h2>
 
         <div className="rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
-          {unknownSkus.length > 0 ? (
+          {unmappedProducts.length > 0 ? (
+            <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+              {unmappedProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="p-4 hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium truncate">{product.product_name}</p>
+                      {product.variant_title && (
+                        <p className="text-sm text-[#71717a] truncate">{product.variant_title}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-1">
+                        {product.sku && (
+                          <span className="text-xs font-mono text-[#71717a]">SKU: {product.sku}</span>
+                        )}
+                        <span className="text-xs text-[#71717a]">
+                          {product.order_count} order{product.order_count !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <span className="text-xs text-[#71717a]">Assign in Products tab</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#5CB87A]/10 flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-[#5CB87A]" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">All Products Assigned</h3>
+              <p className="text-[#71717a]">
+                Every product has been assigned to a subscription or marked as one-time.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Unknown SKUs from Shipments */}
+      {unknownSkus.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-4">
+            Unknown SKUs from Shipments
+            <span className="ml-2 text-sm font-normal text-amber-500">
+              ({unknownSkus.length} need mapping)
+            </span>
+          </h2>
+
+          <div className="rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
             <div className="divide-y divide-[rgba(255,255,255,0.06)]">
               {unknownSkus.map(({ sku, count }) => (
                 <div
@@ -344,19 +827,9 @@ function SKUMapperTab({
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#5CB87A]/10 flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-[#5CB87A]" />
-              </div>
-              <h3 className="text-lg font-medium text-white mb-2">All SKUs Mapped</h3>
-              <p className="text-[#71717a]">
-                Every product SKU in your shipments has been mapped to a box number.
-              </p>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Existing Aliases Section */}
       {aliases.length > 0 && (
@@ -417,23 +890,77 @@ function SKUMapperTab({
         </div>
       )}
 
+      {/* Ignored Products Section */}
+      {ignoredProducts.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowIgnored(!showIgnored)}
+            className="flex items-center gap-2 text-xl font-semibold text-white mb-4 hover:text-[#e07a42] transition-colors"
+          >
+            {showIgnored ? (
+              <ChevronDown className="w-5 h-5" />
+            ) : (
+              <ChevronRight className="w-5 h-5" />
+            )}
+            Ignored Products
+            <span className="ml-2 text-sm font-normal text-[#71717a]">
+              ({ignoredProducts.length})
+            </span>
+          </button>
+
+          {showIgnored && (
+            <div className="rounded-2xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] overflow-hidden">
+              <div className="divide-y divide-[rgba(255,255,255,0.06)]">
+                {ignoredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="p-4 hover:bg-[rgba(255,255,255,0.02)] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#a1a1aa] font-medium truncate">{product.product_name}</p>
+                        {product.variant_title && (
+                          <p className="text-sm text-[#71717a] truncate">{product.variant_title}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-1">
+                          {product.sku && (
+                            <span className="text-xs font-mono text-[#71717a]">SKU: {product.sku}</span>
+                          )}
+                          <span className="text-xs text-[#71717a]">
+                            {product.order_count} order{product.order_count !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRestoreIgnored(product.id)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(255,255,255,0.05)] text-[#71717a] hover:text-white hover:bg-[rgba(255,255,255,0.1)] transition-colors text-sm font-medium ml-4"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Restore
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Mapping Modal */}
       {mappingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={handleCloseMapper}
           />
 
-          {/* Modal */}
           <div className="relative bg-[#1a1a1a] rounded-2xl border border-[rgba(255,255,255,0.1)] p-6 w-full max-w-md shadow-2xl">
             <h3 className="text-xl font-semibold text-white mb-2">Map SKU to Box Number</h3>
             <p className="text-sm text-[#71717a] mb-6">
               Which box/episode does this SKU represent?
             </p>
 
-            {/* SKU Display */}
             <div className="mb-4 p-3 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
               <p className="text-xs text-[#71717a] mb-1">SKU</p>
               <p className="text-white font-mono text-sm break-all">{mappingModal.sku}</p>
@@ -442,7 +969,6 @@ function SKUMapperTab({
               </p>
             </div>
 
-            {/* Sequence Input */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-[#a1a1aa] mb-2">
                 Box/Episode Number <span className="text-red-400">*</span>
@@ -458,7 +984,6 @@ function SKUMapperTab({
               />
             </div>
 
-            {/* Name Input (optional) */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-[#a1a1aa] mb-2">
                 Friendly Name <span className="text-[#52525b]">(optional)</span>
@@ -472,14 +997,12 @@ function SKUMapperTab({
               />
             </div>
 
-            {/* Error */}
             {error && (
               <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                 {error}
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={handleCloseMapper}
