@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
     // Paginate through all orders
     while (nextPageUrl) {
-      const response = await fetch(nextPageUrl, {
+      const response: Response = await fetch(nextPageUrl, {
         headers: {
           'X-Shopify-Access-Token': access_token,
           'Content-Type': 'application/json',
