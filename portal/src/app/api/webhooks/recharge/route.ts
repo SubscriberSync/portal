@@ -163,13 +163,32 @@ async function handleSubscriptionEvent(
   topic: RechargeWebhookTopic,
   subscription: RechargeSubscription
 ) {
-  // First, get the customer data to have email
-  const { data: existingSub } = await supabase
+  // Look up subscriber by compound key (org_id, subscription_id) 
+  // or fall back to customer_id for legacy records
+  let existingSub = null
+  
+  // First try to find by subscription_id (compound key approach)
+  const { data: subBySubscriptionId } = await supabase
     .from('subscribers')
     .select('*')
     .eq('organization_id', orgId)
-    .eq('recharge_customer_id', subscription.customer_id.toString())
+    .eq('recharge_subscription_id', subscription.id.toString())
     .single()
+  
+  if (subBySubscriptionId) {
+    existingSub = subBySubscriptionId
+  } else {
+    // Fall back to customer_id lookup (for base records or legacy data)
+    const { data: subByCustomerId } = await supabase
+      .from('subscribers')
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('recharge_customer_id', subscription.customer_id.toString())
+      .limit(1)
+      .single()
+    
+    existingSub = subByCustomerId
+  }
 
   if (!existingSub && topic !== 'subscription/created') {
     console.log('[Recharge Webhook] Subscriber not found, skipping')
@@ -188,6 +207,7 @@ async function handleSubscriptionEvent(
     status,
     sku: subscription.sku || subscription.product_title,
     box_number: boxNumber,
+    recharge_subscription_id: subscription.id.toString(),
     updated_at: new Date().toISOString(),
   }
 
@@ -208,11 +228,57 @@ async function handleSubscriptionEvent(
   }
 
   if (existingSub) {
-    // Update existing subscriber
-    await supabase
-      .from('subscribers')
-      .update(updateData)
-      .eq('id', existingSub.id)
+    // Check if this is a new subscription for an existing customer (multi-subscription)
+    // If the existing record has a different subscription_id, we need to create a new record
+    if (existingSub.recharge_subscription_id && 
+        existingSub.recharge_subscription_id !== subscription.id.toString()) {
+      // Create new subscriber record for this subscription (compound key)
+      const { error } = await supabase
+        .from('subscribers')
+        .upsert({
+          organization_id: orgId,
+          email: existingSub.email,
+          recharge_subscription_id: subscription.id.toString(),
+          recharge_customer_id: subscription.customer_id.toString(),
+          first_name: existingSub.first_name,
+          last_name: existingSub.last_name,
+          phone: existingSub.phone,
+          address1: existingSub.address1,
+          address2: existingSub.address2,
+          city: existingSub.city,
+          state: existingSub.state,
+          zip: existingSub.zip,
+          country: existingSub.country,
+          shopify_customer_id: existingSub.shopify_customer_id,
+          ...updateData,
+        }, {
+          onConflict: 'organization_id,recharge_subscription_id,email',
+        })
+      
+      if (error) {
+        console.error('[Recharge Webhook] Failed to create new subscription record:', error)
+      } else {
+        console.log(`[Recharge Webhook] Created new subscriber record for subscription ${subscription.id}`)
+      }
+      
+      // Get the newly created record for syncs
+      const { data: newSub } = await supabase
+        .from('subscribers')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('recharge_subscription_id', subscription.id.toString())
+        .single()
+      
+      if (newSub) {
+        existingSub = newSub
+      }
+    } else {
+      // Update existing subscriber record
+      await supabase
+        .from('subscribers')
+        .update(updateData)
+        .eq('id', existingSub.id)
+    }
 
     // Sync to Klaviyo
     const updatedSub = { ...existingSub, ...updateData } as Subscriber
@@ -241,7 +307,7 @@ async function handleCustomerEvent(
 ) {
   console.log(`[Recharge Webhook] Processing ${topic} for customer ${customer.id} (${customer.email})`)
 
-  // Upsert customer data
+  // Customer data to update/insert
   const subscriberData: Record<string, unknown> = {
     organization_id: orgId,
     email: customer.email.toLowerCase(),
@@ -265,57 +331,103 @@ async function handleCustomerEvent(
     subscriberData.status = 'Active'
   } else if (topic === 'customer/deactivated') {
     console.log(`[Recharge Webhook] Deactivating customer ${customer.id}`)
-    // When a customer is deactivated, they likely have no active subscriptions
+    // When a customer is deactivated, update ALL their subscriber records
     // Check if they have prepaid remaining orders, otherwise mark as Cancelled
-    const { data: existingSubscriber } = await supabase
+    const { data: existingSubscribers } = await supabase
       .from('subscribers')
-      .select('is_prepaid, orders_remaining')
+      .select('id, is_prepaid, orders_remaining, recharge_subscription_id')
       .eq('organization_id', orgId)
-      .eq('email', customer.email.toLowerCase())
-      .single()
+      .eq('recharge_customer_id', customer.id.toString())
 
-    if (existingSubscriber?.is_prepaid && existingSubscriber.orders_remaining && existingSubscriber.orders_remaining > 0) {
-      subscriberData.status = 'Expired' // Prepaid still has remaining orders
-      console.log(`[Recharge Webhook] Customer has prepaid remaining, setting to Expired`)
-    } else {
-      subscriberData.status = 'Cancelled' // No active subscriptions
-      console.log(`[Recharge Webhook] No prepaid remaining, setting to Cancelled`)
+    if (existingSubscribers && existingSubscribers.length > 0) {
+      for (const sub of existingSubscribers) {
+        let newStatus: 'Active' | 'Expired' | 'Cancelled' = 'Cancelled'
+        if (sub.is_prepaid && sub.orders_remaining && sub.orders_remaining > 0) {
+          newStatus = 'Expired' // Prepaid still has remaining orders
+          console.log(`[Recharge Webhook] Subscriber ${sub.id} has prepaid remaining, setting to Expired`)
+        } else {
+          console.log(`[Recharge Webhook] Subscriber ${sub.id} no prepaid remaining, setting to Cancelled`)
+        }
+        
+        await supabase
+          .from('subscribers')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', sub.id)
+      }
+      return // Already handled all records
     }
   }
 
+  // For customer/created or customer/updated, find or create base record
+  // Using compound key with NULL subscription_id (partial index)
   const { data: existing } = await supabase
     .from('subscribers')
-    .select('id')
+    .select('id, recharge_subscription_id')
     .eq('organization_id', orgId)
-    .eq('email', customer.email.toLowerCase())
+    .eq('recharge_customer_id', customer.id.toString())
+    .is('recharge_subscription_id', null) // Look for base record without subscription
     .single()
 
   if (existing) {
+    // Update existing base record (no subscription_id)
     await supabase
       .from('subscribers')
       .update(subscriberData)
       .eq('id', existing.id)
   } else {
-    await supabase
+    // Check if any record exists for this customer (might have subscription_id set)
+    const { data: anyExisting } = await supabase
       .from('subscribers')
-      .insert({
-        ...subscriberData,
-        status: subscriberData.status || 'Active',
-        box_number: 1,
-        subscribed_at: customer.created_at,
-      })
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('recharge_customer_id', customer.id.toString())
+      .limit(1)
+      .single()
+
+    if (anyExisting) {
+      // Update customer data on all their subscription records
+      await supabase
+        .from('subscribers')
+        .update({
+          first_name: subscriberData.first_name,
+          last_name: subscriberData.last_name,
+          phone: subscriberData.phone,
+          address1: subscriberData.address1,
+          address2: subscriberData.address2,
+          city: subscriberData.city,
+          state: subscriberData.state,
+          zip: subscriberData.zip,
+          country: subscriberData.country,
+          shopify_customer_id: subscriberData.shopify_customer_id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('organization_id', orgId)
+        .eq('recharge_customer_id', customer.id.toString())
+    } else {
+      // Create new base record (NULL subscription_id uses partial index)
+      await supabase
+        .from('subscribers')
+        .insert({
+          ...subscriberData,
+          recharge_subscription_id: null, // Explicit NULL for base record
+          status: (subscriberData.status as string) || 'Active',
+          box_number: 1,
+          subscribed_at: customer.created_at,
+        })
+    }
   }
 
-  // Sync to Klaviyo
-  const { data: subscriber } = await supabase
+  // Sync to Klaviyo - sync all subscriber records for this customer
+  const { data: allSubscribers } = await supabase
     .from('subscribers')
     .select('*')
     .eq('organization_id', orgId)
-    .eq('email', customer.email.toLowerCase())
-    .single()
+    .eq('recharge_customer_id', customer.id.toString())
 
-  if (subscriber) {
-    await syncSubscriberToKlaviyo(subscriber as Subscriber)
+  if (allSubscribers) {
+    for (const subscriber of allSubscribers) {
+      await syncSubscriberToKlaviyo(subscriber as Subscriber)
+    }
   }
 }
 
@@ -326,12 +438,36 @@ async function handleChargeEvent(
 ) {
   // On successful charge, handle box number incrementing and decrement orders_remaining for prepaid
   if (charge.status === 'SUCCESS') {
-    const { data: subscriber } = await supabase
-      .from('subscribers')
-      .select('*')
-      .eq('organization_id', orgId)
-      .eq('recharge_customer_id', charge.customer_id.toString())
-      .single()
+    // Look up subscriber by subscription_id first (compound key approach)
+    // Fall back to customer_id for legacy records
+    let subscriber = null
+    
+    // Charges are associated with subscriptions via line_items
+    const chargeSubscriptionId = charge.line_items?.[0]?.subscription_id
+    
+    if (chargeSubscriptionId) {
+      const { data: subBySubscriptionId } = await supabase
+        .from('subscribers')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('recharge_subscription_id', chargeSubscriptionId.toString())
+        .single()
+      
+      subscriber = subBySubscriptionId
+    }
+    
+    // Fall back to customer_id lookup
+    if (!subscriber) {
+      const { data: subByCustomerId } = await supabase
+        .from('subscribers')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('recharge_customer_id', charge.customer_id.toString())
+        .limit(1)
+        .single()
+      
+      subscriber = subByCustomerId
+    }
 
     if (subscriber) {
       // Get current charge SKU

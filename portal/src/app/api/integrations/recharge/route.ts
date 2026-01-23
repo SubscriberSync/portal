@@ -224,6 +224,9 @@ async function initialSync(
             pageDuplicates++
           }
 
+          // Upsert customer with NULL subscription_id initially
+          // Uses partial unique index (org_id, email) WHERE subscription_id IS NULL
+          // Subscription sync will create separate records per subscription
           const { error } = await supabase.from('subscribers').upsert(
             {
               organization_id: orgId,
@@ -243,9 +246,11 @@ async function initialSync(
               status: 'Active', // Set as Active initially - webhooks handle status changes
               migration_status: 'pending',
               updated_at: new Date().toISOString(),
+              // recharge_subscription_id is NULL - will be set during subscription sync
             },
             {
-              onConflict: 'organization_id,email',
+              onConflict: 'organization_id,recharge_subscription_id,email',
+              ignoreDuplicates: true, // Don't error if compound key exists
             }
           )
 
@@ -325,7 +330,9 @@ async function initialSync(
           break
         }
 
-        // Update subscriber records with subscription data
+        // Upsert subscriber records with subscription data
+        // Uses compound key (org_id, subscription_id, email) to allow
+        // multiple subscriptions per customer as separate subscriber records
         let subUpdates = 0
         for (const sub of subscriptions) {
           try {
@@ -357,26 +364,57 @@ async function initialSync(
               effectiveStatus = (ordersRemaining && ordersRemaining > 0) ? 'Active' : 'Expired'
             }
 
+            // First, get the customer's email from the base subscriber record
+            const { data: baseSubscriber } = await supabase
+              .from('subscribers')
+              .select('email, first_name, last_name, phone, address1, address2, city, state, zip, country, shopify_customer_id')
+              .eq('organization_id', orgId)
+              .eq('recharge_customer_id', sub.customer_id.toString())
+              .limit(1)
+              .single()
+
+            if (!baseSubscriber) {
+              console.log(`[Recharge] No base subscriber found for customer ${sub.customer_id}, skipping subscription ${sub.id}`)
+              continue
+            }
+
+            // Upsert using compound key (org_id, subscription_id, email)
+            // This creates separate records for customers with multiple subscriptions
             const { error } = await supabase
               .from('subscribers')
-              .update({
+              .upsert({
+                organization_id: orgId,
+                email: baseSubscriber.email,
+                recharge_subscription_id: sub.id.toString(),
+                recharge_customer_id: sub.customer_id.toString(),
+                // Copy customer data from base record
+                first_name: baseSubscriber.first_name,
+                last_name: baseSubscriber.last_name,
+                phone: baseSubscriber.phone,
+                address1: baseSubscriber.address1,
+                address2: baseSubscriber.address2,
+                city: baseSubscriber.city,
+                state: baseSubscriber.state,
+                zip: baseSubscriber.zip,
+                country: baseSubscriber.country,
+                shopify_customer_id: baseSubscriber.shopify_customer_id,
+                // Subscription-specific data
                 status: effectiveStatus,
                 sku: sub.sku || sub.product_title,
                 frequency: frequency,
                 is_prepaid: isPrepaid,
                 prepaid_total: prepaidTotal,
                 orders_remaining: ordersRemaining,
-                recharge_subscription_id: sub.id.toString(),
                 cancelled_at: sub.cancelled_at ? new Date(sub.cancelled_at).toISOString() : null,
                 cancel_reason: sub.cancellation_reason || null,
                 next_charge_date: sub.next_charge_scheduled_at || null,
                 updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'organization_id,recharge_subscription_id,email',
               })
-              .eq('organization_id', orgId)
-              .eq('recharge_customer_id', sub.customer_id.toString())
 
             if (error) {
-              console.error(`[Recharge] Failed to update subscription ${sub.id}:`, error)
+              console.error(`[Recharge] Failed to upsert subscription ${sub.id}:`, error)
             } else {
               subUpdates++
             }

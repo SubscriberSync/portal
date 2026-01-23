@@ -394,27 +394,48 @@ async function handleCustomerEvent(
 
   const address = customer.default_address
 
-  // Upsert subscriber
-  await supabase
+  // Customer data to update
+  const customerData = {
+    first_name: customer.first_name,
+    last_name: customer.last_name,
+    phone: customer.phone || address?.phone,
+    address1: address?.address1,
+    address2: address?.address2,
+    city: address?.city,
+    state: address?.province,
+    zip: address?.zip,
+    country: address?.country || 'US',
+    shopify_customer_id: customer.id.toString(),
+    updated_at: new Date().toISOString(),
+  }
+
+  // Check if subscriber exists (with or without subscription_id)
+  const { data: existing } = await supabase
     .from('subscribers')
-    .upsert(
-      {
+    .select('id, recharge_subscription_id')
+    .eq('organization_id', orgId)
+    .eq('email', email)
+    .limit(1)
+
+  if (existing && existing.length > 0) {
+    // Update all subscriber records for this email (may have multiple subscriptions)
+    await supabase
+      .from('subscribers')
+      .update(customerData)
+      .eq('organization_id', orgId)
+      .eq('email', email)
+  } else {
+    // Create new subscriber with NULL subscription_id (one-time customer)
+    // Uses partial unique index (org_id, email) WHERE subscription_id IS NULL
+    await supabase
+      .from('subscribers')
+      .insert({
         organization_id: orgId,
         email: email,
-        first_name: customer.first_name,
-        last_name: customer.last_name,
-        phone: customer.phone || address?.phone,
-        address1: address?.address1,
-        address2: address?.address2,
-        city: address?.city,
-        state: address?.province,
-        zip: address?.zip,
-        country: address?.country || 'US',
-        shopify_customer_id: customer.id.toString(),
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'organization_id,email',
-      }
-    )
+        recharge_subscription_id: null, // Explicit NULL for Shopify-only customers
+        status: 'Active',
+        box_number: 1,
+        ...customerData,
+      })
+  }
 }
