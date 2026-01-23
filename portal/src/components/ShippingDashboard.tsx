@@ -62,6 +62,8 @@ interface ShipmentWithSubscriber extends Shipment {
     email: string
     first_name: string | null
     last_name: string | null
+    preferred_name?: string | null
+    use_preferred_name_for_shipping?: boolean
     address1?: string | null
     address2?: string | null
     city?: string | null
