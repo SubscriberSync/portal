@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { syncSubscriberToKlaviyo, Subscriber } from '@/lib/klaviyo-sync'
 import { syncSingleSubscriber } from '@/app/api/discord/sync/route'
 import { handleApiError } from '@/lib/api-utils'
+import { RechargeCharge } from '@/lib/recharge'
 
 // Recharge webhook topics we handle
 type RechargeWebhookTopic =
@@ -62,14 +63,6 @@ interface RechargeCustomer {
   updated_at: string
 }
 
-interface RechargeCharge {
-  id: number
-  customer_id: number
-  subscription_id: number
-  status: 'SUCCESS' | 'QUEUED' | 'ERROR' | 'REFUNDED' | 'SKIPPED'
-  total_price: string
-  processed_at?: string
-}
 
 // Map Recharge status to our status
 function mapStatus(rechargeStatus: string): 'Active' | 'Paused' | 'Cancelled' | 'Expired' {

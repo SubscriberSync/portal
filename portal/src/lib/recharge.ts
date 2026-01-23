@@ -13,6 +13,7 @@ interface RechargeCharge {
   line_items: {
     subscription_id: number
     title: string
+    sku: string | null
     quantity: number
     variant_title?: string
   }[]
