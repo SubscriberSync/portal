@@ -31,6 +31,8 @@ interface SubscriberPreview {
   state?: string
   shipmentCount?: number
   activityCount?: number
+  needs_review?: boolean
+  tier_name?: string
 }
 
 interface MergePreview {
