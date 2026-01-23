@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 
+interface DiscrepancyResult {
+  type: string
+  description: string
+  count: number
+  samples: any[]
+}
+
+interface ResultsSummary {
+  totalSubscribers: number
+  fieldDiscrepancies: number
+  auditDiscrepancies: number
+  migrationStatus: Record<string, number>
+  highEpisodeCount: number
+}
+
+interface Results {
+  timestamp: string
+  discrepancies: DiscrepancyResult[]
+  summary: ResultsSummary
+  auditLogs?: Record<string, any>
+}
+
 /**
  * Debug endpoint to find episode counting discrepancies
  * GET /api/debug/episode-discrepancy
@@ -9,10 +31,16 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceClient()
 
   try {
-    const results = {
+    const results: Results = {
       timestamp: new Date().toISOString(),
       discrepancies: [],
-      summary: {}
+      summary: {
+        totalSubscribers: 0,
+        fieldDiscrepancies: 0,
+        auditDiscrepancies: 0,
+        migrationStatus: {},
+        highEpisodeCount: 0
+      }
     }
 
     // 1. Get subscribers with episode data
@@ -70,7 +98,13 @@ export async function GET(request: NextRequest) {
       .limit(50)
 
     if (!auditError && auditLogs) {
-      const auditDiscrepancies = []
+      const auditDiscrepancies: Array<{
+        email: string
+        auditedEpisode: number
+        actualBoxNumber: number
+        auditDate: string
+        auditStatus: string
+      }> = []
       auditLogs.forEach(log => {
         const subscriber = Array.isArray(log.subscribers) ? log.subscribers[0] : log.subscribers
         if (!subscriber) return
@@ -100,7 +134,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Check migration status distribution
-    const statusCounts = {}
+    const statusCounts: Record<string, number> = {}
     subscribers.forEach(sub => {
       const status = sub.migration_status || 'null'
       statusCounts[status] = (statusCounts[status] || 0) + 1
@@ -135,7 +169,7 @@ export async function GET(request: NextRequest) {
 
       if (!auditError && auditLogs) {
         // Group by email to get latest audit per subscriber
-        const latestAudits = {}
+        const latestAudits: Record<string, any> = {}
         auditLogs.forEach(log => {
           if (!latestAudits[log.email]) {
             latestAudits[log.email] = log
